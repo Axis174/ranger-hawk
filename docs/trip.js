@@ -79,7 +79,11 @@ async function tripBack() {
   navigator.geolocation.getCurrentPosition(pos => {
     const lat = pos.coords.latitude, lon = pos.coords.longitude, tr = TRIP && TRIP.truck;
     const un = UNITS ? unitsAt(lon, lat).map(u => esc(u.n)) : [];
-    const units = un.length > 1 ? un.slice(0, -1).join(', ') + ' and ' + un[un.length - 1] : un[0] || '';
+    /* Unit names carry their own commas ("Wasatch Mtns, East"), so three or more of them
+       comma-joined ran together into one unintelligible string in the sentence Pete is told
+       to read to a dispatcher. Semicolons cannot collide with what is inside a name. */
+    const units = un.length > 2 ? un.slice(0, -1).join('; ') + '; and ' + un[un.length - 1]
+      : un.length === 2 ? un[0] + ' and ' + un[1] : un[0] || '';
     const near = DB.birds.map(p => ({ p, mi: miles(lat, lon, p.lat, p.lon) })).sort((a, b) => a.mi - b.mi)[0];
     /* A bare mileage to a landmark sounds like "nearby", so give the direction -
        and say nothing at all past 25 miles. The access points are clustered in

@@ -23,7 +23,11 @@ const F_LABEL = { elk: 'Elk', deer: 'Deer', pronghorn: 'Pronghorn', moose: 'Moos
 /* Compare words, not characters, so "Wasatch, 7 points" and the unit name
    "Wasatch Mtns" can meet in the middle: punctuation becomes a space. */
 const fWords = s => ' ' + String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
-const F_RANGE = /\s+(mtns?|mountains?)$/i;                 // nobody says "Wasatch Mtns" out loud
+const F_RANGE = /\s+(mtns?|mountains?)$/i;
+/* Utah place names that contain an animal word. "deer near antelope island" must not read
+   as pronghorn just because the island is called Antelope, so these phrases are removed
+   before the species match - and left alone for the place match, where they belong. */
+const F_PLACE_NOISE = /\b(antelope island|antelope flat|deer creek|deer valley|bear lake|bear river|elk ridge|goose creek|swan creek|pigeon hollow)\b/g;                 // nobody says "Wasatch Mtns" out loud
 /* Every way a hunt unit can be named in a sentence, longest needle first. */
 function fUnitNames() {
   const out = [];
@@ -43,13 +47,29 @@ function fLoad() {
 /* Read the sentence. Anything not found becomes a question. */
 function fParse(text) {
   const t = fWords(text);
-  const q = { text, sp: null, bird: null, gap: null, wp: null, place: null, pt: null, wantAntlerless: /\b(cow|antlerless|doe|meat|freezer)\b/.test(t), wantGeneral: /\b(general|over the counter|otc|no draw|guaranteed)\b/.test(t), wantLE: /\b(limited|draw|le |trophy|bonus)\b/.test(t) };
-  for (const g of F_BIRD_GAPS) if (g[1].test(t)) { q.gap = g; break; }
-  if (!q.gap) for (const b of F_BIRDS) if (b[2].test(t)) { q.bird = b; break; }
-  if (!q.gap && !q.bird) for (const [k, re] of F_SPECIES) if (re.test(t)) { q.sp = k; break; }
+  const q = { text, sp: null, bird: null, gap: null, wp: null, place: null, alsoUnit: null, pt: null, wantAntlerless: /\b(cow|antlerless|doe|meat|freezer)\b/.test(t), wantGeneral: /\b(general|over the counter|otc|no draw|guaranteed)\b/.test(t), wantLE: /\b(limited|draw|le |trophy|bonus)\b/.test(t) };
+  const st = t.replace(F_PLACE_NOISE, ' ');          // species read from text with place names removed
+  for (const g of F_BIRD_GAPS) if (g[1].test(st)) { q.gap = g; break; }
+  if (!q.gap) for (const b of F_BIRDS) if (b[2].test(st)) { q.bird = b; break; }
+  if (!q.gap && !q.bird) for (const [k, re] of F_SPECIES) if (re.test(st)) { q.sp = k; break; }
   for (const [k, re] of F_WEAPON) if (re.test(t)) { q.wp = k; break; }
   const m = /(\d{1,2})\s*(?:bonus|preference)?\s*(?:points?|pts)/.exec(t); if (m) q.pt = +m[1];
-  for (const h of (DB.config.homes || [])) if ((h.aliases || []).some(a => t.includes(fWords(a)))) { q.place = { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon }; break; }
+  let hitAlias = null;
+  for (const h of (DB.config.homes || [])) {
+    const a = (h.aliases || []).find(x => t.includes(fWords(x)));
+    if (a) { hitAlias = a; q.place = { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon }; break; }
+  }
+  /* "boulder" and "fishlake" are Pete's own words for the Torrey country AND the leading
+     words of real hunt units (Boulder Elk, Boulder/Kaiparowits, Fishlake). The home wins,
+     because they are his words for his own places - but silently swallowing a unit name
+     would plan the wrong hunt, so the collision is surfaced and he can switch in one tap.
+     Only aliases he chose are tested this way, which keeps it from firing on common words. */
+  if (hitAlias && UNITS) {
+    const needle = fWords(hitAlias).trimEnd();                 // " boulder"
+    const bases = [...new Set(UNITS.map(u => u.n.split(',')[0]))];
+    const hits = bases.filter(b => fWords(b) === fWords(hitAlias) || fWords(b).startsWith(needle + ' '));
+    if (hits.length) q.alsoUnit = hits.map(b => ({ label: b, units: UNITS.filter(u => u.n.split(',')[0] === b).map(u => u.n) }));
+  }
   if (!q.place && /\b(here|where i am|my location|gps|right now)\b/.test(t)) q.place = { kind: 'gps' };
   if (!q.place && UNITS) {                                   // a unit named outright, longest match wins
     const hit = fUnitNames().find(([needle]) => t.includes(needle));
@@ -146,7 +166,8 @@ const F_BIRDS = [
   ['crow', 'American crow', /\bcrows?\b/, ['crow', 'crow2'], null, 'Statewide, in two split seasons. Every national wildlife refuge in Utah is closed to crow hunting.'],
   ['crane', 'Sandhill crane', /\b(sandhills?|cranes?)\b/, ['crane-cache-rich', 'crane-boxelder', 'crane-uintah-early', 'crane-uintah-mid', 'crane-uintah-late'], null, 'A drawn hunt in Cache, Rich and East Box Elder counties and the Uintah Basin Zone. One bird for the whole season.'],
   ['duck', 'Duck, coot and snipe', /\b(ducks?|mallards?|teal|wid?geons?|gadwalls?|pintails?|canvasbacks?|mergansers?|coots?|snipe|redheads?|bluebills?|scaup)\b/, { north: ['duck-n', 'scaup-n'], south: ['duck-s', 'scaup-s'] }, /duck/i, null],
-  ['goose', 'Geese', /\b(goose|geese|honkers?|specklebell(y|ies)|white-?fronted)\b/, ['geese-wf', 'geese-wf2', 'geese-ebe', 'geese-n', 'geese-n2', 'geese-s'], /duck/i, null],
+  ['lightgoose', "Light geese (snow, blue and Ross's)", /\b(snow\s*(goose|geese)|blue\s*(goose|geese)|ross'?s?\s*(goose|geese)|light\s*(goose|geese))\b/, ['light-geese-n', 'light-geese-n2', 'light-geese-s', 'light-geese-s2'], /duck/i, null],
+  ['goose', 'Geese', /\b(goose|geese|honkers?|specklebell(y|ies)|white-?fronted)\b/, ['geese-wf', 'geese-wf2', 'geese-ebe', 'geese-n', 'geese-n2', 'geese-s', 'light-geese-n', 'light-geese-n2', 'light-geese-s', 'light-geese-s2'], /duck/i, null],
   ['swan', 'Tundra swan', /\bswans?\b/, ['swan'], /duck/i, null],
   ['turkey', 'Wild turkey', /\b(turkeys?|gobblers?)\b/, ['turkey-fall', 'turkey-general', 'turkey-le'], /turkey/i, null]
 ];
@@ -171,7 +192,7 @@ function fCountyZone(c) {
   return null;                                  // Tooele, or somewhere we cannot place
 }
 
-const F_BIRD_CHIP = { pheasant: 'Pheasant', chukar: 'Chukar', quail: 'Quail', grouse: 'Grouse', 'sage-grouse': 'Sage grouse', sharptail: 'Sharp-tailed', ptarmigan: 'Ptarmigan', duck: 'Duck', goose: 'Geese', swan: 'Swan', crane: 'Crane', dove: 'Dove', pigeon: 'Pigeon', crow: 'Crow', turkey: 'Turkey', cottontail: 'Cottontail', hare: 'Snowshoe hare', jackrabbit: 'Jackrabbit' };
+const F_BIRD_CHIP = { pheasant: 'Pheasant', chukar: 'Chukar', quail: 'Quail', grouse: 'Grouse', 'sage-grouse': 'Sage grouse', sharptail: 'Sharp-tailed', ptarmigan: 'Ptarmigan', duck: 'Duck', goose: 'Geese', lightgoose: 'Light geese', swan: 'Swan', crane: 'Crane', dove: 'Dove', pigeon: 'Pigeon', crow: 'Crow', turkey: 'Turkey', cottontail: 'Cottontail', hare: 'Snowshoe hare', jackrabbit: 'Jackrabbit' };
 const fBird = k => F_BIRDS.find(b => b[0] === k);
 const fPointZone = p => fCountyZone(String(p.county || '').split(',')[0]);   // some points span two counties
 /* Where today sits in the season. */
@@ -290,6 +311,13 @@ function vFind() {
   const res = fResults(q, myUnits);
   h += `<div class="sec-title">${esc(F_LABEL[q.sp])}${q.wp ? ' &middot; ' + esc(q.wp) : ''} &middot; ${esc(q.place.label || 'here')}</div>
     <p class="fine" style="padding-left:2px">Hunt boundaries under that spot: <b>${fList(myUnits)}</b>. One place can sit in several overlapping hunts, so check the boundary on the map before you buy.</p>`;
+  /* Only offer the switch for units that would actually answer. The boundary layer and the
+     hunt lists do not always spell a unit the same way, so some candidates return nothing -
+     a chip that leads to an empty page is worse than no chip. */
+  const useful = (q.alsoUnit || []).filter(u => { try { return fResults(q, u.units).length > 0; } catch (e) { return false; } });
+  if (useful.length) h += `<div class="warnbox" style="margin-top:4px"><b>That is also the name of a hunt unit.</b>
+    This answer is for ${esc(q.place.label)}, because that is your own word for it. If you meant the unit, switch:</div>
+    <div class="chipsrow">${useful.map(u => `<button class="chip" data-fask="useunit" data-fval="${esc(u.label)}">${esc(u.label)}</button>`).join('')}</div>`;
   if (!q.wp) h += fAsk('Which weapon? (or leave it open)', [['archery', 'Archery'], ['muzzleloader', 'Muzzleloader'], ['rifle', 'Rifle / any legal weapon'], ['any', 'Show all']], 'wp');
   for (const c of res) h += `<div class="sec-title">${esc(c.title)}</div><div class="card">${c.rows.map(r => `<${r.code ? 'button' : 'div'} class="row" ${r.code ? `data-draw="${esc(r.code)}"` : ''} style="--g:var(--brand)"><span class="pill"></span><span><span class="t">${esc(r.t)}${r.sub || ''}</span><span class="s">${r.s}</span></span><span class="v"></span></${r.code ? 'button' : 'div'}>`).join('')}</div>`;
   if (!res.length) h += `<p class="empty">Nothing matched in ${fList(myUnits)} for ${esc(F_LABEL[q.sp])}${q.wp ? ' with ' + q.wp : ''}. Try another weapon or drop the extra words.</p>`;
@@ -310,6 +338,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-fask]'); if (!t) return;
   const q = fq.parsed || fParse(''); const v = t.dataset.fval;
   if (t.dataset.fask === 'sp') { if (v.indexOf('bird:') === 0) { q.bird = fBird(v.slice(5)); q.sp = null; } else { q.sp = v; q.bird = null; } }
+  if (t.dataset.fask === 'useunit') { q.place = { kind: 'unit', label: v, units: (UNITS || []).filter(u => u.n.split(',')[0] === v).map(u => u.n) }; q.alsoUnit = null; }
   if (t.dataset.fask === 'wp') q.wp = v === 'any' ? null : v, q.wpAsked = true;
   if (t.dataset.fask === 'place') { const h = (DB.config.homes || []).find(x => x.id === v); q.place = h ? { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon } : { kind: 'gps' }; if (!h) { fq.parsed = q; fRun(fq.text); return; } }
   fq.parsed = q; render();
