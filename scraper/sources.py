@@ -79,6 +79,21 @@ PDFS = {
     "waterfowl_upland_turkey": "https://wildlife.utah.gov/guidebooks/waterfowl-upland-game-turkey-guidebook.pdf",
     "big_game_field_regs":     "https://wildlife.utah.gov/guidebooks/field_regs.pdf",
     "big_game_application":    "https://wildlife.utah.gov/guidebooks/biggameapp.pdf",
+    # Fishing runs on a calendar year, Jan. 1-Dec. 31, and UDWR swaps the file at
+    # this same address when the next year's book comes out. The app compares this
+    # hash with the one docs/data/fishing_rules.json was built from and says so on
+    # the phone when they differ.
+    "fishing":                 "https://wildlife.utah.gov/guidebooks/fishing_guidebook.pdf",
+}
+
+# Emergency changes to the fishing guidebook. UDWR never folds these into the PDF:
+# each is a signed notice listed under "Revisions" beside the Fishing Guidebook on
+# the guidebooks page (nine of them in 2026 by September). So the PDF hash above
+# cannot see them, and this block is read on its own every day.
+FISHING_REVISIONS = {
+    "page": "https://wildlife.utah.gov/guidebooks",
+    "block_id": "contentguidebookFishingRevisions",
+    "notice_path": "/pdf/guidebooks/emergency-changes/",
 }
 
 # Pages scanned for the 2027 application window announcement.

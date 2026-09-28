@@ -1,0 +1,87 @@
+{
+ "_what": "The guidebook's underwater spearfishing section (pages 19 to 21) names waters in its own words, which are not always the words used in 'Rules for specific waters'. build_fishing.py matches the two by itself only when the whole name and the counties agree. Every other water named there is listed here with the entry it belongs to, or null when the guidebook has no entry of its own for it. The key is the name and counties as the spearfishing section prints them.",
+ "Brown’s Draw Reservoir|Duchesne": {
+  "water": null,
+  "why": "No entry of its own."
+ },
+ "Electric Lake|Emery": {
+  "water": null,
+  "why": "No entry of its own. Huntington Creek below Electric Lake has one; the lake does not."
+ },
+ "Uinta Mountains|Daggett, Duchesne, Summit, Uintah": {
+  "water": null,
+  "why": "Seventeen named high lakes. 'Uinta Mountains lakes and streams, Summit County' in the water rules is a different list of five lakes with a trout limit."
+ },
+ "Willard Bay Reservoir|Box Elder": {
+  "water": "willard-bay-reservoir-and-inlet-channel-box-elder",
+  "why": "The water rules head it 'Willard Bay Reservoir and inlet channel'."
+ },
+ "East Canyon Reservoir|Morgan": {
+  "water": null,
+  "why": "No entry of its own."
+ },
+ "Echo Reservoir|Summit": {
+  "water": null,
+  "why": "No entry of its own."
+ },
+ "Flaming Gorge|Daggett": {
+  "water": "flaming-gorge-reservoir-daggett",
+  "why": "The water rules head it 'Flaming Gorge Reservoir'."
+ },
+ "Recapture Reservoir|San Juan": {
+  "water": null,
+  "why": "No entry of its own. Recapture Creek is named under San Juan River tributaries; the reservoir is not."
+ },
+ "Rockport Reservoir|Summit": {
+  "water": null,
+  "why": "No entry of its own."
+ },
+ "Steinaker Reservoir|Uintah": {
+  "water": null,
+  "why": "No entry of its own."
+ },
+ "Jordan River|Salt Lake, Utah": {
+  "water": null,
+  "why": "No entry of its own in the water rules."
+ },
+ "Quail Creek Reservoir|Washington": {
+  "water": "quail-creek-reservoir-quail-lake-washington",
+  "why": "The water rules head it 'Quail Creek Reservoir (Quail Lake)'."
+ },
+ "_named": {
+  "_what": "Waters that a spearfishing entry names INSIDE its rules, as the guidebook spells them. The build checks that every name is printed in that entry and that a printed list holds no name missing here. The app matches whole names only: 'Fish Lake (Weber River drainage)' names Fish Lake, not the Weber River.",
+  "Uinta Mountains|Daggett, Duchesne, Summit, Uintah": [
+   "Alexander Lake",
+   "Chepeta Lake",
+   "China Lake",
+   {
+    "n": "Fish Lake",
+    "q": "Weber River drainage"
+   },
+   "Hacking Lake",
+   "Hoop Lake",
+   "Hoover Lake",
+   "Moccasin Lake",
+   "Papoose Lake",
+   "Paradise Park Lake",
+   "Sand Lake",
+   "Smith and Morehouse Reservoir",
+   "Spirit Lake",
+   "Upper Stillwater Reservoir",
+   "Wall Lake",
+   "Whitney Reservoir",
+   "Wigwam Lake"
+  ],
+  "Utah Lake tributaries|Utah": [
+   "American Fork Creek",
+   "Beer Creek",
+   "Dry Creek",
+   "Hobble Creek",
+   "Spanish Fork River",
+   "Spring Creek",
+   "Spring Creek Run",
+   "Provo River",
+   "Provo River Delta"
+  ]
+ }
+}

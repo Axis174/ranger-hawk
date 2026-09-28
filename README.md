@@ -6,8 +6,9 @@ _Formerly "Utah Hunt Atlas" (the repo keeps that slug). The name goes back to Ra
 
 A personal, installable phone app plus a daily data refresh for Utah hunting —
 birds (pheasant, chukar, duck, ptarmigan) and big game (deer and elk, archery
-through rifle) — measured from three homes: **North Salt Lake**, **Heber City**
-and **Torrey**.
+through rifle) — and, since 2026-09-27, Utah fishing: the statewide limits, every
+water with rules of its own, and UDWR's emergency changes. Measured from three
+homes: **North Salt Lake**, **Heber City** and **Torrey**.
 
 Not affiliated with UDWR. Always confirm against the current guidebook and the
 [Utah Hunt Planner](https://hunt.utah.gov/) before you hunt.
@@ -136,6 +137,20 @@ Known weakness of the sort: frames of the camera being handled score highest,
 and an animal at the dark edge of the flash scores low, so nothing is ever
 hidden or deleted automatically.
 
+**Fish** — type "trout near the cabin" or the name of a water. The screen has
+four parts. *Near*: 435 places from UDWR's own layers, by road time from the
+selected home, each with a chip saying what the app found for it today. *By
+water*: all 179 entries of the guidebook's "Rules for specific waters" and the 64
+community fishing waters. *Statewide*: the daily-limits table, 39 general
+rules and the general rules for spearfishing. *In force*: the statewide kokanee closure and every emergency change, with
+the days each has left. Opening a water shows, from the top down: anything wrong
+with the rules as a whole today, the kokanee closure while it runs, any emergency
+change, the water's own rules stretch by stretch, the rules of a community water,
+the whole statewide table with the rows a rule above speaks to marked, the rules
+for groups of waters that may also cover it, and what the guidebook's spearfishing
+section says about it. Everything is in UDWR's words. Works with no signal. See
+"Fishing" below for how it is kept honest.
+
 **Seasons** — every season for birds, deer, elk and turkey with live open/closed
 state. A **Draw odds** switch shows UDWR's published draw results: pick limited
 entry, general deer or antlerless, a species, resident or nonresident, and your
@@ -164,6 +179,9 @@ Everything lands in `docs/data/`.
 |---|---|
 | `bird_access.json` | 88 access points, road-routed from all three homes |
 | `seasons.json` | Season dates and deadlines. **Hand-maintained** from the guidebooks |
+| `fishing_rules.json` | The fishing guidebook, in UDWR's words, with emergency changes. Built by `scraper/build_fishing.py`, never edited by hand |
+| `fishing_places.json` | 435 places to fish, with the rules each is linked to. Built by `scraper/build_fishing_places.py` |
+| `fishing_notices.json` | UDWR's list of emergency changes to the fishing guidebook, read **daily** |
 | `config.json` | Homes, contacts, landowner calls, permits, trespass law |
 | `migration_utah.json` | 492 USGS ungulate migration features, Utah extent |
 | `raw_*.json` | Verbatim upstream pulls, kept so diffs are auditable |
@@ -171,6 +189,9 @@ Everything lands in `docs/data/`.
 | `changelog.json` | Last 60 runs: what changed, field by field |
 
 ### Sources
+- UDWR 2026 Utah Fishing Guidebook, and the emergency changes UDWR posts beside it
+- UDWR Fish Utah planner, community fisheries layer and lake registry (places,
+  species and stocking; not regulations)
 - UDWR 2026-27 Waterfowl, Upland Game and Turkey Guidebook
 - UDWR 2026 Big Game Field Regulations and Application Guidebooks
 - UDWR ArcGIS services: Walk-In Access, pheasant release areas, all public
@@ -194,6 +215,188 @@ not yet published. The two application deadlines in `seasons.json` are marked
 `projected: true` and carry the 2026 dates until the real ones appear.
 
 ---
+
+## Fishing
+
+Hunting is one guidebook and one table per species. Fishing is a statewide table,
+179 entries that each override part of it, groups of waters that share a rule,
+river stretches with different rules on the same river, and signed emergency
+changes that UDWR posts during the year and never folds into the PDF. There were
+nine of those in 2026 by September. The guidebook states the order itself: "On
+waters that have a specific rule, that rule takes precedence over the general
+rules."
+
+### How it is kept from going quietly wrong
+
+1. **UDWR's words are the record.** `scraper/build_fishing.py` lifts every rule
+   out of the PDF by position and keeps the wording and the page. The app shows
+   that wording. Beside each rule is a small index (`fx`) that only sorts it: what
+   it is about, which rows of the statewide table it takes over, which dates it
+   covers. The app works out yes-or-no answers from the index - closed today,
+   flies and lures only, catch and release, no motors - and **never works out a
+   merged limit**.
+2. **Layers, highest first:** emergency change (by date), the water's own rule
+   (by stretch), a group rule (community waters), statewide. A higher layer
+   replaces only what it speaks to. Bear Lake's "Limit 2 trout" takes the trout
+   row; bass at Bear Lake is still the statewide 6.
+3. **The statewide figure is never hidden.** Many rules change only part of a row
+   ("No limit for brook trout") or build on it ("Limit 2 splake (goes toward the
+   statewide trout limit)"). So the statewide table is always printed whole. A
+   row a rule speaks to is listed as changed, with the species the rule names and
+   the statewide figure beside it, and the app does not say what the two add up
+   to.
+4. **It fails toward caution.** A sentence no strict pattern can sort fails the
+   build until a person has read it into `scraper/fishing/overrides.json`. A
+   pattern has no "any words here": where a rule gives dates the pattern takes
+   only the words dates are written in, and where it lists fish, only fish. So
+   "Limit 8 trout from Aug. 1-Oct. 31 (at all other times the limit is 2)" cannot
+   be sorted with its second half swallowed; it stops the build instead. Words
+   such as CLOSED, "limit", "must be released" and "artificial flies only" cannot
+   appear in a rule without the index saying so, whoever sorted it, and a date
+   written in by hand must be a date the same stretch prints. On the phone, an index
+   entry the app does not fully understand is shown as "not sorted - read it". A
+   place that cannot be matched to a guidebook entry says so, shows the entries
+   with a similar name, the group rules for its county, and every water with its
+   own rules in that county. None of these is ever read as "statewide applies".
+5. **The build checks itself and writes nothing if a check fails.** A second,
+   independent reading of the same pages must contain every rule. Every bullet
+   printed must be held, page by page. The statewide table is read three ways -
+   by position, by content order and from a hand-kept copy - and all three must
+   agree. Species named in a rule must equal the rows in its index. Dates in a
+   rule must equal the spans in its index. Every "See ..." must lead somewhere.
+   A general rule is quoted by hand, so the build reads what the guidebook
+   prints straight after every quote. It refuses a quote that stops inside a
+   sentence, a list quoted without all its bullets, and a quote followed by a
+   sentence that opens like an exception, a permission or a note ("The only
+   exception", "You may", "However", "Note:"), unless the next words are held as
+   a rule of their own or a person has read on and written down why they are
+   left out.
+6. **Emergency changes are read every day** from UDWR's Revisions list. A new
+   notice reaches the phone the next morning word for word, marked as not yet
+   built into the rules. Any link to a PDF in that list counts as a notice,
+   whatever tags it is wrapped in, and so does a line headed the way UDWR heads
+   one, "Name (Some County):", with no link at all. The whole list is hashed with
+   every character kept, and text that is struck through is marked, so an edit
+   the reader cannot make sense of still raises a warning. The signed PDFs are
+   read again every day, because UDWR can replace one and leave its address and
+   its summary as they were. Each change carries its
+   own dates, so the phone drops it when it ends, with no signal. UDWR writes
+   "until Oct. 1"; every change so far raises a limit, so the app treats Sept. 30
+   as the last day. A change UDWR takes down or rewords is set aside if it raised
+   a limit and kept if it tightened one.
+7. **Dates are Utah's.** The phone works everything out in Utah time whatever it
+   is set to, because a phone at Lake Powell can be keeping Arizona's. A span
+   ends at the first moment outside it: "through April 30" ends when May 1
+   begins, "through 6 a.m." at 6 a.m. sharp. "Opens" is worked out across every
+   rule that shuts a stretch, and a date in a later year than the guidebook's is
+   never printed.
+8. **Every warning travels with the rule.** A replaced guidebook, a notice taken
+   down or reworded, a notice nobody has read in, a list not read for three days,
+   places and rules from different builds, the year being over: each is printed
+   on the Fish tab, on every water and place sheet, and on every answer the hunt
+   finder gives. After Dec. 31 every chip says the rules are out of date.
+
+### Keeping it current
+
+**When UDWR posts an emergency change** (the daily run reports it, and the app
+shows it as unread): read the signed notice, add an entry to
+`scraper/fishing/amendments.json`, then
+
+    python3 scraper/build_fishing.py
+    node scraper/fishing/test_fishing.js
+
+The build checks the entry against the signed notice itself and against UDWR's
+summary, and fails if the wording or the dates differ. If the entries or their
+stretches have changed it says "THE PLACES MUST BE REBUILT NOW"; do it, because
+the phone will not match places to rules built from different editions.
+
+**When UDWR reissues the guidebook** (every year, around November for the
+following year): run the same two commands. Rules whose wording did not change
+keep their sorting. A new or changed sentence fails the build and names itself;
+read it and, if no pattern fits, add it to `scraper/fishing/overrides.json`.
+Check the page number in `scraper/fishing/statewide.json`, and re-read the 39
+general rules and 7 spearfishing rules there against the new pages: they are
+quoted by hand. Then rebuild
+the places (below), because the places file is tied to one build of the rules and
+the phone will not use it with another. Then have the result audited against the
+page images before it ships: the 2026 build was, twice, by independent readers
+(see "Audits").
+
+**Once a year, or when UDWR's layers change:**
+
+    python3 scraper/build_fishing_places.py --drive     # about 8 minutes, one request every 1.5 s
+
+Both builders need `pdftotext` and `pdftohtml` (`brew install poppler`). Neither
+is part of the daily job, on purpose.
+
+### Where the places come from
+
+| Source | Used for |
+|---|---|
+| UDWR [Fish Utah planner](https://fish.utah.gov/) | 292 waters: position, UDWR's point for directions, species with UDWR's own "likely" or "possible", recent stocking |
+| UDWR community fisheries layer | community ponds the planner lacks |
+| UDWR property layer (already pulled daily) | 107 angler access points and other properties whose stated purpose includes fishing |
+| UDWR lake registry | a position for 31 guidebook lakes the planner does not carry, each matched by a person |
+| UGRC county outlines | which county a point is in |
+| OSRM | road time from the three homes, from town-level anchors |
+
+A place is linked to a guidebook entry by itself **only when the whole name and
+the county both match**. Every other link is a decision recorded with its reason
+in `scraper/fishing/links.json`: which entry, which stretch, or that the place is
+on the water but outside every stretch the guidebook lists, in which case the
+sheet says why. The decisions rest on USGS's stream, lake, road and place-name
+maps. UDWR's planner also carries regulation text, but most of it was last touched
+in 2019, so the app does not show it; the builder reads it only as a second
+source, to catch a rule filed under the wrong water. A directions point UDWR gives
+that lies more than 15 miles from its own point for the water is not used.
+
+### Audits
+
+The 2026 build was read against the page images by independent checkers before it
+shipped, and the code was reviewed three times. What they found, and what was done, is
+in the save points of 2026-09-28. The tests (`node scraper/fishing/test_fishing.js`)
+run under six clocks with the clock stopped, so they give the same answer on any
+day, and hold expected values worked out by hand from the guidebook and a
+calendar, not copied from the program. Each fix was also broken on purpose to
+prove a test catches it.
+
+### Honest limits
+
+- **A river has one point on the map and many miles of bank.** Where a river has
+  several stretches with different rules and the place's name does not settle
+  which stretch it is on, the app shows every stretch and says so.
+- **Some rules cover waters they do not name.** "Utah Lake tributaries" says
+  "including but not limited to", and "Boulder Mountain lakes and reservoirs"
+  names only its exceptions. The app cannot know that a creek or lake is one of
+  them, so on every sheet it offers the group rules of the same county and the
+  same kind of water as ones that **may** apply, and says when the guidebook names
+  that water as an exception.
+- **Spearfishing is shown, not worked out.** The guidebook's underwater
+  spearfishing section (pp. 19-21) is printed word for word on the waters it
+  names, with its general rules. A water the lists do not name says so and
+  quotes the guidebook: only listed waters are open to spearfishing for game
+  fish.
+- **The general rules are a selection.** 39 are held. Fish used as bait,
+  setlines, bowfishing, dipnets, trespass, waste and tagging are in the
+  guidebook and not in the app.
+- **The county in a guidebook heading is not always the whole water.** "Weber
+  River, Summit County" has a stretch that runs to the Great Salt Lake. Known
+  cases are in `links.json` under `extra_counties`.
+- **About 40 entries have no position:** streams and tributary groups. They are
+  found by name, through the county list and as group rules.
+- **The app reads "until" one day early.** UDWR's notices say a change "will
+  remain in effect until Oct. 1". That most likely includes Oct. 1. The app stops
+  at Sept. 30, because every change so far raises a limit and the cost of being
+  wrong the other way is a citation.
+- **Species and stocking are not rules**, and UDWR's list of what lives in a water
+  is not a promise.
+- **Signs at the water govern.** Several rules say "as posted". The app cannot
+  see a sign.
+- **The guidebook's own page references are sometimes stale.** It sends the reader
+  to "page 32", "page 50" and "page 53" for the same description of a cutthroat
+  trout. The app keeps UDWR's words as printed and does not follow them.
+- Flaming Gorge, Bear Lake and Lake Powell are shared with Wyoming, Idaho and
+  Arizona. Only Utah's rules are here.
 
 ## On social media
 
@@ -221,7 +424,8 @@ dies the app loses nothing else; failures are logged in `changelog.json`.
 
 ## Maintaining it
 
-**`seasons.json` is the one file you edit by hand**, and deliberately so. Season
+**`seasons.json` is the one hunting file you edit by hand**, and deliberately so.
+(Fishing is kept differently; see "Fishing" above.) Season
 dates and bag limits come out of a PDF that changes layout year to year; a
 scraper that guessed at them would eventually be confidently wrong about a legal
 limit. The job flags the reissue, a human reads the table, the file gets edited.
@@ -255,6 +459,9 @@ Checked 2026-09-20 against what is current and maintained on GitHub.
 | [USFS Motor Vehicle Use Map](https://www.fs.usda.gov/visit/maps/mvum) data | Which forest roads are legally open, to what, and when | public domain |
 | [tippecanoe](https://github.com/felt/tippecanoe) 2.x (build tool, not shipped) | Cuts the land ownership layer into an offline map file | BSD-2-Clause |
 | Ray-casting point-in-polygon (a dozen lines, inlined) | Which hunt unit am I in | public technique |
+| [poppler](https://poppler.freedesktop.org/) `pdftohtml`, `pdftotext` (build tool, not shipped) | Reads the fishing guidebook by position, and a second time by content order | GPL-2.0, used as a command-line tool |
+| UDWR [Fish Utah planner](https://fish.utah.gov/), community fisheries layer, lake registry | Fishing places, species, stocking | public record |
+| [UGRC](https://gis.utah.gov/) county boundaries | Which county a fishing place is in | public domain |
 | [USGS Water Services](https://waterservices.usgs.gov/) | Great Salt Lake elevation, sites 10010000 and 10010100, parameter 62614 | public domain |
 | [National Weather Service API](https://www.weather.gov/documentation/services-web-api) | Forecast per access point | public domain |
 
@@ -436,6 +643,17 @@ the legal authority.
 - **eBird** recent sightings - free key, but the terms are non-commercial.
 - **[PWABuilder](https://github.com/pwa-builder/PWABuilder)** - packages this exact
   app for the App Store and Play Store when the time comes, without a rewrite.
+- **Fishing: the stretches themselves on the map** (2026-09-27, not built). Today a
+  river is one point and its stretches are words. USGS's stream map gives the line
+  of every named river, and the stretch ends are dams, bridges and confluences it
+  also carries, so each stretch could be drawn and "which stretch am I on" answered
+  from GPS. It would also give a position to the 40 stream and tributary entries
+  that have none.
+- **Fishing: places on the Map tab** (2026-09-27, not built). The 435 places are a
+  list on the Fish tab only.
+- **Fishing: the rest of the unlinked properties.** About 170 places have no
+  guidebook entry by name and none nearby on USGS's map. Most are lakes under the
+  statewide rules. A person has not looked at each one.
 
 ## Known gaps
 

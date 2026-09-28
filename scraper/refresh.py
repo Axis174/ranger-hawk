@@ -228,6 +228,84 @@ for key, url in S.PDFS.items():
 if new_hashes:
     save("pdf_hashes.json", new_hashes)
 
+# ------------------------------------------- fishing: emergency changes ----
+# UDWR amends the fishing guidebook by signed notice during the year and never
+# folds the change into the PDF, so the hash above cannot see it. This reads the
+# Revisions list beside the Fishing Guidebook and keeps UDWR's words. It decides
+# nothing: a new notice reaches the phone the next morning word for word, marked
+# as not yet built into the rules, until a person has read it into
+# scraper/fishing/amendments.json and rebuilt. A page that cannot be read never
+# wipes the notices already held - it is recorded as a failed check instead, and
+# the app shows how long ago the list was last read successfully.
+try:
+    import fishing_notices as FN
+    prev = load_prev("fishing_notices.json") or {}
+    had = {n["slug"]: n for n in prev.get("notices", [])}
+    try:
+        got = FN.read(get(S.FISHING_REVISIONS["page"], timeout=90).decode("utf-8", "ignore"),
+                      S.FISHING_REVISIONS["block_id"], S.FISHING_REVISIONS["notice_path"])
+    except Exception as e:                # noqa: BLE001
+        got = {"ok": False, "error": repr(e)[:200], "notices": [], "other": []}
+    if got["ok"] and not got["notices"] and had:
+        got = {"ok": False, "error": "the list came back empty although %d notices were held" % len(had),
+               "notices": [], "other": []}
+    out = {"checked": report["run"], "page": S.FISHING_REVISIONS["page"],
+           "guidebook": new_hashes.get("fishing") or prev.get("guidebook")}
+    if got["ok"]:
+        detail = []
+        for n in got["notices"]:
+            old = had.get(n["slug"])
+            n["first_seen"] = (old or {}).get("first_seen") or report["run"][:10]
+            for k in ("pdf_sha", "pdf_bytes"):
+                if old and old.get(k):
+                    n[k] = old[k]
+            # The signed notice is read every day, not once: UDWR can replace the PDF
+            # and leave its address and its summary as they were.
+            if not n.get("no_pdf"):
+                try:
+                    b = get(n["url"], timeout=90)
+                    if b[:5] == b"%PDF-":
+                        n["pdf_sha"], n["pdf_bytes"] = hashlib.sha256(b).hexdigest()[:16], len(b)
+                    else:
+                        report["errors"].append({"source": "fishing_notice:" + n["slug"], "error": "what came back is not a PDF"})
+                except Exception as e:        # noqa: BLE001
+                    report["errors"].append({"source": "fishing_notice:" + n["slug"], "error": repr(e)[:160]})
+            if old is None:
+                detail.append({"type": "added", "item": n["title"]})
+            else:
+                if old.get("sha") != n["sha"]:
+                    detail.append({"type": "changed", "item": n["title"], "field": "wording",
+                                   "from": old.get("sha", ""), "to": n["sha"]})
+                if old.get("pdf_sha") and n.get("pdf_sha") and old["pdf_sha"] != n["pdf_sha"]:
+                    detail.append({"type": "changed", "item": n["title"], "field": "signed notice",
+                                   "from": old["pdf_sha"], "to": n["pdf_sha"]})
+        for slug_, old in had.items():
+            if slug_ not in {n["slug"] for n in got["notices"]}:
+                detail.append({"type": "removed", "item": old.get("title", slug_)})
+        if not detail and prev.get("sha") and prev["sha"] != got["sha"]:
+            # The list reads differently and no notice accounts for it: a heading, a
+            # correction, or a notice set out in a way the reader does not know.
+            detail.append({"type": "changed", "item": "the list itself", "field": "wording",
+                           "from": prev["sha"], "to": got["sha"]})
+        if detail and prev:
+            report["changes"].append({
+                "source": "fishing_notices",
+                "desc": "FISHING EMERGENCY CHANGE - the app shows UDWR's words; a person must read it into "
+                        "scraper/fishing/amendments.json and run build_fishing.py",
+                "features": len(got["notices"]), "detail": detail[:40]})
+        else:
+            report["ok"].append({"source": "fishing_notices", "features": len(got["notices"]),
+                                 **({"first_run": True} if not prev else {})})
+        out.update({"ok": True, "last_ok": report["run"], "sha": got["sha"],
+                    "notices": got["notices"], "other": got["other"]})
+    else:
+        report["errors"].append({"source": "fishing_notices", "error": got["error"]})
+        out.update({"ok": False, "error": got["error"], "last_ok": prev.get("last_ok"),
+                    "sha": prev.get("sha"), "notices": prev.get("notices", []), "other": prev.get("other", [])})
+    save("fishing_notices.json", out)
+except Exception as e:                    # noqa: BLE001
+    report["errors"].append({"source": "fishing_notices", "error": repr(e)[:200]})
+
 # --------------------------------------------------- 2027 application watch --
 app_hits = []
 for key, url in S.WATCH_PAGES.items():

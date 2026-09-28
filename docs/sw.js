@@ -8,12 +8,13 @@
 
    Data is network-first with a cache fallback: a live refresh wins when there
    is signal, and the last good copy is there when there is none. */
-const VERSION = 'ranger-hawk-v23';
+const VERSION = 'ranger-hawk-v24';
 const SHELL = [
-  './', './index.html', './app.js', './cams.js', './finder.js', './trip.js', './roads.js', './styles.css', './data/cam_rules.json', './data/hunt_units_2026.json', './data/landowner_tags.json',
+  './', './index.html', './app.js', './cams.js', './finder.js', './fishing.js', './trip.js', './roads.js', './styles.css', './data/cam_rules.json', './data/hunt_units_2026.json', './data/landowner_tags.json',
   './manifest.webmanifest', './icons/rangerhawk-wordmark.svg', './icons/icon-192.png', './icons/icon-512.png',
   './data/bird_access.json', './data/seasons.json', './data/config.json',
-  './vendor/suncalc.js', './data/lake_level.json', './data/units_geo.json', './data/snow.json', './data/draw_odds.json', './data/udot.json'
+  './vendor/suncalc.js', './data/lake_level.json', './data/units_geo.json', './data/snow.json', './data/draw_odds.json', './data/udot.json',
+  './data/fishing_rules.json', './data/fishing_places.json', './data/fishing_notices.json'
 ];
 
 self.addEventListener('install', e => {

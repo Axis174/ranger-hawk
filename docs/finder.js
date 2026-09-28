@@ -40,15 +40,30 @@ function fUnitNames() {
 }
 
 function fLoad() {
+  if (typeof fishLoad === 'function') fishLoad();
   if (!HU) fetch('data/hunt_units_2026.json').then(r => r.json()).then(j => { HU = j; if (tab === 'seasons') render(); }).catch(() => { HU = { hunts: {} }; });
   if (!ODDS) loadOdds();
   if (!UNITS) fetch('data/units_geo.json').then(r => r.json()).then(j => { UNITS = j.units; if (tab === 'seasons') render(); }).catch(() => {});
 }
 /* Read the sentence. Anything not found becomes a question. */
 function fParse(text) {
+  /* Fishing is asked first. Utah's waters borrow the names of its game ("Sheep Creek
+     Lake", "Quail Creek Reservoir", "Duck Fork"), so a sentence about fishing would
+     otherwise be answered as a hunt. fishParse hands back nothing when the sentence
+     is not about fishing. */
+  if (typeof fishParse === 'function') { const fq_ = fishParse(text); if (fq_) return { text, fish: fq_ }; }
   const t = fWords(text);
+  /* A water named in a sentence that is not about fishing. Its name must not be
+     read as an animal ("Duck Fork Reservoir", "Moose Pond", "Sheep Creek Lake"), so
+     it is taken out before the species is looked for, the same way Antelope Island
+     is. It stays in for the place match below, where it belongs. */
+  const wtr = typeof fishWaterIn === 'function' ? fishWaterIn(text, false) : null;
+  /* A shorter way of saying a water ("duck fork", "deer creek") is only used to offer
+     the fishing answer beside a hunt. It is never taken out of the sentence before the
+     animal is looked for, or "tushar mountain goat" would lose its mountain. */
+  const wtr2 = wtr || (typeof fishWaterIn === 'function' ? fishWaterIn(text, 'two') : null);
   const q = { text, sp: null, bird: null, gap: null, wp: null, place: null, alsoUnit: null, pt: null, wantAntlerless: /\b(cow|antlerless|doe|meat|freezer)\b/.test(t), wantGeneral: /\b(general|over the counter|otc|no draw|guaranteed)\b/.test(t), wantLE: /\b(limited|draw|le |trophy|bonus)\b/.test(t) };
-  const st = t.replace(F_PLACE_NOISE, ' ');          // species read from text with place names removed
+  const st = (wtr ? wtr.rest : t).replace(F_PLACE_NOISE, ' ');   // species read from text with place names removed
   for (const g of F_BIRD_GAPS) if (g[1].test(st)) { q.gap = g; break; }
   if (!q.gap) for (const b of F_BIRDS) if (b[2].test(st)) { q.bird = b; break; }
   if (!q.gap && !q.bird) for (const [k, re] of F_SPECIES) if (re.test(st)) { q.sp = k; break; }
@@ -75,6 +90,11 @@ function fParse(text) {
     const hit = fUnitNames().find(([needle]) => t.includes(needle));
     if (hit) q.place = { kind: 'unit', label: hit[1], units: UNITS.filter(u => u.n.split(',')[0] === hit[1]).map(u => u.n) };
   }
+  /* Nothing to hunt was named and a water was. If it is not also the name of a hunt
+     unit, the sentence is about that water, and fishing can answer it. If it is both
+     ("Panguitch Lake"), the hunt finder keeps it and offers the water in one tap. */
+  if (wtr && !q.sp && !q.bird && !q.gap && !q.wp && !(q.place && q.place.kind === 'unit') && !(typeof F_HUNT_WORD !== 'undefined' && F_HUNT_WORD.test(wtr.rest))) return { text, fish: fishParse(text, true) };
+  if (wtr2) q.alsoWater = wtr2.needle;
   return q;
 }
 const fBase = n => (n || '').split(',')[0].replace(/\s*\(.*\)\s*/, '').trim().toLowerCase();
@@ -296,14 +316,17 @@ const fGapNotice = g => `<div class="warnbox" style="margin-top:12px"><b>${esc(g
 function vFind() {
   fLoad();
   const q = fq.parsed || null;
-  let h = `<form id="findform" style="margin-top:12px"><input class="search" id="findq" placeholder="pheasant near home, or elk by my cabin with a rifle" value="${esc(fq.text)}"><div class="acts" style="padding:8px 0 0"><button class="btn" type="submit">Find hunts</button></div></form>
-    <p class="fine" style="padding-left:2px">Try: "elk by the cabin", "pheasant near home", "chukar where I am", "archery deer near Torrey", "limited entry elk Wasatch, 7 points". Works with no signal.</p>`;
+  let h = `<form id="findform" style="margin-top:12px"><input class="search" id="findq" placeholder="pheasant near home, elk by my cabin, or trout near the cabin" value="${esc(fq.text)}"><div class="acts" style="padding:8px 0 0"><button class="btn" type="submit">Find hunts</button></div></form>
+    <p class="fine" style="padding-left:2px">Try: "elk by the cabin", "pheasant near home", "chukar where I am", "archery deer near Torrey", "limited entry elk Wasatch, 7 points", "trout near the cabin", "Strawberry Reservoir rules". Works with no signal.</p>`;
   if (!q) return h;
+  if (q.fish) return h + (FR ? fStale(fNow(), null, false) : '') + fishAnswer(q.fish) + (FR ? F_FOOT() : '');    // fishing answers from the guidebook rules and UDWR's places
   if (q.gap) return h + fGapNotice(q.gap);                 // named it, but there is no data to stand behind
   if (q.bird) return h + fBirdView(q);                     // birds answer from seasons + access, not hunt units
   if (!HU || !UNITS) return h + '<p class="empty">Loading the hunt lists&hellip;</p>';
   // Questions first
-  if (!q.sp) return h + fAsk('What do you want to hunt?', Object.entries(F_LABEL).concat(F_BIRDS.map(b => ['bird:' + b[0], F_BIRD_CHIP[b[0]]])), 'sp');
+  const water = q.alsoWater ? `<div class="warnbox" style="margin-top:4px"><b>That sentence also names a water.</b> This answer is about hunting. For the fishing rules:</div>
+    <div class="chipsrow"><button class="chip" data-fask="usewater" data-fval="${esc(q.alsoWater)}">Fishing at ${esc(q.alsoWater)}</button></div>` : '';
+  if (!q.sp) return h + water + fAsk('What do you want to hunt?', Object.entries(F_LABEL).concat(F_BIRDS.map(b => ['bird:' + b[0], F_BIRD_CHIP[b[0]]])), 'sp');
   if (!q.place) return h + fAsk('Where?', (DB.config.homes || []).map(x => [x.id, x.label]).concat([['gps', 'Where I am now']]), 'place') + '<p class="fine" style="padding-left:2px">Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
   if (q.place.kind === 'gps' && !q.place.lat) return h + `<p class="empty">Getting a GPS fix&hellip;</p>`;
   const myUnits = q.place.units || (q.place.lat ? unitsAt(q.place.lon, q.place.lat).map(u => u.n) : []);
@@ -326,7 +349,15 @@ function vFind() {
 }
 const fAsk = (question, opts, key) => `<div class="sec-title">${esc(question)}</div><div class="chipsrow">${opts.map(([v, l]) => `<button class="chip" data-fask="${key}" data-fval="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
 function fRun(text) {
-  fq.text = text; fq.parsed = fParse(text);
+  fq.text = text; fq.touched = false; fq.parsed = fParse(text);
+  if (fq.parsed.fish) {
+    const q = fq.parsed.fish;
+    if (q.place && q.place.kind === 'gps' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(p => { q.place = { kind: 'gps', label: 'where I am', lat: p.coords.latitude, lon: p.coords.longitude }; render(); },
+        () => { q.place = null; render(); }, { enableHighAccuracy: true, timeout: 15000 });
+    }
+    render(); return;
+  }
   if (fq.parsed.place && fq.parsed.place.kind === 'gps' && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => { fq.parsed.place = { kind: 'gps', label: 'where I am', lat: p.coords.latitude, lon: p.coords.longitude }; render(); },
       () => { fq.parsed.place = null; render(); }, { enableHighAccuracy: true, timeout: 15000 });
@@ -336,8 +367,10 @@ function fRun(text) {
 document.addEventListener('submit', e => { if (e.target.id === 'findform') { e.preventDefault(); fRun($('findq').value.trim()); } });
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-fask]'); if (!t) return;
-  const q = fq.parsed || fParse(''); const v = t.dataset.fval;
+  fq.touched = true;                                       // answers given by tapping are not thrown away by a later re-read
+  const q = (fq.parsed && !fq.parsed.fish) ? fq.parsed : fParse(''); const v = t.dataset.fval;
   if (t.dataset.fask === 'sp') { if (v.indexOf('bird:') === 0) { q.bird = fBird(v.slice(5)); q.sp = null; } else { q.sp = v; q.bird = null; } }
+  if (t.dataset.fask === 'usewater') { fq.parsed = { text: fq.text, fish: fishParse(v, true) }; render(); return; }
   if (t.dataset.fask === 'useunit') { q.place = { kind: 'unit', label: v, units: (UNITS || []).filter(u => u.n.split(',')[0] === v).map(u => u.n) }; q.alsoUnit = null; }
   if (t.dataset.fask === 'wp') q.wp = v === 'any' ? null : v, q.wpAsked = true;
   if (t.dataset.fask === 'place') { const h = (DB.config.homes || []).find(x => x.id === v); q.place = h ? { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon } : { kind: 'gps' }; if (!h) { fq.parsed = q; fRun(fq.text); return; } }

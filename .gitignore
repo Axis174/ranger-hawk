@@ -1,3 +1,6 @@
 .DS_Store
 __pycache__/
 *.pyc
+
+# By-hand pulls from UDWR that build_fishing_places.py reuses with --cached.
+scraper/fishing/.cache/

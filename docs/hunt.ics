@@ -4,12 +4,29 @@ PRODID:-//ranger-hawk//Pete Busch//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 X-WR-CALNAME:Ranger Hawk
-X-WR-CALDESC:Seasons, permit deadlines and access contacts for Utah hunting
+X-WR-CALDESC:Seasons, permit deadlines, access contacts and fishing dates for Utah
 X-PUBLISHED-TTL:PT12H
 REFRESH-INTERVAL;VALUE=DURATION:PT12H
+BEGIN:VTIMEZONE
+TZID:America/Denver
+BEGIN:DAYLIGHT
+DTSTART:20070311T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+TZOFFSETFROM:-0700
+TZOFFSETTO:-0600
+TZNAME:MDT
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:20071104T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0700
+TZNAME:MST
+END:STANDARD
+END:VTIMEZONE
 BEGIN:VEVENT
 UID:season-ptarmigan@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20261101
 SUMMARY:BIRD: White-tailed ptarmigan
@@ -28,7 +45,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-dusky-ruffed@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20270101
 SUMMARY:BIRD: Dusky and ruffed grouse
@@ -46,7 +63,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-chukar-youth@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260919
 DTEND;VALUE=DATE:20260922
 SUMMARY:BIRD: Chukar / gray partridge - YOUTH
@@ -64,7 +81,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-chukar@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260926
 DTEND;VALUE=DATE:20270216
 SUMMARY:BIRD: Chukar and gray partridge
@@ -83,7 +100,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-duck-n@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20270117
 SUMMARY:BIRD: Duck\, merganser\, coot\, snipe - Northern Zone
@@ -104,7 +121,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-scaup-n@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20261228
 SUMMARY:BIRD: Scaup - Northern Zone
@@ -122,7 +139,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-duck-s@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261010
 DTEND;VALUE=DATE:20270124
 SUMMARY:BIRD: Duck\, merganser\, coot\, snipe - Southern Zone
@@ -143,7 +160,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-scaup-s@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261030
 DTEND;VALUE=DATE:20270124
 SUMMARY:BIRD: Scaup - Southern Zone
@@ -161,7 +178,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-swan@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20261214
 SUMMARY:BIRD: Tundra swan
@@ -181,7 +198,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-geese-wf@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20261011
 SUMMARY:BIRD: Dark and white-fronted geese - Wasatch Front area (part 1)
@@ -201,7 +218,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-geese-wf2@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261110
 DTEND;VALUE=DATE:20270216
 SUMMARY:BIRD: Dark and white-fronted geese - Wasatch Front area (part 2)
@@ -221,7 +238,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-geese-ebe@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20270117
 SUMMARY:BIRD: Dark and white-fronted geese - Eastern Box Elder area
@@ -241,7 +258,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-geese-n@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20261011
 SUMMARY:BIRD: Dark and white-fronted geese - Northern area (part 1)
@@ -260,7 +277,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-geese-n2@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261026
 DTEND;VALUE=DATE:20270201
 SUMMARY:BIRD: Dark and white-fronted geese - Northern area (part 2)
@@ -280,7 +297,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-geese-s@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261010
 DTEND;VALUE=DATE:20270124
 SUMMARY:BIRD: Dark and white-fronted geese - Southern area
@@ -299,7 +316,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-light-geese-n@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261015
 DTEND;VALUE=DATE:20261223
 SUMMARY:BIRD: Light geese (snow\, blue\, Ross's) - Eastern Box Elder\, No
@@ -323,7 +340,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-light-geese-n2@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270201
 DTEND;VALUE=DATE:20270311
 SUMMARY:BIRD: Light geese (snow\, blue\, Ross's) - Eastern Box Elder\, No
@@ -344,7 +361,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-light-geese-s@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261026
 DTEND;VALUE=DATE:20261216
 SUMMARY:BIRD: Light geese (snow\, blue\, Ross's) - Southern goose area (p
@@ -367,7 +384,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-light-geese-s2@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270115
 DTEND;VALUE=DATE:20270311
 SUMMARY:BIRD: Light geese (snow\, blue\, Ross's) - Southern goose area (p
@@ -388,7 +405,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-pheasant-youth@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261031
 DTEND;VALUE=DATE:20261106
 SUMMARY:BIRD: Ring-necked pheasant - YOUTH
@@ -406,7 +423,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-pheasant@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261107
 DTEND;VALUE=DATE:20261207
 SUMMARY:BIRD: Ring-necked pheasant
@@ -425,7 +442,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-quail@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261107
 DTEND;VALUE=DATE:20270101
 SUMMARY:BIRD: California and Gambel's quail
@@ -443,7 +460,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-deer-archery@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260815
 DTEND;VALUE=DATE:20260912
 SUMMARY:DEER: Buck deer - general archery
@@ -461,7 +478,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-deer-muzz@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260923
 DTEND;VALUE=DATE:20261002
 SUMMARY:DEER: Buck deer - general muzzleloader
@@ -480,7 +497,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-deer-early-rifle@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261007
 DTEND;VALUE=DATE:20261012
 SUMMARY:DEER: Buck deer - early any legal weapon (rifle)
@@ -498,7 +515,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-deer-rifle@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261017
 DTEND;VALUE=DATE:20261026
 SUMMARY:DEER: Buck deer - any legal weapon (rifle)
@@ -516,7 +533,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-deer-ext-archery@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260912
 DTEND;VALUE=DATE:20261201
 SUMMARY:DEER: Deer - extended archery (Wasatch Front\, either sex)
@@ -539,7 +556,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-archery-anybull@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260815
 DTEND;VALUE=DATE:20260917
 SUMMARY:ELK: Bull elk - archery\, any bull units
@@ -557,7 +574,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-ext-archery@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260815
 DTEND;VALUE=DATE:20261216
 SUMMARY:ELK: Elk - extended archery (Wasatch Front\, either sex)
@@ -578,7 +595,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-archery-spike@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260815
 DTEND;VALUE=DATE:20260905
 SUMMARY:ELK: Bull elk - archery\, spike units
@@ -596,7 +613,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-youth-draw@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260912
 DTEND;VALUE=DATE:20260923
 SUMMARY:ELK: Elk - draw-only youth any bull / hunter's choice
@@ -614,7 +631,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-early-rifle@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20261010
 SUMMARY:ELK: Bull elk - early any legal weapon\, any bull units
@@ -633,7 +650,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-spike-rifle@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261003
 DTEND;VALUE=DATE:20261016
 SUMMARY:ELK: Bull elk - any legal weapon\, spike units
@@ -650,7 +667,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-late-rifle@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261010
 DTEND;VALUE=DATE:20261017
 SUMMARY:ELK: Bull elk - late any legal weapon\, any bull units
@@ -669,7 +686,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-elk-muzz@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261028
 DTEND;VALUE=DATE:20261106
 SUMMARY:ELK: Bull elk - muzzleloader (any bull and spike)
@@ -687,7 +704,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-turkey-fall@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261001
 DTEND;VALUE=DATE:20270301
 SUMMARY:TURKEY: Wild turkey - fall management harvest
@@ -708,7 +725,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-turkey-le@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270410
 DTEND;VALUE=DATE:20270430
 SUMMARY:TURKEY: Wild turkey - limited entry spring
@@ -728,7 +745,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-turkey-general@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270503
 DTEND;VALUE=DATE:20270601
 SUMMARY:TURKEY: Wild turkey - spring general season
@@ -748,7 +765,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-dove@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20261031
 SUMMARY:BIRD: Mourning and white-winged dove
@@ -768,7 +785,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-band-tailed-pigeon@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20260915
 SUMMARY:BIRD: Band-tailed pigeon
@@ -787,7 +804,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crow@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20261001
 SUMMARY:BIRD: American crow (part 1)
@@ -806,7 +823,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crow2@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261201
 DTEND;VALUE=DATE:20270301
 SUMMARY:BIRD: American crow (part 2)
@@ -825,7 +842,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-sage-grouse@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260926
 DTEND;VALUE=DATE:20261019
 SUMMARY:BIRD: Greater sage-grouse
@@ -846,7 +863,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-sharptail-grouse@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260926
 DTEND;VALUE=DATE:20261019
 SUMMARY:BIRD: Sharp-tailed grouse
@@ -867,7 +884,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crane-cache-rich@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260905
 DTEND;VALUE=DATE:20260914
 SUMMARY:BIRD: Sandhill crane - Cache and Rich counties
@@ -887,7 +904,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crane-boxelder@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260905
 DTEND;VALUE=DATE:20261104
 SUMMARY:BIRD: Sandhill crane - East Box Elder County
@@ -905,7 +922,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crane-uintah-early@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260926
 DTEND;VALUE=DATE:20261016
 SUMMARY:BIRD: Sandhill crane - Uintah Basin\, early
@@ -924,7 +941,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crane-uintah-mid@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261016
 DTEND;VALUE=DATE:20261105
 SUMMARY:BIRD: Sandhill crane - Uintah Basin\, middle
@@ -942,7 +959,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-crane-uintah-late@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261105
 DTEND;VALUE=DATE:20261125
 SUMMARY:BIRD: Sandhill crane - Uintah Basin\, late
@@ -960,7 +977,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-cottontail@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20270301
 SUMMARY:SMALLGAME: Cottontail rabbit (desert and mountain)
@@ -979,7 +996,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-snowshoe-hare@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20270316
 SUMMARY:SMALLGAME: Snowshoe hare
@@ -998,7 +1015,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-jackrabbit@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260101
 DTEND;VALUE=DATE:20270101
 SUMMARY:SMALLGAME: Jackrabbit (black-tailed and white-tailed)
@@ -1018,7 +1035,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:season-cha@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260831
 DTEND;VALUE=DATE:20270401
 SUMMARY:BIRD: Commercial hunting areas (released birds)
@@ -1037,7 +1054,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-ptarmigan-permit@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261031
 DTEND;VALUE=DATE:20261101
 SUMMARY:[LAST DAY] Ptarmigan season closes
@@ -1068,7 +1085,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-wma-permit@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261001
 DTEND;VALUE=DATE:20261002
 SUMMARY:[PERMIT] Confirm WMA digital access permit
@@ -1096,7 +1113,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-wia-auth@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261001
 DTEND;VALUE=DATE:20261002
 SUMMARY:[PERMIT] Get annual Walk-In Access authorization number
@@ -1122,7 +1139,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-hip-stamp@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261002
 DTEND;VALUE=DATE:20261003
 SUMMARY:[PERMIT] HIP number + federal duck stamp before the duck opener
@@ -1156,7 +1173,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-landowner-calls@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261015
 DTEND;VALUE=DATE:20261016
 SUMMARY:[TO DO] Call the Box Elder WIA landowners
@@ -1184,7 +1201,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-ogden-bay-closure@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261114
 DTEND;VALUE=DATE:20261115
 SUMMARY:[CLOSES] Ogden Bay WMA - portion closed today
@@ -1210,7 +1227,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-wallsburg-close@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261130
 DTEND;VALUE=DATE:20261201
 SUMMARY:[CLOSES] Last day at Wallsburg WMA
@@ -1242,7 +1259,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-wma-dec-close@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261130
 DTEND;VALUE=DATE:20261201
 SUMMARY:[CLOSES] Dec 1 WMA closures take effect
@@ -1268,7 +1285,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-brigham-face-close@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261231
 DTEND;VALUE=DATE:20270101
 SUMMARY:[CLOSES] Brigham Face and Coldwater Canyon WMAs close Jan 1
@@ -1296,7 +1313,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-biggame-app-2027@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270319
 DTEND;VALUE=DATE:20270320
 SUMMARY:[APPLY] Utah big game application window opens (projected)
@@ -1333,7 +1350,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-biggame-app-close-2027@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270423
 DTEND;VALUE=DATE:20270424
 SUMMARY:[APPLY] Utah big game application CLOSES (projected)
@@ -1382,7 +1399,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-antlerless-2027@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270623
 DTEND;VALUE=DATE:20270624
 SUMMARY:[APPLY] Antlerless application window closes (projected)
@@ -1416,7 +1433,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:deadline-turkey-report@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20270330
 DTEND;VALUE=DATE:20270331
 SUMMARY:[REPORT] Fall turkey harvest report due
@@ -1443,7 +1460,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:wia-call-0@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261012
 DTEND;VALUE=DATE:20261013
 SUMMARY:[CALL] RSorensen WIA landowner
@@ -1467,7 +1484,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:wia-call-1@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261013
 DTEND;VALUE=DATE:20261014
 SUMMARY:[CALL] Sorensen Sons WIA landowner
@@ -1491,7 +1508,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:wia-call-2@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261014
 DTEND;VALUE=DATE:20261015
 SUMMARY:[CALL] TMunns Blue Creek WIA landowner
@@ -1514,7 +1531,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:wia-call-3@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20261015
 DTEND;VALUE=DATE:20261016
 SUMMARY:[CALL] TMunns Hansel Valley WIA landowner
@@ -1537,7 +1554,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:dwr-call-0@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260928
 DTEND;VALUE=DATE:20260929
 SUMMARY:[CALL] DWR Salt Lake office - 801-538-4700
@@ -1558,7 +1575,7 @@ END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:dwr-call-1@utah-hunt-atlas
-DTSTAMP:20260927T190009Z
+DTSTAMP:20260928T170455Z
 DTSTART;VALUE=DATE:20260929
 DTEND;VALUE=DATE:20260930
 SUMMARY:[CALL] DWR Central Region (Springville) - 801-491-5678
@@ -1576,6 +1593,399 @@ BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Call DWR Central Region (Springville) today
 TRIGGER:-PT9H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-change-2026-09-30@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261001
+SUMMARY:[FISH] Last day: 6 emergency changes
+DESCRIPTION:UDWR's emergency changes for Canyon View Park Pond\, Minersvi
+ lle Reservoir\, Otter Creek Reservoir\, Palisade Reservoir\, Vernon Rese
+ rvoir\, Nine Mile Reservoir end.\nUDWR's wording is 'will remain in effe
+ ct until Oct. 1\, 2026'. The app treats Sep. 30 as the last day\, to sta
+ y on the safe side. From the next day the guidebook rule is back.\nCanyo
+ n View Park Pond (Utah County): No limit\, all species\nMinersville Rese
+ rvoir (Beaver County): 4 trout\, any size\; Minersville Reservoir is ope
+ n to underwater spearfishing for all game fish.\nOtter Creek Reservoir (
+ Piute County): 16 trout\, any species\; 6 wiper\; Otter Creek Reservoir 
+ is open to underwater spearfishing for all game fish.\nPalisade Reservoi
+ r (Sanpete County): No limit\, all species\nVernon Reservoir (Tooele Cou
+ nty): 8 trout\, any species\; Vernon Reservoir is open to underwater spe
+ arfishing for all game fish.\nNine Mile Reservoir (Sanpete County): 16 t
+ rout\nSource: Utah Division of Wildlife Resources\, 2026 Utah Fishing Gu
+ idebook and its posted emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Emergency fishing changes end in 3 days: Canyon View Park Pon
+ d\, Minersville Reservoir\, Otter Creek Reservoir\, Palisade Reservoir\,
+  Vernon Reservoir\, Nine Mile Reservoir
+TRIGGER:-P3D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Emergency fishing changes end today: Canyon View Park Pond\, 
+ Minersville Reservoir\, Otter Creek Reservoir\, Palisade Reservoir\, Ver
+ non Reservoir\, Nine Mile Reservoir
+TRIGGER:-PT9H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-change-2026-12-30@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20261230
+DTEND;VALUE=DATE:20261231
+SUMMARY:[FISH] Last day: 3 emergency changes
+DESCRIPTION:UDWR's emergency changes for Pineview Reservoir\, Red Creek R
+ eservoir\, Crouse Reservoir end.\nUDWR's wording is 'will remain in effe
+ ct until Dec. 31\, 2026'. The app treats Dec. 30 as the last day\, to st
+ ay on the safe side. From the next day the guidebook rule is back.\nPine
+ view Reservoir (Weber County): 12 Largemouth or Smallmouth Bass (a combi
+ ned total)\; 1 Tiger Muskellunge over 40 inches\; No limit\, all other s
+ pecies\nRed Creek Reservoir (Duchesne County): 8 trout\, any species\; R
+ ed Creek Reservoir is open to underwater spearfishing for all game fish.
+ \nCrouse Reservoir (Uintah County): 8 trout\, any species\nSource: Utah 
+ Division of Wildlife Resources\, 2026 Utah Fishing Guidebook and its pos
+ ted emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Emergency fishing changes end in 3 days: Pineview Reservoir\,
+  Red Creek Reservoir\, Crouse Reservoir
+TRIGGER:-P3D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Emergency fishing changes end today: Pineview Reservoir\, Red
+  Creek Reservoir\, Crouse Reservoir
+TRIGGER:-PT9H
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-kokanee-2026@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20260910
+DTEND;VALUE=DATE:20261201
+SUMMARY:FISH: kokanee may not be kept (statewide)
+DESCRIPTION:Anglers may not possess kokanee salmon at any waterbody state
+ wide from Sept. 10 through Nov. 30 to protect kokanee during the spawnin
+ g season.\nSource: Utah Division of Wildlife Resources\, 2026 Utah Fishi
+ ng Guidebook and its posted emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-edition-2026@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20261231
+DTEND;VALUE=DATE:20270101
+SUMMARY:[FISH] Last day of the 2026 fishing rules
+DESCRIPTION:The 2026 Utah Fishing Guidebook is in force through Dec. 31\,
+  2026. The 2027 guidebook governs from Jan. 1\, and the rules in the app
+  must be rebuilt from it (scraper/build_fishing.py) before they can be r
+ elied on.\nSource: Utah Division of Wildlife Resources\, 2026 Utah Fishi
+ ng Guidebook and its posted emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:The 2026 fishing rules end in 30 days
+TRIGGER:-P30D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:The 2026 fishing rules end in a week
+TRIGGER:-P7D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-opens-20260228@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;TZID=America/Denver:20260228T060000
+DTEND;TZID=America/Denver:20260228T070000
+SUMMARY:FISH opens 6 a.m.: Manila Creek Pond\, Spanish Oaks Reservoir
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nManila Creek
+  Pond - Spanish Oaks Reservoir and Manila Creek Pond are closed Dec. 1 t
+ hrough 6 a.m. on the last Saturday of February. (near Heber City\, North
+  Salt Lake)\nSpanish Oaks Reservoir - Spanish Oaks Reservoir and Manila 
+ Creek Pond are closed Dec. 1 through 6 a.m. on the last Saturday of Febr
+ uary. (near Heber City\, North Salt Lake)\nSource: Utah Division of Wild
+ life Resources\, 2026 Utah Fishing Guidebook and its posted emergency ch
+ anges. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH opens 6 a.m.: Manila Creek Pond\, Spanish Oaks Reservoir
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-opens-20260418@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;TZID=America/Denver:20260418T060000
+DTEND;TZID=America/Denver:20260418T070000
+SUMMARY:FISH opens 6 a.m.: Beaver Dam Reservoir\, Bulberry Lakes\, Fish C
+ reek Reservoir\, Honeymoon Lake and 6 more
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nBeaver Dam R
+ eservoir - CLOSED Jan. 1 through 6 a.m. on the third Saturday of April a
+ nd Nov. 1–Dec. 31. (near Torrey)\nBulberry Lakes - CLOSED Jan. 1 throu
+ gh 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31. (near Tor
+ rey)\nFish Creek Reservoir - CLOSED Jan. 1 through 6 a.m. on the third S
+ aturday of April and Nov. 1–Dec. 31. (near Torrey)\nHoneymoon Lake - C
+ LOSED Jan. 1 through 6 a.m. on the third Saturday of April and Nov. 1–
+ Dec. 31. (near Torrey)\nLong Willow Bottom Reservoir - CLOSED Jan. 1 thr
+ ough 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31. (near T
+ orrey)\nMcGath Lake - CLOSED Jan. 1 through 6 a.m. on the third Saturday
+  of April and Nov. 1–Dec. 31. (near Torrey)\nPacer Lake - CLOSED Jan. 
+ 1 through 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31. (n
+ ear Torrey)\nPine Creek Reservoir - CLOSED Jan. 1 through 6 a.m. on the 
+ third Saturday of April and Nov. 1–Dec. 31. (near Torrey)\nRound Willo
+ w Bottom Reservoir - CLOSED Jan. 1 through 6 a.m. on the third Saturday 
+ of April and Nov. 1–Dec. 31. (near Torrey)\nSolitaire Lake - CLOSED Ja
+ n. 1 through 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31.
+  (near Torrey)\nSource: Utah Division of Wildlife Resources\, 2026 Utah 
+ Fishing Guidebook and its posted emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH opens 6 a.m.: Beaver Dam Reservoir\, Bulberry Lakes\, Fi
+ sh Creek Reservoir\, Honeymoon Lake and 6 more
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-opens-20260502@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20260502
+DTEND;VALUE=DATE:20260503
+SUMMARY:FISH opens: Deseret Reservoir
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nDeseret Rese
+ rvoir - Open to fishing on the first Saturday of May through Oct. 31 dur
+ ing daylight hours. (Gate will be closed and locked from dusk to dawn.)\
+ ; Facility CLOSED Nov. 1–Dec. 31 and Jan. 1–April 30. (near Heber Ci
+ ty\, North Salt Lake)\nSource: Utah Division of Wildlife Resources\, 202
+ 6 Utah Fishing Guidebook and its posted emergency changes. Not legal adv
+ ice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH opens: Deseret Reservoir
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-closes-20260515@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20260515
+DTEND;VALUE=DATE:20260516
+SUMMARY:FISH closes: Strawberry Reservoir tributaries (b)\, Strawberry Re
+ servoir tributaries (c)\, West Fork Duchesne River
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nStrawberry R
+ eservoir tributaries (b) - CLOSED May 15 through 6 a.m. on the second Sa
+ turday of July. (near Heber City\, North Salt Lake)\nStrawberry Reservoi
+ r tributaries (c) - CLOSED May 15 through 6 a.m. on the second Saturday 
+ of July\, and from Sept. 1 through 6 a.m. on the second Saturday of Octo
+ ber. (near Heber City\, North Salt Lake)\nWest Fork Duchesne River - CLO
+ SED May 15 through 6 a.m. on the second Saturday of July. (near Heber Ci
+ ty\, North Salt Lake)\nSource: Utah Division of Wildlife Resources\, 202
+ 6 Utah Fishing Guidebook and its posted emergency changes. Not legal adv
+ ice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH closes: Strawberry Reservoir tributaries (b)\, Strawberr
+ y Reservoir tributaries (c)\, West Fork Duchesne River
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-opens-20260711@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;TZID=America/Denver:20260711T060000
+DTEND;TZID=America/Denver:20260711T070000
+SUMMARY:FISH opens 6 a.m.: Dougherty Basin Lake\, East Fork Sevier River 
+ (a)\, Huntington Reservoir tributaries\, Logan River (b) and 5 more
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nDougherty Ba
+ sin Lake - CLOSED Jan. 1 through 6 a.m. on the second Saturday of July. 
+ (near Torrey)\nEast Fork Sevier River (a) - CLOSED Jan. 1 through 6 a.m.
+  on the second Saturday of July. (near Torrey)\nHuntington Reservoir tri
+ butaries - CLOSED Jan. 1 through 6 a.m. on the second Saturday of July. 
+ (near Heber City)\nLogan River (b) - CLOSED Jan. 1 through 6 a.m. on the
+  second Saturday of July. (near North Salt Lake)\nManning Meadow Reservo
+ ir\, tributaries and spillway - CLOSED Jan. 1 through 6 a.m. on the seco
+ nd Saturday of July. (near Torrey)\nScofield Reservoir tributaries - CLO
+ SED Jan. 1 through 6 a.m. on the second Saturday of July. (near Heber Ci
+ ty)\nStrawberry Reservoir tributaries (b) - CLOSED May 15 through 6 a.m.
+  on the second Saturday of July. (near Heber City\, North Salt Lake)\nSt
+ rawberry Reservoir tributaries (c) - CLOSED May 15 through 6 a.m. on the
+  second Saturday of July\, and from Sept. 1 through 6 a.m. on the second
+  Saturday of October. (near Heber City\, North Salt Lake)\nWest Fork Duc
+ hesne River - CLOSED May 15 through 6 a.m. on the second Saturday of Jul
+ y. (near Heber City\, North Salt Lake)\nSource: Utah Division of Wildlif
+ e Resources\, 2026 Utah Fishing Guidebook and its posted emergency chang
+ es. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH opens 6 a.m.: Dougherty Basin Lake\, East Fork Sevier Ri
+ ver (a)\, Huntington Reservoir tributaries\, Logan River (b) and 5 more
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-closes-20260815@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20260815
+DTEND;VALUE=DATE:20260816
+SUMMARY:FISH closes: Causey Reservoir tributaries\, East Fork Little Bear
+  River and its tributaries
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nCausey Reser
+ voir tributaries - CLOSED Aug. 15 through 6 a.m. on the last Saturday of
+  September. (near Heber City\, North Salt Lake)\nEast Fork Little Bear R
+ iver and its tributaries - CLOSED Aug. 15 through 6 a.m. on the last Sat
+ urday of September. (near Heber City\, North Salt Lake)\nSource: Utah Di
+ vision of Wildlife Resources\, 2026 Utah Fishing Guidebook and its poste
+ d emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH closes: Causey Reservoir tributaries\, East Fork Little 
+ Bear River and its tributaries
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-closes-20260901@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20260901
+DTEND;VALUE=DATE:20260902
+SUMMARY:FISH closes: Strawberry Reservoir tributaries (c)
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nStrawberry R
+ eservoir tributaries (c) - CLOSED May 15 through 6 a.m. on the second Sa
+ turday of July\, and from Sept. 1 through 6 a.m. on the second Saturday 
+ of October. (near Heber City\, North Salt Lake)\nSource: Utah Division o
+ f Wildlife Resources\, 2026 Utah Fishing Guidebook and its posted emerge
+ ncy changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH closes: Strawberry Reservoir tributaries (c)
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-opens-20260926@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;TZID=America/Denver:20260926T060000
+DTEND;TZID=America/Denver:20260926T070000
+SUMMARY:FISH opens 6 a.m.: Causey Reservoir tributaries\, East Fork Littl
+ e Bear River and its tributaries
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nCausey Reser
+ voir tributaries - CLOSED Aug. 15 through 6 a.m. on the last Saturday of
+  September. (near Heber City\, North Salt Lake)\nEast Fork Little Bear R
+ iver and its tributaries - CLOSED Aug. 15 through 6 a.m. on the last Sat
+ urday of September. (near Heber City\, North Salt Lake)\nSource: Utah Di
+ vision of Wildlife Resources\, 2026 Utah Fishing Guidebook and its poste
+ d emergency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH opens 6 a.m.: Causey Reservoir tributaries\, East Fork L
+ ittle Bear River and its tributaries
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-opens-20261010@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;TZID=America/Denver:20261010T060000
+DTEND;TZID=America/Denver:20261010T070000
+SUMMARY:FISH opens 6 a.m.: Strawberry Reservoir tributaries (c)
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nStrawberry R
+ eservoir tributaries (c) - CLOSED May 15 through 6 a.m. on the second Sa
+ turday of July\, and from Sept. 1 through 6 a.m. on the second Saturday 
+ of October. (near Heber City\, North Salt Lake)\nSource: Utah Division o
+ f Wildlife Resources\, 2026 Utah Fishing Guidebook and its posted emerge
+ ncy changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH opens 6 a.m.: Strawberry Reservoir tributaries (c)
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-closes-20261101@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261102
+SUMMARY:FISH closes: Beaver Dam Reservoir\, Bulberry Lakes\, Deseret Rese
+ rvoir\, Fish Creek Reservoir and 7 more
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nBeaver Dam R
+ eservoir - CLOSED Jan. 1 through 6 a.m. on the third Saturday of April a
+ nd Nov. 1–Dec. 31. (near Torrey)\nBulberry Lakes - CLOSED Jan. 1 throu
+ gh 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31. (near Tor
+ rey)\nDeseret Reservoir - Open to fishing on the first Saturday of May t
+ hrough Oct. 31 during daylight hours. (Gate will be closed and locked fr
+ om dusk to dawn.)\; Facility CLOSED Nov. 1–Dec. 31 and Jan. 1–April 
+ 30. (near Heber City\, North Salt Lake)\nFish Creek Reservoir - CLOSED J
+ an. 1 through 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31
+ . (near Torrey)\nHoneymoon Lake - CLOSED Jan. 1 through 6 a.m. on the th
+ ird Saturday of April and Nov. 1–Dec. 31. (near Torrey)\nLong Willow B
+ ottom Reservoir - CLOSED Jan. 1 through 6 a.m. on the third Saturday of 
+ April and Nov. 1–Dec. 31. (near Torrey)\nMcGath Lake - CLOSED Jan. 1 t
+ hrough 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31. (near
+  Torrey)\nPacer Lake - CLOSED Jan. 1 through 6 a.m. on the third Saturda
+ y of April and Nov. 1–Dec. 31. (near Torrey)\nPine Creek Reservoir - C
+ LOSED Jan. 1 through 6 a.m. on the third Saturday of April and Nov. 1–
+ Dec. 31. (near Torrey)\nRound Willow Bottom Reservoir - CLOSED Jan. 1 th
+ rough 6 a.m. on the third Saturday of April and Nov. 1–Dec. 31. (near 
+ Torrey)\nSolitaire Lake - CLOSED Jan. 1 through 6 a.m. on the third Satu
+ rday of April and Nov. 1–Dec. 31. (near Torrey)\nSource: Utah Division
+  of Wildlife Resources\, 2026 Utah Fishing Guidebook and its posted emer
+ gency changes. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH closes: Beaver Dam Reservoir\, Bulberry Lakes\, Deseret 
+ Reservoir\, Fish Creek Reservoir and 7 more
+TRIGGER:-P3D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fish-closes-20261201@utah-hunt-atlas
+DTSTAMP:20260928T170455Z
+DTSTART;VALUE=DATE:20261201
+DTEND;VALUE=DATE:20261202
+SUMMARY:FISH closes: Manila Creek Pond\, Spanish Oaks Reservoir
+DESCRIPTION:Within 75 miles of a home\, in a straight line:\nManila Creek
+  Pond - Spanish Oaks Reservoir and Manila Creek Pond are closed Dec. 1 t
+ hrough 6 a.m. on the last Saturday of February. (near Heber City\, North
+  Salt Lake)\nSpanish Oaks Reservoir - Spanish Oaks Reservoir and Manila 
+ Creek Pond are closed Dec. 1 through 6 a.m. on the last Saturday of Febr
+ uary. (near Heber City\, North Salt Lake)\nSource: Utah Division of Wild
+ life Resources\, 2026 Utah Fishing Guidebook and its posted emergency ch
+ anges. Not legal advice.
+CATEGORIES:FISHING
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:FISH closes: Manila Creek Pond\, Spanish Oaks Reservoir
+TRIGGER:-P3D
 END:VALARM
 END:VEVENT
 END:VCALENDAR

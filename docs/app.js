@@ -563,6 +563,8 @@ async function initMap() {
       const rd = roadsOn ? MAP.queryRenderedFeatures([[e.point.x - 9, e.point.y - 9], [e.point.x + 9, e.point.y + 9]], { layers: ROAD_LINES.filter(id => MAP.getLayer(id)) })[0] : null;
       const ar = roadsOn && MAP.getLayer('blm-areas') ? MAP.queryRenderedFeatures(e.point, { layers: ['blm-closed', 'blm-areas'] })[0] : null;
       if (!hit && !un.length && !lc && !rd && !ar) return;
+      const pr = hit ? hit.properties : {};
+      const nm = pr.name || pr['UDWR.DWRADMIN.WIA_Properties.Name'] || '';
       let rdHtml = '';
       if (rd) {
         const q = rd.properties, stt = mvStatus(q), blm = q.src === 'blm';
@@ -616,6 +618,7 @@ function vToday() {
   h += near.map(p => rowPoint(p)).join('') || '<p class="empty">No access data.</p>';
   h += `</div>`;
 
+  h += (typeof cardFish === 'function' ? cardFish() : '');
   h += cardLake();
   h += cardSnow();
   h += `<div class="sec-title">What is coming</div><div class="card">`;
@@ -919,6 +922,7 @@ const TABS = [
   ['today', 'Today', '<path d="M3 10h18M7 3v4M17 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/>'],
   ['map', 'Map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'],
   ['access', 'Access', '<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'],
+  ['fish', 'Fish', '<path d="M3 12c3-4.5 7-6 11-6 3 0 5.5 2.5 7 6-1.500 3.500-4 6-7 6-4 0-8-1.500-11-6z"/><path d="M3 7.500v9"/><circle cx="16" cy="11" r=".9"/>'],
   ['cams', 'Cams', '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.2"/>'],
   ['seasons', 'Seasons', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
   ['remind', 'Remind', '<path d="M18 8a6 6 0 1 0-12 0c0 7-2 8-2 8h16s-2-1-2-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/>'],
@@ -937,14 +941,14 @@ function renderChrome() {
     `<button data-tab="${k}"${tab === k ? ' aria-current="page"' : ''}>
       <span style="position:relative"><svg viewBox="0 0 24 24">${path}</svg>${k === 'remind' && n ? `<span class="badge">${n}</span>` : ''}</span>
       <span>${label}</span></button>`).join('');
-  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', seasons: 'Seasons', remind: 'Reminders', contacts: 'Contacts' }[tab];
+  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Seasons', remind: 'Reminders', contacts: 'Contacts' }[tab];
   if (tab === 'today') $('title').innerHTML = '<img src="icons/rangerhawk-wordmark.svg" alt="Ranger Hawk">'; else $('title').textContent = ttl;
 }
 function render() {
   renderChrome();
   if (MAP && tab !== 'map') { try { MAP.remove(); } catch (e) { /* already gone */ } MAP = null; }
   if (tab === 'map' && MAP) { renderChrome(); return; }
-  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, seasons: vSeasons, remind: vReminders, contacts: vContacts }[tab];
+  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts }[tab];
   $('view').innerHTML = v();
   document.body.classList.toggle('on-map', tab === 'map');
   if (tab === 'map') initMap();

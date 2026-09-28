@@ -1,0 +1,688 @@
+{
+  "_what": "The hand-kept copy of the guidebook's statewide daily-limits table, and the general rules the app quotes. build_fishing.py reads the table off the page two other ways and refuses to build unless all three agree, so a slip here is a loud failure rather than a wrong limit. Every 'text' below must be found word for word on the page named. A RULE IS QUOTED WITH ITS EXCEPTIONS: the audit of 2026-09-27 found six rules here quoted without the 'only exception' printed in the next sentence. The build now reads the words that follow each quote and fails if they begin an exception.",
+  "page": 7,
+  "spear_other_bullets": 2,
+  "_spear_other_bullets": "The spearfishing section prints two bullets that are not under any water: the two exceptions to the rule against artificial light (page 19).",
+  "limits": [
+    {
+      "row": "crappie",
+      "name": "Crappie",
+      "label": "Black crappie and white crappie (a combined total)",
+      "limit": "50"
+    },
+    {
+      "row": "bluegill",
+      "name": "Bluegill and green sunfish",
+      "label": "Bluegill and green sunfish (a combined total)",
+      "limit": "50"
+    },
+    {
+      "row": "cisco",
+      "name": "Bonneville cisco",
+      "label": "Bonneville cisco",
+      "limit": "30"
+    },
+    {
+      "row": "bullhead",
+      "name": "Bullhead",
+      "label": "Bullhead",
+      "limit": "24"
+    },
+    {
+      "row": "burbot",
+      "name": "Burbot",
+      "label": "Burbot (Reminder: Do not release any burbot you catch. All burbot caught must be immediately killed.)",
+      "limit": "No limit"
+    },
+    {
+      "row": "catfish",
+      "name": "Channel catfish",
+      "label": "Channel catfish",
+      "limit": "8"
+    },
+    {
+      "row": "community",
+      "name": "Community fisheries",
+      "label": "Community fisheries (The limit includes fish of most species, but you must release any tiger muskellunge you catch. You are also encouraged to release all largemouth bass. See the complete list of community waters on page 31.)",
+      "limit": "2"
+    },
+    {
+      "row": "crayfish",
+      "name": "Crayfish",
+      "label": "Crayfish (Reminder: You may use bait to catch crayfish on waters where bait use is prohibited for fish, as long as none of the lines have hooks attached. See page 13 for details.)",
+      "limit": "No limit"
+    },
+    {
+      "row": "kokanee",
+      "name": "Kokanee salmon",
+      "label": "Kokanee salmon (Reminder: Kokanee salmon are part of the total trout limit.)",
+      "limit": "See trout limit next column"
+    },
+    {
+      "row": "bass",
+      "name": "Largemouth and smallmouth bass",
+      "label": "Largemouth and smallmouth bass (a combined total)",
+      "limit": "6"
+    },
+    {
+      "row": "nongame",
+      "name": "Nongame species",
+      "label": "Nongame species (see exceptions on pages 16–17 for prohibited fish and specific waterbodies)",
+      "limit": "No limit"
+    },
+    {
+      "row": "pike",
+      "name": "Northern pike",
+      "label": "Northern pike",
+      "limit": "20, only 1 over 36 inches"
+    },
+    {
+      "row": "roundtail",
+      "name": "Roundtail chub",
+      "label": "Roundtail chub (Note: Bait and harvest restrictions may apply. For details see the Rules for specific waters section beginning on page 28.)",
+      "limit": "2"
+    },
+    {
+      "row": "sacperch",
+      "name": "Sacramento perch",
+      "label": "Sacramento perch",
+      "limit": "10"
+    },
+    {
+      "row": "striper",
+      "name": "Striped bass",
+      "label": "Striped bass",
+      "limit": "No limit"
+    },
+    {
+      "row": "tigermuskie",
+      "name": "Tiger muskellunge",
+      "label": "Tiger muskellunge",
+      "limit": "1 over 40 inches"
+    },
+    {
+      "row": "trout",
+      "name": "Trout, kokanee salmon and Arctic grayling",
+      "label": "Trout, kokanee salmon and Arctic grayling (a combined total). Anglers may not possess kokanee salmon at any waterbody statewide from Sept. 10 through Nov. 30.",
+      "limit": "4"
+    },
+    {
+      "row": "walleye",
+      "name": "Walleye",
+      "label": "Walleye",
+      "limit": "10, only 1 over 24 inches"
+    },
+    {
+      "row": "whitefish",
+      "name": "Whitefish",
+      "label": "Whitefish",
+      "limit": "10"
+    },
+    {
+      "row": "whitebass",
+      "name": "White bass",
+      "label": "White bass",
+      "limit": "No limit"
+    },
+    {
+      "row": "wiper",
+      "name": "Wiper",
+      "label": "Wiper",
+      "limit": "3"
+    },
+    {
+      "row": "perch",
+      "name": "Yellow perch",
+      "label": "Yellow perch",
+      "limit": "50"
+    }
+  ],
+  "rules": [
+    {
+      "id": "season",
+      "head": "Season",
+      "page": 22,
+      "text": "Utah’s general fish and crayfish season is Jan. 1 through Dec. 31. Fish may be caught by angling or setline 24 hours a day.",
+      "fx": {
+        "t": "access",
+        "open": [
+          [
+            "01-01",
+            "12-31"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "kokanee",
+      "head": "Kokanee salmon, fall closure",
+      "page": 5,
+      "text": "Anglers may not possess kokanee salmon at any waterbody statewide from Sept. 10 through Nov. 30 to protect kokanee during the spawning season.",
+      "fx": {
+        "t": "release",
+        "rows": [
+          "trout"
+        ],
+        "sp": [
+          "kokanee salmon"
+        ],
+        "w": [
+          [
+            "09-10",
+            "11-30"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "licence",
+      "head": "Licence",
+      "page": 8,
+      "text": "If you’re 12 years of age or older, you must purchase a fishing license or a combination license to fish in Utah.",
+      "fx": {
+        "t": "access"
+      },
+      "ends_ok": true,
+      "ends_why": "What is printed next is 'You can choose from a variety of licenses, which are listed on page 6', which is about buying one. The two exceptions, Free Fishing Day and children under 12, are held as rules of their own."
+    },
+    {
+      "id": "carry-licence",
+      "head": "Carry your licence",
+      "page": 8,
+      "text": "You must have your license with you while you’re fishing, and you cannot alter your license or transfer it to another person. Keep in mind that you can use the Utah Hunting and Fishing app to legally carry fishing licenses on a phone or tablet for all the members of your family.",
+      "fx": {
+        "t": "access"
+      }
+    },
+    {
+      "id": "free-day",
+      "head": "Free Fishing Day",
+      "page": 8,
+      "text": "The one day you don’t need a license to fish in Utah is Saturday, June 6, 2026, which is Free Fishing Day. Everyone in Utah can fish for free that day, but please remember that all of the state’s other fishing laws and rules still apply.",
+      "fx": {
+        "t": "access"
+      }
+    },
+    {
+      "id": "bear-lake-licence",
+      "head": "Bear Lake: one licence, two states",
+      "page": 8,
+      "text": "If you have a valid Utah or Idaho fishing or combination license—whether you are a resident or nonresident—you may fish both the Utah and Idaho portions of the lake, as long as you follow the angling regulations that apply to the state where you are fishing. It is your responsibility to know and follow each state’s laws and rules for Bear Lake. Reminder: Even if you are licensed in both states, you may only take one daily limit each day.",
+      "waters": [
+        "bear-lake-rich"
+      ],
+      "fx": [
+        {
+          "t": "access"
+        },
+        {
+          "t": "keep"
+        }
+      ]
+    },
+    {
+      "id": "powell-licence",
+      "head": "Lake Powell: one licence, two states",
+      "page": 8,
+      "text": "If you have a valid Utah or Arizona fishing or combination license—whether you are a resident or nonresident—you may fish both the Utah and Arizona portions of the lake, as long as you follow the angling regulations that apply to the state where you are fishing. It is your responsibility to know and follow each state’s laws and rules for Lake Powell. Reminder: Even if you are licensed in both states, you may only take one daily limit each day.",
+      "waters": [
+        "lake-powell-garfield-kane-san-juan"
+      ],
+      "fx": [
+        {
+          "t": "access"
+        },
+        {
+          "t": "keep"
+        }
+      ]
+    },
+    {
+      "id": "gorge-licence",
+      "head": "Flaming Gorge: a permit from the other state",
+      "page": 9,
+      "text": "Utah and Wyoming resident anglers: To fish across state lines at Flaming Gorge Reservoir, residents of Utah or Wyoming must have a valid resident fishing license from their state of residence and a reciprocal fishing permit from the other state. For example, if you buy a Utah resident fishing license, you can fish the Utah portion of Flaming Gorge. After buying your Utah license, if you decide you also want to fish the Wyoming portion of the reservoir, you must buy a Wyoming reciprocal fishing permit. You can also choose to purchase a Wyoming nonresident fishing license.",
+      "items": [
+        "Nonresident anglers: If you are not a resident of either Utah or Wyoming—and you want to fish all of Flaming Gorge Reservoir— you must purchase nonresident fishing licenses from both states.",
+        "Reminder: Even if you are licensed in both states, you may only take one daily limit."
+      ],
+      "waters": [
+        "flaming-gorge-reservoir-daggett"
+      ],
+      "fx": [
+        {
+          "t": "access"
+        },
+        {
+          "t": "keep"
+        }
+      ]
+    },
+    {
+      "id": "under12",
+      "head": "Under 12",
+      "page": 8,
+      "text": "If you’re under 12 years of age, you do not need a fishing license to fish in Utah. You can fish without a license, use two poles, use a setline and take a full daily limit.",
+      "fx": [
+        {
+          "t": "access"
+        },
+        {
+          "t": "keep"
+        }
+      ]
+    },
+    {
+      "id": "two-poles",
+      "head": "Two poles, one limit",
+      "page": 11,
+      "text": "If you are under age 12 or have a valid Utah fishing or combination license, you can fish with two poles at any water in the state during its open fishing season. You may keep only one daily limit of fish. Using a second pole does not allow you to keep two daily limits of fish. You may use additional lines or hooks when you are:",
+      "fx": [
+        {
+          "t": "method"
+        },
+        {
+          "t": "keep"
+        }
+      ],
+      "items": [
+        "Fishing for crayfish. Please see page 16 of this guide for more information about fishing for crayfish.",
+        "Using a setline. See page 13 to learn more about fishing with a setline.",
+        "Ice fishing at Flaming Gorge, Porcupine and Causey reservoirs and Pelican Lake. Please see Rules for specific waters beginning on page 28 for more information about each of these waterbodies."
+      ],
+      "waters": [
+        "flaming-gorge-reservoir-daggett",
+        "porcupine-reservoir-cache",
+        "causey-reservoir-weber",
+        "pelican-lake-uintah"
+      ]
+    },
+    {
+      "id": "in-sight",
+      "head": "Stay with your gear",
+      "page": 11,
+      "text": "While fishing, you must be within sight of the equipment you’re fishing with (this distance cannot exceed 100 feet). The only exception to this rule is if you have a setline permit.",
+      "fx": {
+        "t": "method"
+      }
+    },
+    {
+      "id": "hooks",
+      "head": "Hooks on a line",
+      "page": 11,
+      "text": "No line may have attached to it more than three baited hooks, three artificial flies or three artificial lures. (This rule also applies to those who are fishing for crayfish.) This does not apply to setlines; please see page 13 of this guide for more information about fishing with a setline.",
+      "fx": {
+        "t": "tackle"
+      }
+    },
+    {
+      "id": "light",
+      "head": "Artificial light",
+      "page": 11,
+      "text": "The use of artificial light is allowed when angling statewide. (Important: See page 19 for Underwater spearfishing rules regarding artificial light.)",
+      "fx": {
+        "t": "method"
+      }
+    },
+    {
+      "id": "lure-hooks",
+      "head": "Hooks on a lure",
+      "page": 11,
+      "text": "No artificial lure may have more than three hooks.",
+      "fx": {
+        "t": "tackle"
+      }
+    },
+    {
+      "id": "ice-hole",
+      "head": "Ice holes",
+      "page": 12,
+      "text": "When you’re fishing through the ice, you may not fish through a hole that’s more than 12 inches wide. The only exceptions are at Bear Lake, Flaming Gorge Reservoir and Fish Lake.",
+      "fx": {
+        "t": "method"
+      }
+    },
+    {
+      "id": "bait-crayfish",
+      "head": "Bait: corn and crayfish",
+      "page": 12,
+      "text": "You may legally use or possess corn while fishing anywhere in Utah where bait is permitted. You may only use live crayfish for bait if you are on the water where the crayfish were captured. It is unlawful to transport live crayfish away from the water where they were captured. You may use bait—without hooks—to catch crayfish in waters where fishing with bait is prohibited. You may not, however, catch fish using bait in waters where bait is prohibited.",
+      "fx": {
+        "t": "tackle"
+      }
+    },
+    {
+      "id": "bait-unlawful",
+      "head": "Bait you may not use",
+      "page": 12,
+      "text": "While you are fishing, it is unlawful to:",
+      "items": [
+        "Use or possess live baitfish.",
+        "Use or possess tiger salamanders (live or dead).",
+        "Use or possess any bait—including PowerBait or scented jigs—where prohibited.",
+        "Use or possess artificial baits that are commercially imbedded or covered with fish or fish parts."
+      ],
+      "fx": {
+        "t": "tackle"
+      }
+    },
+    {
+      "id": "powerbait",
+      "head": "PowerBait counts as bait",
+      "page": 13,
+      "text": "Both PowerBait and scented lures are considered to be bait, and they may not be used where bait is prohibited.",
+      "fx": {
+        "t": "tackle"
+      }
+    },
+    {
+      "id": "chumming",
+      "head": "Chumming",
+      "page": 13,
+      "text": "Chumming is prohibited on all waters except Lake Powell and Flaming Gorge.",
+      "fx": {
+        "t": "tackle"
+      }
+    },
+    {
+      "id": "snagging",
+      "head": "Snagged fish",
+      "page": 13,
+      "text": "A snagged fish may not be taken and must be released immediately. The only exceptions are Bear Lake (where you may snag Bonneville cisco) and any waterbody where there is a catch-and-kill regulation for the fish you snag.",
+      "fx": [
+        {
+          "t": "method"
+        },
+        {
+          "t": "release",
+          "rows": "all"
+        }
+      ],
+      "waters": [
+        "bear-lake-rich"
+      ]
+    },
+    {
+      "id": "gaffs",
+      "head": "Gaffs",
+      "page": 13,
+      "text": "You may not take or land a fish by gaffing, and you may not have a gaff in your possession while fishing. The only exceptions are at Lake Powell (where you may use a gaff to land striped bass).",
+      "fx": {
+        "t": "method"
+      }
+    },
+    {
+      "id": "hatcheries",
+      "head": "Closed areas",
+      "page": 15,
+      "text": "All of the state’s fish hatcheries are closed to fishing, including the warmwater fish hatchery at the Lee Kay Public Shooting Range.",
+      "fx": {
+        "t": "closed",
+        "scope": "part"
+      }
+    },
+    {
+      "id": "wma-closed",
+      "head": "Waterfowl management areas",
+      "page": 15,
+      "text": "All of the state’s waterfowl management areas are closed to fishing, unless they’re posted open to fishing or they’re listed as open to fishing in Rules for specific waters on page 28.",
+      "fx": {
+        "t": "closed",
+        "scope": "part"
+      }
+    },
+    {
+      "id": "refuges",
+      "head": "National wildlife refuges",
+      "page": 15,
+      "text": "All national wildlife refuges within Utah are also closed to fishing, unless declared open by the managing authority.",
+      "fx": {
+        "t": "closed",
+        "scope": "part"
+      }
+    },
+    {
+      "id": "protected",
+      "head": "Fish you must let go",
+      "page": 16,
+      "text": "If you catch any of these fish, you must release them (alive) immediately:",
+      "items": [
+        "Bonytail",
+        "Colorado pikeminnow",
+        "Humpback chub",
+        "June sucker",
+        "Razorback sucker",
+        "Virgin River chub",
+        "Woundfin"
+      ],
+      "fx": {
+        "t": "release",
+        "rows": [
+          "nongame"
+        ],
+        "sp": [
+          "protected native fish"
+        ]
+      }
+    },
+    {
+      "id": "many-waters",
+      "head": "Fishing more than one water in a day",
+      "page": 22,
+      "text": "If you fish multiple waters in one day, you cannot have any fish in your possession that violate the rules of the waterbody where you’re fishing.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "stringer",
+      "head": "What counts toward the limit",
+      "page": 22,
+      "text": "Any trout, salmon or grayling not immediately released is part of your daily limit.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "kokanee-counts",
+      "head": "Kokanee count as trout",
+      "page": 22,
+      "text": "Note: Kokanee salmon are considered to be part of the total trout limit. Anglers may not possess kokanee salmon at any waterbody statewide from Sept. 10 through Nov. 30.",
+      "fx": [
+        {
+          "t": "release",
+          "rows": [
+            "trout"
+          ],
+          "sp": [
+            "kokanee salmon"
+          ],
+          "w": [
+            [
+              "09-10",
+              "11-30"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "held-fish",
+      "head": "Fish on a stringer",
+      "page": 22,
+      "text": "A trout, salmon or grayling may not be released if it’s been held on a stringer or in a fish basket, livewell or any other type of device.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "wrong-fish",
+      "head": "A fish you may not keep",
+      "page": 22,
+      "text": "Any fish that doesn’t meet the size or species rules for the water you’re fishing must be returned to the water immediately.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "two-limits",
+      "head": "A second limit on a trip",
+      "page": 22,
+      "text": "You may possess up to two daily limits of fish as you travel within Utah—or if you leave the state—as long as you meet all of the following conditions:",
+      "items": [
+        "You are on an overnight or multiday fishing trip at any Utah waterbody, excluding Flaming Gorge Reservoir. (Important: At Flaming Gorge Reservoir, you may have only one daily limit in your possession at any time.)",
+        "At least one of the limits in your possession was caught at a Utah water on a previous day, and the fish were a legal species and limit for the waterbody where you caught them.",
+        "The fish from the previous day have been cleaned and gutted (entrails removed)."
+      ],
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "second-water",
+      "head": "A second water on the same trip",
+      "page": 22,
+      "text": "If you fish at a different waterbody on the second day of your trip, you may not have any fish in your possession—from either day—that violate the rules of the waterbody where you’re currently fishing. You must always comply with the size and species regulations for the waterbody where you’re fishing and not have more than two daily limits in your possession.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "full-limit",
+      "head": "Fishing on with a full limit",
+      "page": 23,
+      "text": "You may continue to fish while in possession of a full daily limit, but you must immediately release any additional fish you catch.",
+      "fx": [
+        {
+          "t": "keep"
+        },
+        {
+          "t": "release",
+          "rows": "all"
+        }
+      ]
+    },
+    {
+      "id": "home-limit",
+      "head": "Taking fish home",
+      "page": 23,
+      "text": "Any fish species stored at your permanent residence do not count as part of your limit. Please keep in mind that this does NOT allow you to take home multiple daily limits of fish in one day. You may take home only one daily limit per day.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "fillet",
+      "head": "Filleting while you fish",
+      "page": 23,
+      "text": "While you are in the act of fishing, it is unlawful to possess filleted fish from the current day’s catch or fish that have had their heads or tails removed. This does not apply to fish processed for immediate consumption or from a previous day’s catch. At most waters, you may fillet harvested game fish, or remove their heads or tails, after you have:",
+      "fx": {
+        "t": "keep"
+      },
+      "items": [
+        "Completed the act of fishing",
+        "Arrived at camp",
+        "Reached a fish-cleaning station",
+        "Arrived at a principle means of land transportation"
+      ]
+    },
+    {
+      "id": "fillet-four",
+      "head": "Four waters where trout and salmon stay whole",
+      "page": 23,
+      "text": "At Strawberry Reservoir, Scofield Reservoir, Lost Creek Reservoir and Panguitch Lake, you may not fillet trout and salmon, and you may not remove their heads or tails while in the field or in transit.",
+      "fx": {
+        "t": "keep"
+      },
+      "waters": [
+        "strawberry-reservoir-wasatch",
+        "scofield-reservoir-carbon-utah",
+        "lost-creek-reservoir-morgan",
+        "panguitch-lake-garfield"
+      ]
+    },
+    {
+      "id": "entrails",
+      "head": "Entrails and carcasses",
+      "page": 23,
+      "text": "Note: Do not dispose of entrails and carcasses on the bank. Leave them in the water where you caught the fish.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "live-fish",
+      "head": "Live fish",
+      "page": 24,
+      "text": "You may not transport live fish or crayfish away from the water where they were caught.",
+      "fx": {
+        "t": "keep"
+      }
+    },
+    {
+      "id": "officer",
+      "head": "If an officer checks you",
+      "page": 24,
+      "text": "If you meet a conservation officer, you must provide the items they ask for, including any licenses required for fishing, any devices used to participate in fishing and any fish that you’ve taken.",
+      "fx": {
+        "t": "access"
+      }
+    }
+  ],
+  "spear_general": [
+    {
+      "id": "sg-subject",
+      "head": "All fishing rules apply",
+      "page": 19,
+      "text": "When spearfishing, you are subject to all of Utah’s fishing rules, regulations, daily limits and licensing requirements. In addition to the following information, carefully review Rules for specific waters beginning on page 28."
+    },
+    {
+      "id": "sg-hours",
+      "head": "Hours",
+      "page": 19,
+      "text": "Underwater spearfishing may take place 24 hours a day where allowed."
+    },
+    {
+      "id": "sg-freeshaft",
+      "head": "Free shafting",
+      "page": 19,
+      "text": "Free shafting is prohibited."
+    },
+    {
+      "id": "sg-light",
+      "head": "Artificial light",
+      "page": 19,
+      "text": "Important: It is illegal to use artificial light while underwater spearfishing with the following two exceptions:",
+      "items": [
+        "If you’re underwater spearfishing for burbot or lake trout at Flaming Gorge.",
+        "If you’re underwater spearfishing for common carp or Utah chub anywhere in the state where spearfishing is allowed."
+      ]
+    },
+    {
+      "id": "sg-carp",
+      "head": "Carp and Utah chub",
+      "page": 19,
+      "text": "At all waters open to fishing—during their open seasons—you can underwater spearfish for common carp and Utah chub, except for the Provo River and Provo River Delta.",
+      "waters": [
+        "provo-river-summit-utah-wasatch",
+        "provo-river-delta-utah"
+      ]
+    },
+    {
+      "id": "sg-limits",
+      "head": "Limits and closures",
+      "page": 19,
+      "text": "Remember: All possession limits and seasonal closures apply, regardless of the fishing technique you use. (This includes the statewide seasonal closure on kokanee salmon from Sept. 10 to Nov. 30.) Refer to the statewide Daily limits table on page 7."
+    },
+    {
+      "id": "sg-flag",
+      "head": "Diver flag",
+      "page": 21,
+      "text": "SCUBA divers are required to deploy the diver flag from the highest point of their boat, or from a buoy if not diving from a boat.",
+      "items": [
+        "For safety purposes, it is highly recommended that anyone snorkeling, spearfishing or swimming in deeper waters should deploy a diver flag and use caution to stay within 150 feet of the flag.",
+        "Boaters are required to stay 150 feet away from this flag when it is deployed. It also signals to boaters that they should slow down and steer clear of the area to avoid people in the water."
+      ]
+    }
+  ]
+}

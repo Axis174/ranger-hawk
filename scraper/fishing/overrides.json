@@ -1,0 +1,26 @@
+{
+  "_what": "Readings made by a person for sentences no strict pattern in build_fishing.py could sort. The key is the guidebook's sentence, word for word; if UDWR changes a word the build fails and points here. Each reading says why a pattern would not do. 'fx' is the list of effects, in the same form the patterns produce.",
+
+  "Limit 2 cutthroat or tiger trout (a combined total); no more than 2 may be under 15 inches, and no more than 1 may be a cutthroat or tiger trout over 22 inches (goes toward the statewide trout limit). All cutthroat and tiger trout from 15 to 22 inches must be immediately released.": {
+    "why": "One bullet holding a limit, two size rules and a release rule. Panguitch Lake tributaries, page 37.",
+    "fx": [
+      {"t": "limit", "rows": ["trout"], "sp": ["tiger trout", "cutthroat trout"]},
+      {"t": "release", "rows": ["trout"], "sp": ["tiger trout", "cutthroat trout"]}
+    ]
+  },
+
+  "At all other times of the year, there is a 2-fish limit": {
+    "why": "Pond at Poulter Preserve, page 38. 'All other times' is the rest of the year after the bullet above it, which runs from 6 a.m. on the second Saturday of September through the third Saturday in May. So this one runs from the day after the third Saturday in May until 6 a.m. on the second Saturday of September. The dates are not in the sentence itself, hence w_by_hand.",
+    "fx": [
+      {"t": "limit", "rows": "all", "w": [[{"n": 3, "m": 5, "d": 1}, {"n": 2, "m": 9, "h": 6}]], "w_by_hand": 1}
+    ]
+  },
+
+  "Spanish Oaks Reservoir and Manila Creek Pond are closed Dec. 1 through 6 a.m. on the last Saturday of February.": {
+    "why": "A note printed inside the Utah County list of community waters, page 31. It closes two named ponds, not the whole list, and the span runs over the new year.",
+    "members": ["Spanish Oaks Reservoir", "Manila Creek Pond"],
+    "fx": [
+      {"t": "closed", "scope": "all", "w": [["12-01", {"n": -1, "m": 2, "h": 6}]]}
+    ]
+  }
+}

@@ -1,0 +1,703 @@
+{
+ "_what": "Which place is which guidebook water, where a person had to decide. build_fishing_places.py links a place to a guidebook entry by itself ONLY when the whole name and the county both match. Everything here is a decision made by reading both sides. A wrong link would show the wrong rules, so anything not strictly matched and not listed here stays unlinked: the app then shows the guidebook entries with a similar name as 'related', and every water with its own rules in that county.",
+ "_ids": "p = UDWR Fish Utah planner water, c = UDWR community fisheries layer, a = UDWR property layer, r = UDWR lake registry (DWR water id).",
+ "_reach": "reach is one stretch key, a list of keys when stretches overlap, or 'none' when the place is on the water but outside every stretch the guidebook lists. 'none' is only used where the place's own name or UDWR's description settles it. Where it does not, reach is left out and the app shows every stretch.",
+ "extra_counties": {
+  "weber-river-summit": {
+   "counties": [
+    "Morgan",
+    "Weber",
+    "Davis"
+   ],
+   "why": "The guidebook heads this entry 'Summit County', but its stretch (b) runs 'From the Great Salt Lake to Echo Reservoir dam', which crosses Morgan, Weber and Davis counties."
+  },
+  "huntington-creek-emery": {
+   "counties": [
+    "Sanpete"
+   ],
+   "why": "Stretch (b) takes in the Left Fork 'to the headwaters, including all tributaries'. USGS's map has about 6 km of the Left Fork itself in Sanpete County. (Audit of 2026-09-27.)"
+  },
+  "colorado-river-tributaries-garfield-grand-wayne": {
+   "counties": [
+    "San Juan"
+   ],
+   "why": "Mill Creek, which the entry names, runs through San Juan County on its way up to the La Sals. (Audit of 2026-09-27.)"
+  },
+  "solitaire-lake-garfield": {
+   "counties": [
+    "Wayne"
+   ],
+   "why": "The guidebook files the lake under Garfield County. UDWR's registry and USGS both put the only Solitaire Lake in Utah in Wayne County. (Audit of 2026-09-27.)"
+  }
+ },
+ "county": {
+  "p341": {
+   "county": "Daggett",
+   "why": "UDWR's centre point for Flaming Gorge falls on the Wyoming side of the line. Its own directions point is in Daggett County."
+  }
+ },
+ "places": {
+  "p10010": {
+   "water": "community:carbon-county-community-fishery-carbon",
+   "why": "Same pond at the fairgrounds in Price; UDWR names it three ways."
+  },
+  "c6": {
+   "water": "community:carbon-county-community-fishery-carbon",
+   "why": "Same pond."
+  },
+  "p10520": {
+   "water": "community:deer-valley-lakes-summit",
+   "why": "UDWR's lake registry calls them Deer Valley Lakes."
+  },
+  "c8": {
+   "water": "community:deer-valley-lakes-summit",
+   "why": "Same."
+  },
+  "c63": {
+   "water": "community:dry-creek-highland-pond-utah",
+   "why": "Same pond, Highland."
+  },
+  "p10521": {
+   "water": "community:fort-buenaventura-weber",
+   "why": "The pond at Fort Buenaventura."
+  },
+  "c11": {
+   "water": "community:fort-buenaventura-weber",
+   "why": "Same."
+  },
+  "p10522": {
+   "water": "community:garden-city-community-fishery-rich",
+   "why": "Garden City has one community pond."
+  },
+  "c12": {
+   "water": "community:garden-city-community-fishery-rich",
+   "why": "Same."
+  },
+  "c18": {
+   "water": "community:highland-glen-park-pond-utah",
+   "why": "Same pond."
+  },
+  "p291": {
+   "water": "community:huntington-game-farm-ponds-emery",
+   "why": "Same ponds."
+  },
+  "p10032": {
+   "water": "community:knight-ideal-community-fishing-pond-carbon",
+   "why": "Same pond in Wellington."
+  },
+  "c25": {
+   "water": "community:knight-ideal-community-fishing-pond-carbon",
+   "why": "Same."
+  },
+  "p305": {
+   "water": "community:monroe-community-fishery-sevier",
+   "why": "Monroe has one community pond."
+  },
+  "c35": {
+   "water": "community:monroe-community-fishery-sevier",
+   "why": "Same."
+  },
+  "p317": {
+   "water": "community:skyline-drive-pond-washington",
+   "why": "The pond is on Skyline Drive in St. George, which is the pond the guidebook lists."
+  },
+  "c47": {
+   "water": "community:skyline-drive-pond-washington",
+   "why": "Same."
+  },
+  "p304": {
+   "water": "community:willow-park-pond-salt-lake",
+   "why": "The pond in Willow Pond Park, Murray."
+  },
+  "c60": {
+   "water": "community:willow-park-pond-salt-lake",
+   "why": "Same."
+  },
+  "c64": {
+   "water": "community:willow-spring-pond-in-enterprise-washington",
+   "why": "Enterprise has one community pond."
+  },
+  "c28": {
+   "water": "community:tawa-ponds-washington",
+   "why": "The guidebook lists 'Tawa Ponds (Upper and Lower)'."
+  },
+  "c55": {
+   "water": "community:tawa-ponds-washington",
+   "why": "Same."
+  },
+  "c30": {
+   "water": "community:manila-creek-pond-utah",
+   "why": "Same pond, Pleasant Grove."
+  },
+  "c39": {
+   "water": "community:pole-canyon-pond-utah",
+   "why": "Same pond."
+  },
+  "p496": {
+   "water": "community:pole-canyon-pond-utah",
+   "why": "UDWR gives both names."
+  },
+  "p302": {
+   "water": "community:sandy-community-fishery-salt-lake",
+   "why": "UDWR gives both names. This is the Sandy pond, not Grandpa's Pond in Washington County."
+  },
+  "c45": {
+   "water": "community:sandy-community-fishery-salt-lake",
+   "why": "Same pond."
+  },
+  "p315": {
+   "water": "community:grandpas-pond-washington",
+   "why": "UDWR gives both names; Washington County."
+  },
+  "p301": {
+   "water": "community:riverton-city-pond-salt-lake",
+   "why": "UDWR gives both names."
+  },
+  "c54": {
+   "water": "community:cove-pond-salt-lake",
+   "why": "Same pond, Herriman."
+  },
+  "p424": {
+   "water": "community:bartholomew-pond-utah",
+   "why": "The pond in Wayne Bartholomew Family Park, Springville."
+  },
+  "c58": {
+   "water": "community:bartholomew-pond-utah",
+   "why": "Same."
+  },
+  "p10004": {
+   "water": "big-sand-wash-reservoir-duchesne",
+   "why": "UDWR's planner drops the word Reservoir."
+  },
+  "p432": {
+   "water": "willard-bay-reservoir-and-inlet-channel-box-elder",
+   "why": "The guidebook entry covers the reservoir and its inlet channel."
+  },
+  "p435": {
+   "water": "yuba-reservoir-juab-sanpete",
+   "why": "Yuba Reservoir and State Park."
+  },
+  "p416": {
+   "water": "stateline-reservoir-summit",
+   "why": "Abbreviated in the planner."
+  },
+  "p501": {
+   "water": "boulder-mountain-lakes-and-reservoirs-garfield-wayne",
+   "why": "UDWR's planner record for the Boulder Mountain lakes as a group."
+  },
+  "p253": {
+   "water": [
+    "aspen-mirror-lake-kane",
+    "duck-creek-springs-lake-kane"
+   ],
+   "why": "One planner record for two ponds a mile apart. The guidebook gives both the same rule."
+  },
+  "p235": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "a",
+   "why": "Centre Street bridge to I-15, as the planner names it."
+  },
+  "p10574": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "none",
+   "why": "I-15 up to the Olmstead Diversion lies between stretch (a) and stretch (b)."
+  },
+  "p222": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "b",
+   "why": "Olmstead Diversion Dam to Deer Creek Dam."
+  },
+  "p10573": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "c",
+   "why": "Deer Creek to Legacy Bridge."
+  },
+  "p223": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "d",
+   "why": "Legacy Bridge to Jordanelle Dam."
+  },
+  "p224": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "e",
+   "why": "Jordanelle Reservoir up to the forks."
+  },
+  "p10577": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "none",
+   "why": "The upper Provo in the Uintas. The uppermost listed stretch ends where the forks meet the river; USGS puts the North Fork's mouth at longitude -111.102 and the South Fork's at -111.139, and this point is upstream of both at -111.022. (Audit of 2026-09-27.)"
+  },
+  "p10619": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Echo Reservoir to Wanship."
+  },
+  "p177": {
+   "water": "weber-river-summit",
+   "why": "UDWR's general record for the Weber; its centre point is in Morgan County."
+  },
+  "p10579": {
+   "water": "weber-river-summit",
+   "reach": "none",
+   "why": "The upper Weber in the Uintas. Above the I-80 bridge at Wanship, where the upper listed stretch ends: USGS's maps put that bridge at latitude 40.816, the river runs north, and this is upstream of it at 40.727, -111.058. (Audit of 2026-09-27.)"
+  },
+  "p228": {
+   "water": "green-river-carbon-daggett-emery-grand-san-juan-uintah-wayne",
+   "reach": [
+    "a",
+    "b"
+   ],
+   "why": "Below Flaming Gorge Dam: inside stretch (a), which runs the whole river below the dam, and stretch (b), dam to the Colorado line in Browns Park."
+  },
+  "p10544": {
+   "water": "green-river-carbon-daggett-emery-grand-san-juan-uintah-wayne",
+   "reach": [
+    "a",
+    "c"
+   ],
+   "why": "UDWR describes it as the Colorado state line to Desolation Canyon; Sand Wash is where Desolation Canyon begins."
+  },
+  "p10545": {
+   "water": "green-river-carbon-daggett-emery-grand-san-juan-uintah-wayne",
+   "reach": "a",
+   "why": "Near the town of Green River, well below Sand Wash."
+  },
+  "p216": {
+   "water": "huntington-creek-emery",
+   "reach": "a",
+   "why": "Right Fork."
+  },
+  "p217": {
+   "water": "huntington-creek-emery",
+   "reach": "b",
+   "why": "Left Fork."
+  },
+  "p85": {
+   "water": "east-fork-sevier-river-garfield-piute",
+   "reach": "b",
+   "why": "Black Canyon is the stretch above Antimony."
+  },
+  "p10104": {
+   "water": "east-fork-sevier-river-garfield-piute",
+   "reach": "none",
+   "why": "Kingston Canyon is below Otter Creek Reservoir; both listed stretches are above it."
+  },
+  "p10689": {
+   "water": "west-fork-duchesne-river-duchesne-wasatch",
+   "why": "Upstream of Wolf Creek is the stretch the guidebook lists."
+  },
+  "p10687": {
+   "water": "west-fork-duchesne-river-duchesne-wasatch",
+   "reach": "none",
+   "why": "Downstream of Wolf Creek; the listed stretch starts at Wolf Creek and runs up."
+  },
+  "p10": {
+   "water": "beaver-river-beaver",
+   "reach": "none",
+   "why": "UDWR places it downstream of Minersville Reservoir; the listed stretch is above the reservoir."
+  },
+  "p10101": {
+   "water": "beaver-river-beaver",
+   "reach": "none",
+   "why": "East of Beaver; the listed stretch ends at Greenville, west of town."
+  },
+  "p10554": {
+   "water": "strawberry-river-duchesne-wasatch",
+   "reach": "none",
+   "why": "Starvation Reservoir down through Duchesne; the listed stretch is above Starvation, from Red Creek to Soldier Creek Dam."
+  },
+  "p10682": {
+   "water": "logan-river-cache",
+   "reach": "none",
+   "why": "First Dam is in the lower canyon, below Card Canyon: USGS puts the mouth of Card Canyon at longitude -111.664, east of this point and upstream of it. Both listed stretches start at Card Canyon Bridge and run upstream. (Audit of 2026-09-27.)"
+  },
+  "p10683": {
+   "water": "logan-river-cache",
+   "reach": "none",
+   "why": "Second Dam is in the lower canyon, below Card Canyon: USGS puts the mouth of Card Canyon at longitude -111.664, east of this point and upstream of it. Both listed stretches start at Card Canyon Bridge and run upstream. (Audit of 2026-09-27.)"
+  },
+  "p10685": {
+   "water": "logan-river-cache",
+   "reach": "none",
+   "why": "Third Dam is in the lower canyon, below Card Canyon: USGS puts the mouth of Card Canyon at longitude -111.664, east of this point and upstream of it. Both listed stretches start at Card Canyon Bridge and run upstream. (Audit of 2026-09-27.)"
+  },
+  "p10047": {
+   "water": "palisade-reservoir-sanpete",
+   "why": "Palisade Reservoir and State Park."
+  },
+  "a66": {
+   "water": "bicknell-bottoms-wayne",
+   "why": "The guidebook lists Bicknell Bottoms as open to fishing except where posted closed. UDWR's property is the Bicknell Bottoms waterfowl management area."
+  },
+  "a180": {
+   "water": "ogden-river-weber",
+   "reach": "none",
+   "why": "About two miles below Pineview Dam: USGS's outline of the reservoir ends 3.4 km away. The closed stretch is only the first half mile below the dam. (Audit of 2026-09-27.)"
+  },
+  "a262": {
+   "water": "community:old-fort-ponds-uintah",
+   "why": "Named for the pond."
+  },
+  "a186": {
+   "water": [
+    "utah-lake-utah",
+    "utah-lake-tributaries-utah"
+   ],
+   "why": "At the south end of 500 West on Provo Bay. USGS's map puts the shore of Utah Lake about 300 m away across marsh and the Provo River 4.1 km away; the drain beside the property runs into the bay west of I-15, which is what the Utah Lake tributaries entry covers, so both entries are shown. It was linked to the Provo River by mistake. (Audit of 2026-09-27.)"
+  },
+  "a198": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Named for the river, and in Morgan County, where every mile of the Weber is below Echo dam. (Audit of 2026-09-27.)"
+  },
+  "a188": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Named for the river. Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.843. (Audit of 2026-09-27.)"
+  },
+  "a152": {
+   "water": "weber-river-summit",
+   "reach": "none",
+   "why": "Named for the river. Above the I-80 bridge at Wanship, where the upper listed stretch ends: USGS's maps put that bridge at latitude 40.816, the river runs north, and this is upstream of it at 40.788, -111.134. (Audit of 2026-09-27.)"
+  },
+  "a268": {
+   "water": "weber-river-summit",
+   "reach": "none",
+   "why": "Named for the river. Above the I-80 bridge at Wanship, where the upper listed stretch ends: USGS's maps put that bridge at latitude 40.816, the river runs north, and this is upstream of it at 40.707, -111.305. (Audit of 2026-09-27.)"
+  },
+  "a269": {
+   "water": "weber-river-summit",
+   "reach": "none",
+   "why": "Named for the river. Above the I-80 bridge at Wanship, where the upper listed stretch ends: USGS's maps put that bridge at latitude 40.816, the river runs north, and this is upstream of it at 40.748, -111.368. (Audit of 2026-09-27.)"
+  },
+  "a239": {
+   "water": "big-sand-wash-reservoir-duchesne",
+   "why": "Named for the reservoir."
+  },
+  "a96": {
+   "water": "blacksmith-fork-river-cache",
+   "why": "Named for the river."
+  },
+  "a155": {
+   "water": "newcastle-reservoir-iron",
+   "why": "Named for the reservoir."
+  },
+  "a278": {
+   "water": "pelican-lake-uintah",
+   "why": "Named for the lake."
+  },
+  "a279": {
+   "water": "manning-meadow-reservoir-tributaries-and-spillway-piute",
+   "why": "The guidebook entry covers the reservoir, its tributaries and spillway."
+  },
+  "a296": {
+   "water": "strawberry-river-duchesne-wasatch",
+   "why": "Named for the river. Stretch not settled by the name."
+  },
+  "a62": {
+   "water": "strawberry-river-duchesne-wasatch",
+   "why": "Named for the river. Stretch not settled by the name."
+  },
+  "a174": {
+   "water": "utah-lake-utah",
+   "why": "Named for the lake."
+  },
+  "a277": {
+   "water": "utah-lake-utah",
+   "why": "Named for the lake."
+  },
+  "p314": {
+   "water": "community:wasatch-mountain-state-park-pond-wasatch",
+   "why": "UDWR's planner abbreviates Mountain."
+  },
+  "a275": {
+   "water": "utah-lake-utah",
+   "why": "On the shore of Utah Lake: USGS's outline of the lake is within 146 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a199": {
+   "water": "utah-lake-utah",
+   "why": "On the shore of Utah Lake: USGS's outline of the lake is within 137 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a185": {
+   "water": "utah-lake-utah",
+   "why": "On the shore of Utah Lake: USGS's outline of the lake is within 25 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a247": {
+   "water": [
+    "utah-lake-utah",
+    "utah-lake-tributaries-utah"
+   ],
+   "why": "The property touches the Mill Race just west of where it passes under I-15, and the shore of Provo Bay is 110 m away. The Mill Race runs into Utah Lake west of I-15, which is what the Utah Lake tributaries entry covers, so both entries are shown. (Audit of 2026-09-27.)"
+  },
+  "a351": {
+   "water": "ogden-river-weber",
+   "reach": "none",
+   "why": "About a mile below Pineview Dam: USGS's outline of the reservoir ends 1.7 km away, and the river is within 19 m of the centre of the property. The closed stretch is only the first half mile below the dam. (Audit of 2026-09-27.)"
+  },
+  "a306": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.865. The river is within 67 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a191": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.886. The river is within 44 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a339": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.856. The river is within 29 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a350": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.855. The river is within 40 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a200": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.840. The river is within 28 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a361": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.863. The river is within 30 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a265": {
+   "water": "weber-river-summit",
+   "reach": "a",
+   "why": "Between the two I-80 bridges that bound stretch (a): USGS's maps put them at latitude 40.816 (Wanship) and 40.918 (the head of Echo Reservoir), and this is at 40.891. The river is within 49 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a332": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Below Echo dam, so in stretch (b): USGS's outline of Echo Reservoir ends at latitude 40.967 and this is at 41.013, downstream. The river is within 200 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a370": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Below Echo dam, so in stretch (b): USGS's outline of Echo Reservoir ends at latitude 40.967 and this is at 41.008, downstream. The river is within 129 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a263": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Below Echo dam, so in stretch (b): USGS's outline of Echo Reservoir ends at latitude 40.967 and this is at 41.006, downstream. The river is within 87 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a354": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Below Echo dam, so in stretch (b): USGS's outline of Echo Reservoir ends at latitude 40.967 and this is at 41.020, downstream. The river is within 13 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a355": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Below Echo dam, so in stretch (b): USGS's outline of Echo Reservoir ends at latitude 40.967 and this is at 41.028, downstream. The river is within 44 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a112": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "Below Echo dam, so in stretch (b): USGS's outline of Echo Reservoir ends at latitude 40.967 and this is at 41.041, downstream. The river is within 8 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a244": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Davis County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 90 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a329": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Morgan County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 119 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a335": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Morgan County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 44 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a337": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "UDWR's outline of the property holds 191 m of the Weber River and 654 m of East Canyon Creek on USGS's map. In Morgan County every mile of the Weber is below Echo dam, so stretch (b). (Audit of 2026-09-27.)",
+   "note": "Most of the water on this property is East Canyon Creek, which has no entry of its own in the guidebook. The Weber River rule shown is for the Weber only."
+  },
+  "a338": {
+   "related": [
+    "weber-river-summit"
+   ],
+   "why": "UDWR's outline of the property stops 60 m short of the Weber River on USGS's map, so the app does not say the property reaches it. If it does, stretch (b) applies. (Audit of 2026-09-27.)"
+  },
+  "a346": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Morgan County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 62 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a368": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Morgan County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 34 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a196": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Morgan County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 27 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a226": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Weber County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 50 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a195": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Weber County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 70 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a202": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "In Weber County, where every mile of the Weber is below Echo dam, so in stretch (b). USGS's map puts the river within 25 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "a237": {
+   "related": [
+    "weber-river-summit"
+   ],
+   "why": "USGS's map puts the Weber River within 215 m of the centre of the property, too far for the app to say the property reaches it. If it does, stretch (b) applies. (Audit of 2026-09-27.)"
+  },
+  "a230": {
+   "water": "weber-river-summit",
+   "reach": "b",
+   "why": "UDWR's outline of the property holds about 460 m of the Weber River on USGS's map, though its centre is 234 m from the river. In Weber County every mile of the Weber is below Echo dam, so stretch (b). (Audit of 2026-09-27.)"
+  },
+  "a419": {
+   "water": "weber-river-summit",
+   "reach": "none",
+   "why": "On the upper Weber: USGS's map puts the river within 29 m of the centre of the property. Above the I-80 bridge at Wanship, where the upper listed stretch ends: USGS's maps put that bridge at latitude 40.816, the river runs north, and this is upstream of it at 40.783, -111.181. (Audit of 2026-09-27.)"
+  },
+  "a167": {
+   "water": "provo-river-summit-utah-wasatch",
+   "reach": "b",
+   "why": "In Provo Canyon between Deer Creek Dam and the Olmstead Diversion: USGS's outline of Deer Creek Reservoir ends 3 km up the canyon from here, and the river is within 58 m of the centre of the property. (Audit of 2026-09-27.)"
+  },
+  "p10542": {
+   "water": "huntington-creek-emery",
+   "reach": "none",
+   "why": "UDWR keeps separate records for the Right Fork and the Left Fork. This one is the creek below where they meet: USGS puts that at latitude 39.500, and this point is 7 km down the canyon from it. Both listed stretches are on the forks. (Audit of 2026-09-27.)"
+  },
+  "a160": {
+   "water": "east-fork-sevier-river-garfield-piute",
+   "reach": "b",
+   "why": "In Black Canyon. About four fifths of its river frontage is inside stretch (b): below the mouth of Deer Creek (USGS: 38.011) and well past the BLM boundary the guidebook puts about four miles south of Antimony. The rest is above Deer Creek. (Audit of 2026-09-27.)",
+   "note": "The upper end of this property is above the mouth of Deer Creek, where stretch (b) ends. Above Deer Creek the statewide rules apply."
+  },
+  "a165": {
+   "water": "east-fork-sevier-river-garfield-piute",
+   "note": "This property's river frontage is about three and a half miles south of Antimony, close to where stretch (b) begins at the BLM boundary. The app cannot say which side of that line you are on, so both stretches are shown.",
+   "why": "Its frontage is 3.5 to 3.6 road miles south of Antimony and BLM holds the channel from 3.6 to 4.1 miles out, which is the likeliest reading of the guidebook's 'about four miles'. Too close to call, so no stretch is claimed. (Audit of 2026-09-27.)"
+  },
+  "a223": {
+   "water": "east-fork-sevier-river-garfield-piute",
+   "reach": "none",
+   "why": "Kingston Canyon is below Otter Creek Reservoir; both listed stretches are above it. (Audit of 2026-09-27.)"
+  },
+  "a416": {
+   "water": "beaver-river-beaver",
+   "reach": "none",
+   "why": "Below Minersville Reservoir: USGS's outline of the reservoir ends at longitude -112.837 and this is west of it, downstream, 230 m from UDWR's point for the lower river. The listed stretch is above the reservoir. (Audit of 2026-09-27.)"
+  },
+  "a423": {
+   "water": "strawberry-river-duchesne-wasatch",
+   "reach": "none",
+   "why": "Between Red Creek and Starvation Reservoir: USGS puts the mouth of Red Creek at longitude -110.737 and this is east of it, downstream. The listed stretch runs from Red Creek up to Soldier Creek Dam. (Audit of 2026-09-27.)"
+  },
+  "a315": {
+   "water": "sheep-creek-daggett",
+   "why": "USGS's map puts Sheep Creek within 57 m of the centre of the property. The closure covers the creek from Flaming Gorge up to the National Forest boundary, which the app does not hold, so the entry is shown with its description rather than left off. (Audit of 2026-09-27.)",
+   "note": "The closure covers Sheep Creek from Flaming Gorge up to the National Forest boundary. The boundary crosses the creek twice and this property lies between the two crossings, so whether it is inside depends on which is meant. Treat the closure as applying."
+  },
+  "a333": {
+   "water": "east-fork-little-bear-river-cache",
+   "why": "Below Porcupine Dam and above Avon: USGS's outline of the reservoir ends at longitude -111.747, Avon is at -111.813, and this is between them with the river within 30 m of the centre of the property. The listed stretch runs from the dam down to the second crossing of the Avon-Paradise road. (Audit of 2026-09-27.)",
+   "note": "The listed stretch ends at 'the second stream crossing below the reservoir' of the Avon-Paradise road. On the likeliest reading this property is inside it. If a road nearer the dam is meant, it may not be."
+  },
+  "a157": {
+   "water": "east-fork-little-bear-river-cache",
+   "why": "Below Porcupine Dam and above Avon: USGS's outline of the reservoir ends at longitude -111.747, Avon is at -111.813, and this is between them with the river within 172 m of the centre of the property. The listed stretch runs from the dam down to the second crossing of the Avon-Paradise road. (Audit of 2026-09-27.)",
+   "note": "The listed stretch ends at 'the second stream crossing below the reservoir' of the Avon-Paradise road. On the likeliest reading this property is inside it. If a road nearer the dam is meant, it may not be."
+  },
+  "a154": {
+   "water": "lower-fish-creek-price-river-carbon-utah",
+   "why": "Named for the creek, which USGS's map calls the Price River here. The listed stretch runs from a mile below Scofield dam down to the White River; the app does not hold either end, so the entry is shown with its description. (Audit of 2026-09-27.)"
+  },
+  "a427": {
+   "water": "scofield-reservoir-carbon-utah",
+   "unrelated": [
+    "lower-fish-creek-price-river-carbon-utah"
+   ],
+   "why": "On the Fish Creek arm of Scofield Reservoir: USGS's outline of the reservoir is within 140 m of the centre of the property. Fish Creek above the reservoir comes under Scofield Reservoir tributaries. Lower Fish Creek is another water, below the dam. (Audit of 2026-09-27.)"
+  },
+  "p10669": {
+   "water": "green-river-tributaries-carbon-duchesne-emery-uintah",
+   "unrelated": [
+    "west-fork-duchesne-river-duchesne-wasatch"
+   ],
+   "why": "UDWR's point for the river is 9 km below the town of Duchesne. The Green River tributaries entry covers the Duchesne from the Green River up to the Knight Diversion, which is above the town. Above the diversion the entry does not apply. (Audit of 2026-09-27.)"
+  },
+  "a316": {
+   "water": "green-river-tributaries-carbon-duchesne-emery-uintah",
+   "why": "On the Duchesne River 3 km below the town of Duchesne: USGS's map puts the river within 122 m of the centre of the property. The Green River tributaries entry covers the Duchesne from the Green River up to the Knight Diversion, which is above the town. (Audit of 2026-09-27.)"
+  },
+  "a344": {
+   "water": "holmes-creek-reservoir-davis",
+   "why": "The property is the reservoir's: its centre is within 15 m of UDWR's point for Holmes Creek Reservoir, and USGS's outline of the reservoir is 52 m away. (Audit of 2026-09-27.)"
+  },
+  "p10673": {
+   "water": "community:sunset-pond-salt-lake",
+   "why": "The second pond at Sunset Pond park, 150 m from UDWR's point for Sunset Pond. UDWR's own record for it carries the community-water rules. (Audit of 2026-09-27.)"
+  },
+  "c24": {
+   "water": "community:woods-ranch-pond-iron",
+   "why": "The same pond as Woods Ranch Pond, 180 m from UDWR's other point for it. The guidebook lists it as 'Woods Ranch Pond (Kids Pond)'. (Audit of 2026-09-27.)"
+  }
+ },
+ "registry": {
+  "anderson-meadow-reservoir-beaver": "VI001",
+  "annabella-lake-sevier": "VI493A",
+  "aspen-mirror-lake-kane": "VI381",
+  "barney-lake-piute": "VI493AC",
+  "beaver-dam-reservoir-wayne": "I793",
+  "big-lake-sevier": "VI494",
+  "blue-lake-tooele": "IV705",
+  "bulberry-lakes-wayne": "I798",
+  "deep-lake-sevier": "VI498",
+  "donkey-lake-wayne": "I805",
+  "dougherty-basin-lake-garfield": "I310",
+  "duck-creek-springs-lake-kane": "VI382",
+  "fish-creek-reservoir-wayne": "I807",
+  "grassy-trail-reservoir-carbon": "II052",
+  "honeymoon-lake-wayne": "I812",
+  "little-creek-reservoir-rich": "IV407",
+  "little-reservoir-beaver": "VI015",
+  "long-willow-bottom-reservoir-garfield": "I328A",
+  "manning-meadow-reservoir-tributaries-and-spillway-piute": "VI402",
+  "mcgath-lake-garfield": "I329A",
+  "oak-creek-reservoir-upper-bowns-reservoir-garfield": "I333A",
+  "upper-bowns-reservoir-oak-creek-reservoir-garfield": "I333A",
+  "pacer-lake-garfield": "VI335",
+  "pine-creek-reservoir-wayne": "I821",
+  "red-butte-creek-and-red-butte-reservoir-salt-lake": "IV416",
+  "round-willow-bottom-reservoir-garfield": "I347",
+  "solitaire-lake-garfield": "I825",
+  "stansbury-lake-tooele": "IV712",
+  "tony-grove-lake-cache": "IV049",
+  "community:big-bend-west-jordan-salt-lake": "IV428",
+  "community:jordan-river-big-bend-pond-in-west-jordan-salt-lake": "IV428"
+ },
+ "county_notes": {
+  "solitaire-lake-garfield": "The guidebook files Solitaire Lake under Garfield County. UDWR's lake registry places its only Solitaire Lake on the north slope of Boulder Mountain, in Wayne County. The position shown is the registry's."
+ },
+ "no_place": {
+  "scout-lake-garfield": "UDWR's registry has a Little Scout Lake in Garfield County and a Scout Lake outside it; neither is certainly the guidebook's Scout Lake.",
+  "mountain-dell-reservoir-salt-lake": "Closed to fishing. Not in the lake registry.",
+  "pond-at-poulter-preserve-weber": "Not in any UDWR layer read here.",
+  "community:provo-river-delta-gateway-park-pond-utah": "Not in any UDWR layer read here."
+ }
+}

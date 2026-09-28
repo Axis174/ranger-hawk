@@ -53,7 +53,8 @@ nav.tabs button{background:none;border:0;padding:8px 2px 9px;cursor:pointer;disp
 nav.tabs button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
-.badge{position:absolute;transform:translate(15px,-6px);background:var(--crit);color:#fff;
+nav.tabs button>span{display:inline-flex}
+.badge{position:absolute;top:-6px;right:-11px;line-height:1;background:var(--crit);color:#fff;
   font-size:9.5px;font-weight:700;min-width:16px;height:16px;border-radius:8px;
   display:grid;place-items:center;padding:0 4px}
 
@@ -205,3 +206,41 @@ nav.tabs button{font-size:9.5px;letter-spacing:0}
 .camform label{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
 .camform input,.camform select{font:inherit;font-size:15px;padding:10px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink)}
 .btn[aria-pressed="true"]{background:var(--accent);color:#fff}
+
+/* fishing */
+:root{--fish:#15709A}
+nav.tabs button{font-size:9px;padding-inline:0}
+nav.tabs button svg{width:20px;height:20px}
+.fchipline{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.row .s.fchipline:empty{display:none}
+.fstretch{margin:10px 16px 0;border:1px solid var(--hair);border-radius:4px;overflow:hidden;background:var(--surface)}
+.fstretch>.fchipline{padding:8px 12px 0;margin:0;align-items:center}
+.fwhere{padding:9px 12px;background:var(--ground);border-bottom:1px solid var(--hair);font-size:12.5px;line-height:1.45;color:var(--body);font-style:italic}
+.frule{display:grid;grid-template-columns:74px 1fr;gap:3px 10px;padding:9px 12px;border-top:1px solid var(--hair);font-size:13.5px;line-height:1.5}
+.fstretch>.frule:first-child,.fwhere+.frule,.fgen>.frule:first-child{border-top:0}
+.ftopic{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding-top:4px}
+.ftext{color:var(--ink);min-width:0;word-break:break-word}
+.ftext ul{margin:4px 0 0;padding-left:18px}
+.ftag{grid-column:2}
+.fdates{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);margin-top:3px}
+.fchipline .fdates{display:inline;margin:0}
+.frule.off .ftext{color:var(--muted)}
+.frule.gone .ftext{color:var(--faint);text-decoration:line-through}
+.fchange{margin:12px 16px 0;border:1px solid var(--crit);border-left-width:4px;border-radius:4px;overflow:hidden;background:var(--surface)}
+.fchange.off{border-color:var(--line);opacity:.8}
+.fch{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--ground);font-size:13px;color:var(--ink)}
+.fchange .fine{border-top:1px solid var(--hair)}
+.fbad{border-left-color:var(--crit)}
+.fcounty{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px 0}
+table.flim{width:calc(100% - 32px);margin:10px 16px 0;border-collapse:collapse;font-size:13px}
+table.flim td{padding:6px 2px;border-bottom:1px solid var(--hair);vertical-align:top}
+table.flim td:last-child{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink);white-space:normal;max-width:140px}
+.sheet .sec-title{margin-top:20px}
+table.flim.chg td{color:var(--muted)}
+table.flim.chg td:last-child{color:var(--muted);font-size:11.5px;white-space:nowrap;vertical-align:top}
+table.flim td .fdates{font-size:10px}
+details.fgroup{margin:10px 16px 0;border:1px solid var(--hair);border-radius:4px;background:var(--surface)}
+details.fgroup>summary{padding:10px 12px;font-weight:600;font-size:13.5px;color:var(--ink);cursor:pointer}
+details.fgroup>summary .fdates{display:inline;margin-left:6px;font-weight:400}
+details.fgroup .fstretch{margin:0 0 0 0;border:0;border-top:1px solid var(--hair);border-radius:0}
+details.fgroup .warnbox{margin:0 12px 10px}

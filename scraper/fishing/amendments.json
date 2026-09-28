@@ -1,0 +1,354 @@
+{
+  "_what": "A person's reading of each emergency change UDWR has posted to the fishing guidebook. One entry per signed notice. build_fishing.py checks every entry against the signed notice itself (the PDF) and against UDWR's summary on the guidebooks page, and refuses to build if the wording or the dates differ. The daily job finds new notices; until one is read in here the app shows it word for word and says it has not been built in.",
+  "_last_day": "UDWR writes 'will remain in effect until Oct. 1'. Every change so far RAISES a limit, so reading 'until' as 'through' could leave a raised limit on the phone one day too long. The app therefore treats the day before as the last day (direction 'more'). A change that closes a water or lowers a limit would be read the other way, through the date given (direction 'less').",
+  "_keeps": "Every notice ends 'All other rules established in the 2026 Utah Fishing Guidebook remain in effect.' So a change replaces only the guidebook rules named in 'replaces'. Anything not named there still applies and the app says so.",
+  "amendments": [
+    {
+      "notice": "emergency-change-2026-07-02-canyon-view-park-pond",
+      "name": "Canyon View Park Pond",
+      "county": "Utah",
+      "target": {
+        "community": "canyon-view-park-pond-utah"
+      },
+      "from": "2026-07-02",
+      "until": "2026-10-01",
+      "direction": "more",
+      "last_day": "2026-09-30",
+      "rules": [
+        {
+          "text": "No limit, all species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": "all"
+            }
+          ]
+        }
+      ],
+      "replaces": [
+        "The daily limit is 2 fish. (Common carp do not count toward the daily limit.)"
+      ],
+      "why": "The pond is a community fishery, so the 2-fish limit is what this replaces. The community rule that tiger muskie must be released is left standing: the notice raises 'the daily limit' and does not mention it, and the guidebook prints it as a closure of its own beside the limit. If that reading is wrong, the cost is a fish let go that could have been kept."
+    },
+    {
+      "notice": "emergency-change-2026-07-02-minersville-reservoir",
+      "name": "Minersville Reservoir",
+      "county": "Beaver",
+      "target": {
+        "water": "minersville-reservoir-beaver"
+      },
+      "from": "2026-07-02",
+      "until": "2026-10-01",
+      "direction": "more",
+      "last_day": "2026-09-30",
+      "rules": [
+        {
+          "text": "4 trout, any size",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "trout"
+              ],
+              "sp": [
+                "trout"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Minersville Reservoir is open to underwater spearfishing for all game fish.",
+          "fx": [
+            {
+              "t": "method"
+            }
+          ]
+        }
+      ],
+      "replaces": [
+        "Limit 1 trout over 22 inches.",
+        "All trout 22 inches or smaller must be immediately released."
+      ],
+      "also": "The artificial fly and lure only regulation will remain in effect throughout this entire period.",
+      "why": "'4 trout, any size' replaces both the one-trout limit and the rule that smaller trout be released. The notice itself says artificial flies and lures only stays. The closed outlet channel is not mentioned and stays."
+    },
+    {
+      "notice": "emergency-change-2026-07-02-otter-creek-reservoir",
+      "name": "Otter Creek Reservoir",
+      "county": "Piute",
+      "target": {
+        "new": true
+      },
+      "from": "2026-07-02",
+      "until": "2026-10-01",
+      "direction": "more",
+      "last_day": "2026-09-30",
+      "rules": [
+        {
+          "text": "16 trout, any species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "trout"
+              ],
+              "sp": [
+                "trout"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "6 wiper",
+          "html_says": "6 wipers",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "wiper"
+              ],
+              "sp": [
+                "wiper"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Otter Creek Reservoir is open to underwater spearfishing for all game fish.",
+          "fx": [
+            {
+              "t": "method"
+            }
+          ]
+        }
+      ],
+      "replaces": [],
+      "why": "The reservoir has no entry of its own in the guidebook, so until this notice it was under statewide rules. 'Otter Creek Stream' in the guidebook is the creek above the reservoir and is a different water with a seasonal closure."
+    },
+    {
+      "notice": "emergency-change-2026-07-02-palisade-reservoir",
+      "name": "Palisade Reservoir",
+      "county": "Sanpete",
+      "target": {
+        "new": true
+      },
+      "from": "2026-07-02",
+      "until": "2026-10-01",
+      "direction": "more",
+      "last_day": "2026-09-30",
+      "rules": [
+        {
+          "text": "No limit, all species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": "all"
+            }
+          ]
+        }
+      ],
+      "replaces": [],
+      "why": "No entry in the guidebook; statewide rules applied before the notice."
+    },
+    {
+      "notice": "emergency-change-2026-07-02-pineview-reservoir",
+      "name": "Pineview Reservoir",
+      "county": "Weber",
+      "target": {
+        "water": "pineview-reservoir-weber"
+      },
+      "from": "2026-07-02",
+      "until": "2026-12-31",
+      "direction": "more",
+      "last_day": "2026-12-30",
+      "rules": [
+        {
+          "text": "12 Largemouth or Smallmouth Bass (a combined total)",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "bass"
+              ],
+              "sp": [
+                "smallmouth bass",
+                "largemouth bass"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "1 Tiger Muskellunge over 40 inches",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "tigermuskie"
+              ],
+              "sp": [
+                "tiger muskellunge"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "No limit, all other species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": "all"
+            }
+          ]
+        }
+      ],
+      "replaces": [
+        "Limit 20 crappie.",
+        "CLOSED to the possession of tiger muskie. All tiger muskie must be immediately released."
+      ],
+      "why": "'No limit, all other species' replaces the 20-crappie limit. '1 tiger muskellunge over 40 inches' replaces the rule that every tiger muskie be released. The rule against using whole fish for bait is not a limit and stays. The spearfishing section of the guidebook (page 20) separately closes Pineview year-round to taking tiger muskie by spear; the notice does not mention it, so it stands.",
+      "stands": [
+        {
+          "text": "CLOSED year-round to the take of tiger muskie.",
+          "page": 20,
+          "about": "Underwater spearfishing at Pineview Reservoir"
+        }
+      ]
+    },
+    {
+      "notice": "emergency-change-2026-07-02-red-creek-reservoir",
+      "name": "Red Creek Reservoir",
+      "county": "Duchesne",
+      "target": {
+        "new": true
+      },
+      "from": "2026-07-02",
+      "until": "2026-12-31",
+      "direction": "more",
+      "last_day": "2026-12-30",
+      "rules": [
+        {
+          "text": "8 trout, any species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "trout"
+              ],
+              "sp": [
+                "trout"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Red Creek Reservoir is open to underwater spearfishing for all game fish.",
+          "fx": [
+            {
+              "t": "method"
+            }
+          ]
+        }
+      ],
+      "replaces": [],
+      "why": "No entry in the guidebook. This is the Red Creek Reservoir in Duchesne County. The guidebook's 'Paragonah (Red Creek) Reservoir tributaries' is in Iron County and is a different water."
+    },
+    {
+      "notice": "emergency-change-2026-07-02-vernon-reservoir",
+      "name": "Vernon Reservoir",
+      "county": "Tooele",
+      "target": {
+        "new": true
+      },
+      "from": "2026-07-02",
+      "until": "2026-10-01",
+      "direction": "more",
+      "last_day": "2026-09-30",
+      "rules": [
+        {
+          "text": "8 trout, any species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "trout"
+              ],
+              "sp": [
+                "trout"
+              ]
+            }
+          ]
+        },
+        {
+          "text": "Vernon Reservoir is open to underwater spearfishing for all game fish.",
+          "fx": [
+            {
+              "t": "method"
+            }
+          ]
+        }
+      ],
+      "replaces": [],
+      "why": "No entry in the guidebook; statewide rules applied before the notice."
+    },
+    {
+      "notice": "emergency-change-2026-05-11-crouse-reservoir",
+      "name": "Crouse Reservoir",
+      "county": "Uintah",
+      "target": {
+        "new": true
+      },
+      "from": "2026-05-11",
+      "until": "2026-12-31",
+      "direction": "more",
+      "last_day": "2026-12-30",
+      "rules": [
+        {
+          "text": "8 trout, any species",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "trout"
+              ],
+              "sp": [
+                "trout"
+              ]
+            }
+          ]
+        }
+      ],
+      "replaces": [],
+      "why": "No entry in the guidebook; statewide rules applied before the notice."
+    },
+    {
+      "notice": "emergency-change-2026-05-11-nine-mile-reservoir",
+      "name": "Nine Mile Reservoir",
+      "county": "Sanpete",
+      "target": {
+        "new": true
+      },
+      "from": "2026-05-11",
+      "until": "2026-10-01",
+      "direction": "more",
+      "last_day": "2026-09-30",
+      "rules": [
+        {
+          "text": "16 trout",
+          "fx": [
+            {
+              "t": "limit",
+              "rows": [
+                "trout"
+              ],
+              "sp": [
+                "trout"
+              ]
+            }
+          ]
+        }
+      ],
+      "replaces": [],
+      "why": "No entry in the guidebook; statewide rules applied before the notice. 'Nine Mile Creek' named under Green River tributaries is a different water in Carbon and Duchesne counties."
+    }
+  ]
+}
