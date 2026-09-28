@@ -578,8 +578,13 @@ async function initMap() {
         const d = ar.properties.d, rule = { Open: 'Open: cross-country travel allowed', Limited: 'Limited: stay on designated or existing routes', Closed: 'CLOSED to motor vehicles' }[d] || d;
         rdHtml += `<span style="font-size:11.5px"><b>BLM travel rule here:</b> ${esc(rule)}${ar.properties.a ? ' (' + esc(ar.properties.a) + ')' : ''}${!rd && d === 'Limited' ? '<br><i>No BLM route drawn here. BLM has published routes for southern and eastern Utah but almost none for the West Desert and Box Elder; the area rule still applies.</i>' : ''}</span><hr class="pophr">`;
       }
+      const acId = hit && (hit.layer.id === 'wia-fill'
+        ? 'wia:' + String(pr[Object.keys(pr).find(k => k.endsWith('WIA_Properties.PropertyID'))] || '').replace(/[{}]/g, '').toLowerCase()
+        : 'dwr:' + pr.id);
+      const ac = acId && typeof acFor === 'function' ? acFor(acId) : null;
       new maplibregl.Popup({ maxWidth: '270px' }).setLngLat(e.lngLat).setHTML(rdHtml +
         (nm ? `<b>${esc(nm)}</b><br>${hit.layer.id === 'wia-fill' ? 'Walk-In Access property' : esc(pr.type_ || 'DWR property')}<br>` : '') +
+        (ac ? acBlock(ac) : '') +
         (lc ? `<span class="own"><i style="background:${lc[2]}"></i><b>${esc(lc[1])}</b>${lf.properties.name ? ' &middot; ' + esc(lf.properties.name) : ''}</span>${LAND_NOTE[lc[0]] ? `<br><span style="font-size:11.5px">${LAND_NOTE[lc[0]]}</span>` : ''}<br>` : '') +
         (un.length ? `<span class="mono" style="font-size:11px">Hunt units: ${un.join(' &middot; ')}</span>` : '')).addTo(MAP);
     });
@@ -820,6 +825,7 @@ function vTags() {
     <p class="fine" style="padding-left:2px">Researched 2026-09-21 from state statutes, rules and agency pages; 'high' means the state's own text was read, 'medium' means a legal-code mirror or consistent reporting. Not legal advice. Rules change every year.</p>`;
 }
 function vContacts() {
+  if (typeof acLoad === 'function' && typeof acState !== 'undefined' && acState === 'idle') acLoad();
   let h = `<div class="sec-title">Calls that are still open questions</div><div class="card">`;
   h += (DB.config.contacts || []).map(c => `<button class="row" data-contact="${esc(c.name)}" style="--g:${c.priority === 'high' ? 'var(--crit)' : 'var(--accent)'}">
     <span class="pill"></span>
@@ -828,7 +834,10 @@ function vContacts() {
   h += `</div>`;
 
   h += `<div class="sec-title">Walk-In Access &mdash; landowner contact required</div><div class="card">`;
-  h += (DB.config.wia_landowner_calls || []).map((w, i) => `<button class="row" data-wia="${i}" style="--g:var(--warn)">
+  if (typeof acList === 'function' && acList().length > 0) h += acList().map(entry => `<button class="row" data-ac="${esc(entry.ids[0])}" style="--g:var(--warn)"><span class="pill"></span>
+    <span><span class="t">${esc(entry.name)}</span><span class="s">${esc(entry.county)} Co. &middot; ${esc(entry.program)}</span></span>
+    <span class="v">call<small>first</small></span></button>`).join('');
+  else h += (DB.config.wia_landowner_calls || []).map((w, i) => `<button class="row" data-wia="${i}" style="--g:var(--warn)">
     <span class="pill"></span>
     <span><span class="t">${esc(w.property)}</span><span class="s">${esc(w.county)} Co. &middot; ${w.acres} ac</span></span>
     <span class="v">call<small>first</small></span></button>`).join('');

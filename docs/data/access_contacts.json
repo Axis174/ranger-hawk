@@ -1,0 +1,96 @@
+{
+ "_source": "Utah Division of Wildlife Resources: Walk-In Access and property layers, as pulled by the daily job. The wording is UDWR's own.",
+ "_note": "Numbers are the ones UDWR publishes for the property. Nothing here comes from any other source. Not legal advice.",
+ "_built": "2026-09-28",
+ "properties": [
+  {
+   "ids": [
+    "wia:10e6d2d8-a3de-47ee-9105-efe387829e92"
+   ],
+   "name": "ACarter",
+   "county": "Beaver",
+   "program": "Walk-In Access",
+   "lat": 38.21178,
+   "lon": -112.85835,
+   "asks": "There is a portion of this property that is not open for public access. This portion has \"No Trespassing\" signs and should be clearly marked. Do not enter this area without written permission from the landowner.",
+   "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
+   "needs_contact": true,
+   "phones": []
+  },
+  {
+   "ids": [
+    "wia:59fc69c9-4230-4a72-94e9-98572ef31e16",
+    "dwr:364"
+   ],
+   "name": "RSorensen",
+   "county": "Box Elder",
+   "program": "Walk-In Access",
+   "lat": 41.7594,
+   "lon": -112.40423,
+   "asks": "Hunters must speak directly with landowner to set up a date to hunt (do not leave message). Hunters who are denied access should contact the Ogden DWR office. no camping, no target shooting",
+   "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
+   "needs_contact": true,
+   "phones": []
+  },
+  {
+   "ids": [
+    "wia:a7494155-f8a1-4530-8c63-d246b8eabfc4",
+    "dwr:374"
+   ],
+   "name": "Sorensen Sons",
+   "county": "Box Elder",
+   "program": "Walk-In Access",
+   "lat": 41.75639,
+   "lon": -112.40383,
+   "asks": "Hunters must contact the landowner by phone prior to going to the property. This property may limit the number of hunters on it at a given time. Any hunters being denied access should contact the DWR Ogden office. no camping, no target shooting",
+   "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
+   "needs_contact": true,
+   "phones": []
+  },
+  {
+   "ids": [
+    "wia:d46b1a07-01ed-4672-a5c5-1f4f15c7f4a0",
+    "dwr:379"
+   ],
+   "name": "TMunns Blue Creek",
+   "county": "Box Elder",
+   "program": "Walk-In Access",
+   "lat": 41.88103,
+   "lon": -112.48942,
+   "asks": "Before accessing the property you must contact the landowner. Anyone being denied access should contact the DWR immediately. all hunters must call landowner before accessing the property. the landowner [number is on UDWR's Walk-In Access map] or the landowner [number is on UDWR's Walk-In Access map]",
+   "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
+   "needs_contact": true,
+   "phones": []
+  },
+  {
+   "ids": [
+    "wia:1ac206f7-6aa2-4852-ba4e-8708adb4ee20",
+    "dwr:380"
+   ],
+   "name": "TMunns Hansel Valley",
+   "county": "Box Elder",
+   "program": "Walk-In Access",
+   "lat": 41.82445,
+   "lon": -112.595,
+   "asks": "All hunters must contact the landowner prior to accessing the property. Any hunters being denied access should contact the DWR immediately. All hunters must call land owner before accessing the property. the landowner [number is on UDWR's Walk-In Access map], the landowner [number is on UDWR's Walk-In Access map].",
+   "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
+   "needs_contact": true,
+   "phones": []
+  },
+  {
+   "ids": [
+    "wia:65cf2187-36d0-4f03-8988-61688fc18472",
+    "dwr:420"
+   ],
+   "name": "Hinkins Pond",
+   "county": "Emery",
+   "program": "Walk-In Access",
+   "lat": 39.23845,
+   "lon": -111.06447,
+   "asks": "No watercraft of any type. No fishing on the dike on the North end of the lake. It is too steep to access and there is no shoreline. The landowner may launch a boat in order to maintain pond gates, structures, etc. Otherwise, no other watercraft are allowed on the pond. No hunting or trapping on this property without the landowner 's written permission. No swimming. no ice fishing, no camping, no target shooting",
+   "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
+   "needs_contact": true,
+   "phones": []
+  }
+ ]
+}

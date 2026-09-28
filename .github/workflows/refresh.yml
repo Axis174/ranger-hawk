@@ -40,6 +40,10 @@ jobs:
           # writes a placeholder rather than failing the run.
           UDOT_API_KEY: ${{ secrets.UDOT_API_KEY }}
 
+      - name: Rebuild access contacts
+        run: python scraper/build_access_contacts.py
+        continue-on-error: true
+
       - name: Rebuild calendar feed
         run: python scraper/build_calendar.py
 

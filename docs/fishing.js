@@ -762,6 +762,10 @@ function sheetFishPlace(p) {
   if (p.note) h += `<div class="warnbox" style="margin:12px 16px 0">${esc(p.note)}</div>`;
   if (p.pt === 'Waterfowl Management Area') h += `<div class="warnbox" style="margin:12px 16px 0"><b>Waterfowl management areas are closed to fishing</b> unless they are posted open or listed as open in the guidebook (p. 15).${rs.length ? ' This one is listed; read its entry below.' : ' This one has no entry of its own in the guidebook, so look for a sign at the water.'}</div>`;
   if (p.needs) h += `<div class="warnbox" style="margin:12px 16px 0"><b>Needs:</b> ${esc(p.needs)}. Walk-In Access is private land opened by the owner, and each property can set its own dates and rules.</div>`;
+  if (p.src === 'property' && typeof acFor === 'function') {
+    const ac = acFor('dwr:' + String(p.id).slice(1));
+    if (ac) h += acBlock(ac);
+  }
   if (!FLINKED) h += fStale(now) + `<div class="warnbox fbad" style="margin:12px 16px 0"><b>The app has not matched this place to its rules,</b> because the places and the rules on this phone are from different builds. That does not mean the statewide rules apply. Look the water up by name under By water.</div>`;
   else if (rs.length) rs.forEach((res, i) => { h += fEntryHtml(res, now, { name: p.n.split(',')[0], counties: [p.c], kind: fPlaceKind(p), why: p.why || '', bare: i > 0 }); });
   else if (FLINKED) {
