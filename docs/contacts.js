@@ -28,26 +28,22 @@ function acList() {
   return AC ? AC.properties.filter(entry => entry.needs_contact === true) : [];
 }
 
-function acPretty(digits) {
-  const phone = String(digits).replace(/\D/g, '');
-  return '(' + phone.slice(0, 3) + ') ' + phone.slice(3, 6) + '-' + phone.slice(6);
-}
-
+/* No tap-to-call for a landowner, and no formatting of one. The builder redacts these
+   numbers before they are written, and the app refuses to present one even if a future
+   change let one through: a second lock on the same door. Agency office numbers live in
+   config.json and are shown on the Contacts screen as they always were. */
 function acWords(text) {
-  return esc(text).replace(/(?:\b1[\s.-]?)?\(?\b(\d{3})\)?[\s.-]?(\d{3})[\s.-](\d{4})\b/g,
-    (word, area, exchange, line) => '<a href="tel:' + area + exchange + line + '">' + word + '</a>');
+  return esc(text);
 }
 
 function acBlock(entry) {
-  const words = [entry.contact, entry.asks].filter(text => text).map(acWords);
-  const phones = entry.phones || [];
-  let h = '<div class="warnbox" style="margin:12px 16px 0"><b>UDWR says:</b> ' + words.join('<br>') + '</div>';
-  phones.forEach(phone => {
-    const digits = String(phone).replace(/\D/g, '');
-    h += '<div class="acts"><a class="btn" href="tel:' + digits + '">Call ' + esc(acPretty(digits)) + '</a></div>';
-  });
-  if (entry.needs_contact === true && phones.length === 0) h += '<p class="fine" style="padding:10px 16px 0">UDWR asks you to contact the owner and publishes no number for this property. Ask the DWR office for the region.</p>';
-  h += '<p class="fine" style="padding:10px 16px 0">The number is the one UDWR publishes for this property. The app takes nothing from any other source. Not legal advice.</p>';
+  /* entry.asks is UDWR's own wording and is quoted as theirs. entry.contact is this app's
+     routing line, so it is shown as the app's, not attributed to UDWR. */
+  let h = '';
+  if (entry.asks) h += '<div class="warnbox" style="margin:12px 16px 0"><b>UDWR says:</b> ' + acWords(entry.asks) + '</div>';
+  if (entry.needs_contact === true) h += '<p class="fine" style="padding:10px 16px 0"><b>You must reach the owner before you set foot on this property.</b> '
+    + 'UDWR publishes the number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. This app does not carry landowners\' personal numbers. '
+    + 'If you are turned away, call the DWR office for the region. Not legal advice.</p>';
   return h;
 }
 
@@ -65,3 +61,4 @@ document.addEventListener('click', e => {
   const entry = acFor(t.dataset.ac);
   if (entry) openSheet(acSheet(entry));
 });
+

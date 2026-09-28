@@ -57,7 +57,7 @@
    "program": "Walk-In Access",
    "lat": 41.88103,
    "lon": -112.48942,
-   "asks": "Before accessing the property you must contact the landowner. Anyone being denied access should contact the DWR immediately. all hunters must call landowner before accessing the property. the landowner [number is on UDWR's Walk-In Access map] or the landowner [number is on UDWR's Walk-In Access map]",
+   "asks": "Before accessing the property you must contact the landowner. Anyone being denied access should contact the DWR immediately. all hunters must call landowner before accessing the property. the landowner [number is on UDWR's Walk-In Access map]",
    "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
    "needs_contact": true,
    "phones": []
@@ -72,7 +72,7 @@
    "program": "Walk-In Access",
    "lat": 41.82445,
    "lon": -112.595,
-   "asks": "All hunters must contact the landowner prior to accessing the property. Any hunters being denied access should contact the DWR immediately. All hunters must call land owner before accessing the property. the landowner [number is on UDWR's Walk-In Access map], the landowner [number is on UDWR's Walk-In Access map].",
+   "asks": "All hunters must contact the landowner prior to accessing the property. Any hunters being denied access should contact the DWR immediately. All hunters must call land owner before accessing the property. the landowner [number is on UDWR's Walk-In Access map].",
    "contact": "Contact required - UDWR publishes the landowner's number on its Walk-In Access map at wildlife.utah.gov/walkinaccess. If you are denied access, call the DWR regional office.",
    "needs_contact": true,
    "phones": []

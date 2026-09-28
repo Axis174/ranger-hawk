@@ -21,7 +21,7 @@ function context(fetcher = () => Promise.reject(new Error('no network in tests')
     esc, openSheet(html) { sheets.push(html); }, render() { stats.renders++; }, tab: 'contacts'
   };
   vm.createContext(box);
-  vm.runInContext(source + '\n;this.T = { acLoad, acFor, acList, acPretty, acWords, acBlock, acSheet, state: () => ({ data: AC, state: acState }) };', box);
+  vm.runInContext(source + '\n;this.T = { acLoad, acFor, acList, acWords, acBlock, acSheet, state: () => ({ data: AC, state: acState }) };', box);
   return { T: box.T, calls, listeners, sheets, stats };
 }
 let pass = 0, fail = 0;
@@ -29,40 +29,36 @@ function ok(name, got, want) {
   if (JSON.stringify(got) === JSON.stringify(want)) { pass++; return; }
   fail++; console.log('  FAIL ' + name);
 }
-const MISSING = 'UDWR asks you to contact the owner and publishes no number for this property. Ask the DWR office for the region.';
-const NOTE = 'The number is the one UDWR publishes for this property. The app takes nothing from any other source. Not legal advice.';
+const MUST = 'You must reach the owner before you set foot on this property.';
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 async function run() {
   const { T } = context();
-  ok('pretty phone', T.acPretty('4355550142'), '(435) 555-0142');
+  // This app is a public repository served as a public site. It must never render a
+  // landowner's personal number, and must never offer to dial one. The builder redacts
+  // them; these tests are the second lock, on the app side.
   const sentence = T.acWords('Call Pat at (435) 555-0142 (text ok)');
-  ok('phone is a telephone link', sentence.includes('href="tel:4355550142"'), true);
-  ok('published spelling and surrounding words stay', sentence, 'Call Pat at <a href="tel:4355550142">(435) 555-0142</a> (text ok)');
+  ok('no telephone link is ever made', sentence.includes('tel:'), false);
+  ok('words are passed through escaped, not linked', sentence, 'Call Pat at (435) 555-0142 (text ok)');
   const escaped = T.acWords('<script>alert(1)</script> 435-555-0142');
-  ok('markup is escaped before linking', [escaped.includes('<script'), escaped.includes('&lt;script&gt;'), escaped.includes('href="tel:4355550142"')], [false, true, true]);
-  ['(435) 555-0142', '435-555-0142', '435.555.0142', '1-(435)-555-0142', '(435)555-0142'].forEach(phone => {
-    ok('phone spelling links without changing its words: ' + phone, T.acWords(phone), '<a href="tel:4355550142">' + phone + '</a>');
-  });
-  ok('two phones stay in their original order', T.acWords('(435) 555-0142 then (435) 555-0143'), '<a href="tel:4355550142">(435) 555-0142</a> then <a href="tel:4355550143">(435) 555-0143</a>');
-  ok('date postal code and local number are not telephone links', /tel:/.test(T.acWords('2026-09-28 84010-1234 555-0142')), false);
+  ok('markup is escaped', [escaped.includes('<script'), escaped.includes('&lt;script&gt;')], [false, true]);
   ok('null words are empty', T.acWords(null), '');
 
-  const noPhone = T.acBlock(entry());
-  ok('required contact without a number says so exactly', noPhone.includes('<p class="fine" style="padding:10px 16px 0">' + MISSING + '</p>'), true);
-  ok('missing number has no telephone link', noPhone.includes('tel:'), false);
-  ok('source note is always last', noPhone.endsWith('<p class="fine" style="padding:10px 16px 0">' + NOTE + '</p>'), true);
-  ok('no missing-number warning when contact is not required', T.acBlock(entry({ needs_contact: false })).includes(MISSING), false);
-  const two = T.acBlock(entry({ phones: ['4355550142', '4355550143'] }));
-  ok('two numbers make two call buttons', (two.match(/<a class="btn" href="tel:[0-9]+">Call /g) || []).length, 2);
-  ok('each call button has its own actions container', (two.match(/<div class="acts">/g) || []).length, 2);
-  ok('call buttons keep number order', two.indexOf('tel:4355550142') < two.indexOf('tel:4355550143'), true);
-  ok('with numbers there is no missing-number warning', two.includes(MISSING), false);
-  const wording = T.acBlock(entry({ contact: 'Contact & <owner>', asks: 'Call "first".' }));
-  ok('contact words precede rule words with one break', wording.startsWith('<div class="warnbox" style="margin:12px 16px 0"><b>UDWR says:</b> Contact &amp; &lt;owner&gt;<br>Call &quot;first&quot;.</div>'), true);
-  ok('empty words do not add breaks', T.acBlock(entry({ contact: '', asks: '' })).includes('<br>'), false);
-  const badPhone = T.acBlock(entry({ phones: ['4355550142"><script>'] }));
-  ok('telephone href is digits only', [badPhone.includes('href="tel:4355550142"'), badPhone.includes('<script>')], [true, false]);
+  // Even if a number reached the data despite the builder, the app must not dial it.
+  const leaked = T.acBlock(entry({ phones: ['4355550142', '4355550143'], asks: 'Call (435) 555-0142.' }));
+  ok('a leaked number makes no call button', /<a class="btn" href="tel:/.test(leaked), false);
+  ok('a leaked number makes no telephone link at all', leaked.includes('tel:'), false);
+
+  const needed = T.acBlock(entry());
+  ok('a property that needs a call says so', needed.includes(MUST), true);
+  ok('and points at UDWR rather than carrying the number', needed.includes('wildlife.utah.gov/walkinaccess'), true);
+  ok('no warning when no contact is required', T.acBlock(entry({ needs_contact: false })).includes(MUST), false);
+
+  // UDWR's wording is quoted as UDWR's. The app's own routing line is not.
+  const wording = T.acBlock(entry({ contact: 'App routing line', asks: 'Call "first".' }));
+  ok('UDWR is quoted only for its own rule text', wording.includes('<b>UDWR says:</b> Call &quot;first&quot;.'), true);
+  ok("the app's own line is not attributed to UDWR", wording.indexOf('App routing line'), -1);
+  ok('no rule text means no UDWR quote', T.acBlock(entry({ contact: '', asks: '' })).includes('UDWR says:'), false);
 
   const sheet = T.acSheet(entry({ name: '<Test>', county: 'A & B', program: 'Test "program"', lat: 40.1, lon: -111.2 }));
   ok('sheet data is escaped', sheet.startsWith('<h3>&lt;Test&gt;</h3><p class="where">A &amp; B County &middot; Test &quot;program&quot;</p>'), true);

@@ -38,6 +38,10 @@ async function load() {
     grab('lake_level.json', null), grab('snow.json', null)
   ]);
   DB = { birds: b || [], seasons: s, config: c, community: com, lake: lake, snow: snow };
+  /* The map popup, the Contacts list and the fishing place sheet all build their HTML
+     synchronously and ask acFor() while doing it, so none of them can wait for a fetch.
+     Priming screen by screen missed the fishing sheet; priming once here cannot. */
+  if (typeof acLoad === 'function') acLoad();
   if (!DB.seasons || !DB.config) {
     $('view').innerHTML = '<p class="empty">Data could not load and nothing is cached yet.' +
       '<br>Open this once with a connection, then it works offline.</p>';
@@ -825,7 +829,6 @@ function vTags() {
     <p class="fine" style="padding-left:2px">Researched 2026-09-21 from state statutes, rules and agency pages; 'high' means the state's own text was read, 'medium' means a legal-code mirror or consistent reporting. Not legal advice. Rules change every year.</p>`;
 }
 function vContacts() {
-  if (typeof acLoad === 'function' && typeof acState !== 'undefined' && acState === 'idle') acLoad();
   let h = `<div class="sec-title">Calls that are still open questions</div><div class="card">`;
   h += (DB.config.contacts || []).map(c => `<button class="row" data-contact="${esc(c.name)}" style="--g:${c.priority === 'high' ? 'var(--crit)' : 'var(--accent)'}">
     <span class="pill"></span>

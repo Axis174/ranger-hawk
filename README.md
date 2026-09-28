@@ -163,7 +163,10 @@ drew. Points you enter stay on the phone.
 
 **Contacts** — the DWR offices with open questions attached, the Walk-In Access
 landowners who must be phoned before you set foot on the property, and Utah's
-written-permission law spelled out. Where UDWR publishes a number for the owner it is shown with a call button; the app takes numbers from UDWR's own data and from nowhere else.
+written-permission law spelled out. Where UDWR asks you to phone the owner first, the app
+says so in UDWR's own words and points you at UDWR's Walk-In Access map for the number.
+It does not carry landowners' personal numbers: this repository is public, and they did
+not agree to be in it.
 
 Switch homes with the **NSL / HEB / TOR** control in the header. Drive times
 recompute against that home everywhere.
@@ -183,7 +186,7 @@ Everything lands in `docs/data/`.
 | `fishing_places.json` | 435 places to fish, with the rules each is linked to. Built by `scraper/build_fishing_places.py` |
 | `fishing_notices.json` | UDWR's list of emergency changes to the fishing guidebook, read **daily** |
 | `config.json` | Homes, contacts, landowner calls, permits, trespass law |
-| `access_contacts.json` | Properties where UDWR asks for a call first, with the contact UDWR publishes. Built by `scraper/build_access_contacts.py` from the two property layers. |
+| `access_contacts.json` | Properties where UDWR asks you to phone the owner first, in UDWR's wording with the owner's name and number removed. Built by `scraper/build_access_contacts.py` from the two property layers. |
 | `migration_utah.json` | 492 USGS ungulate migration features, Utah extent |
 | `raw_*.json` | Verbatim upstream pulls, kept so diffs are auditable |
 | `community.json` | UDWR news and Reddit, filtered for relevance |

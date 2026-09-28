@@ -183,6 +183,10 @@ def redact(contact, asks):
     for stem in sorted(stems, key=len, reverse=True):
         out = re.sub(r"\b" + re.escape(stem) + r"\w*\b", "the landowner", out)
     out = re.sub(r"(the landowner[ ,]*)+", "the landowner ", out)
+    # "the landowner [number] or the landowner [number]" reads badly; one mention is enough.
+    marker = re.escape(PHONE_SUB)
+    out = re.sub(r"the landowner\s*" + marker + r"(?:\s*(?:,|or|and)?\s*the landowner\s*" + marker + r")+",
+                 "the landowner " + PHONE_SUB, out)
     out = re.sub(r"\s+([.,;:])", r"\1", out)          # redaction can leave " ." behind
     out = " ".join(out.split())
     if _has_number(out):
