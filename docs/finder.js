@@ -51,19 +51,24 @@ function fParse(text) {
      Lake", "Quail Creek Reservoir", "Duck Fork"), so a sentence about fishing would
      otherwise be answered as a hunt. fishParse hands back nothing when the sentence
      is not about fishing. */
-  if (typeof fishParse === 'function') { const fq_ = fishParse(text); if (fq_) return { text, fish: fq_ }; }
+  /* Until the fishing rules arrive no water's name is known, so the "fish" in "deer
+     near Fish Lake" cannot be told from a fishing word. While they are on their way,
+     an animal to hunt and no fish means a hunt; the sentence is read again when they land. */
+  if (typeof fishParse === 'function') { const fq_ = fishParse(text); if (fq_ && !(fq_.pending && !fq_.sp && typeof fGame === 'function' && fGame(fWords(text)))) return { text, fish: fq_ }; }
   const t = fWords(text);
   /* A water named in a sentence that is not about fishing. Its name must not be
      read as an animal ("Duck Fork Reservoir", "Moose Pond", "Sheep Creek Lake"), so
      it is taken out before the species is looked for, the same way Antelope Island
      is. It stays in for the place match below, where it belongs. */
   const wtr = typeof fishWaterIn === 'function' ? fishWaterIn(text, false) : null;
-  /* A shorter way of saying a water ("duck fork", "deer creek") is only used to offer
-     the fishing answer beside a hunt. It is never taken out of the sentence before the
-     animal is looked for, or "tushar mountain goat" would lose its mountain. */
+  /* A shorter way of saying a water ("duck fork", "deer creek") offers the fishing
+     answer beside a hunt, and is taken out before the animal is looked for too, so
+     "deer near duck fork" is deer, not duck. A two-word short name that runs across
+     an animal's name is never matched (fSplitsGame), so "tushar mountain goat" keeps
+     its mountain. */
   const wtr2 = wtr || (typeof fishWaterIn === 'function' ? fishWaterIn(text, 'two') : null);
   const q = { text, sp: null, bird: null, gap: null, wp: null, place: null, alsoUnit: null, pt: null, wantAntlerless: /\b(cow|antlerless|doe|meat|freezer)\b/.test(t), wantGeneral: /\b(general|over the counter|otc|no draw|guaranteed)\b/.test(t), wantLE: /\b(limited|draw|le |trophy|bonus)\b/.test(t) };
-  const st = (wtr ? wtr.rest : t).replace(F_PLACE_NOISE, ' ');   // species read from text with place names removed
+  const st = (wtr2 ? wtr2.rest : t).replace(F_PLACE_NOISE, ' ');   // species read from text with place names removed
   for (const g of F_BIRD_GAPS) if (g[1].test(st)) { q.gap = g; break; }
   if (!q.gap) for (const b of F_BIRDS) if (b[2].test(st)) { q.bird = b; break; }
   if (!q.gap && !q.bird) for (const [k, re] of F_SPECIES) if (re.test(st)) { q.sp = k; break; }
