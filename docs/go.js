@@ -140,12 +140,31 @@ function goHit(t, list) {
    species or water, because "pheasant near north salt lake" holds the word "lake" and is
    plainly not a fishing question. Same trap as "deer near antelope island" in the audit. */
 function goMatch(text) {
-  const t = ' ' + String(text || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
-  if (t.trim() === '') return null;
-  const strong = goHit(t, 'keys');
+  if (String(text || '').trim() === '') return null;
+  const t = goDry(text);
+  let strong = goHit(t, 'keys');
+  if (strong && strong.id === 'fish' && goHunts(text)) strong = null;   /* "deer near fish lake" is a hunt */
   if (strong) return strong;
   if (goNames(text)) return null;                 /* let the finders answer a real sentence */
   return goHit(t, 'weak');
+}
+
+/* The sentence with a water's name taken out. Fish Lake, Fish Creek, Trout Creek and
+   the WMA and walk-in waters carry screen words in their names, and a name is not a
+   request for a screen: "deer near fish lake", "bass at lower fish creek wma". */
+function goDry(text) {
+  const t = ' ' + String(text || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  let w = null;
+  try { if (typeof fishWaterIn === 'function') w = fishWaterIn(t, 'two'); } catch (e) { /* not loaded */ }
+  return w ? ' ' + w.rest.replace(/\s+/g, ' ').trim() + ' ' : t;
+}
+
+/* Does the sentence name something to hunt, outside any water's name? fParse hands a
+   sentence that is about fishing to fishParse, so "kokanee at deer creek" and "trout at
+   elk lake" stay fishing questions. */
+function goHunts(text) {
+  try { if (typeof fParse === 'function') { const q = fParse(goDry(text)); return !!(q && !q.fish && (q.sp || q.bird || q.gap)); } } catch (e) { /* not loaded */ }
+  return false;
 }
 
 /* Is the text nothing but one of this screen's own words? */
@@ -186,8 +205,9 @@ function goSubmit(text) {
      screen word ("trout near home", "fishing in carbon county") also goes to that
      screen's finder with the whole sentence, or the Menu's own example does nothing. */
   if (dest) { goOpen(dest, goBare(dest, raw) ? {} : { q: raw }); return; }
-  // Not a screen name. Let the parsers that already understand sentences try.
-  if (typeof fishParse === 'function') {
+  // Not a screen name. Let the parsers that already understand sentences try. A named
+  // animal goes to the hunt finder even beside a water: "deer near fish lake".
+  if (typeof fishParse === 'function' && !goHunts(raw)) {
     try {
       const f = fishParse(raw, true);
       if (f && (f.water || f.species)) { closeSheet(); tab = 'fish'; render(); setTimeout(() => fishRun(raw), 30); return; }
