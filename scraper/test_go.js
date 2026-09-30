@@ -32,13 +32,13 @@ const DATA = {
 const FILES = { 'fishing_rules.json': DATA.rules, 'fishing_places.json': DATA.places, 'fishing_notices.json': DATA.notices };
 function page(withFishing, net) {
   net = net || { on: false };
-  const runs = [], timers = [], landed = [];
+  const runs = [], timers = [], landed = [], renders = [], gps = [];
   let nextTimer = 1;
   const box = {
     console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
     document: { addEventListener() {} },
     window: { scrollTo() {}, addEventListener() {} },
-    navigator: {}, localStorage: { getItem: () => null, setItem() {} },
+    navigator: { geolocation: { getCurrentPosition() { gps.push(box.tab); } } }, localStorage: { getItem: () => null, setItem() {} },
     fetch(url) {
       const j = FILES[String(url).split('/').pop()];
       return net.on && j ? Promise.resolve({ ok: true, json: () => Promise.resolve(j) }) : Promise.reject(new Error('no network in tests'));
@@ -48,7 +48,9 @@ function page(withFishing, net) {
     setTimeout(fn, ms) { if (!(ms > 30)) { fn(); return 0; } const id = nextTimer++; timers.push({ id, fn }); return id; },
     clearTimeout(id) { const i = timers.findIndex(x => x.id === id); if (i >= 0) timers.splice(i, 1); },
     els: {}, $: id => box.els[id] || null,
-    render() {}, openSheet() {}, closeSheet() {}, loadWx() {},
+    /* As the app does: note which screen was drawn, and draw the Fish screen with vFish. */
+    render() { renders.push(box.tab); if (box.tab === 'fish' && box.T_vFish) box.T_vFish(); },
+    openSheet() {}, closeSheet() {}, loadWx() {},
     tab: 'today', home: 'heber', seasonsMode: 'dates', esc,
     miles(aLat, aLon, bLat, bLon) {
       const r = Math.PI / 180, dLat = (bLat - aLat) * r, dLon = (bLon - aLon) * r;
@@ -91,7 +93,7 @@ function page(withFishing, net) {
     }
     return r;
   }
-  return { box, type, timers, landed };
+  return { box, type, timers, landed, renders, gps };
 }
 
 const rowsIn = html => (html.match(/data-f[wp]="/g) || []).length;
@@ -194,6 +196,7 @@ for (const s of ['fishing at elk lake', 'ice fishing at goose lake', 'fishing at
 fishing('fishing at sheep creek lake', ['reads Sheep Creek Lake', r => r.water === 'sheep creek lake']);
 fishing('fishing at duck fork', ['reads Duck Fork', r => r.water === 'duck fork']);
 hunt('elk hunting at fish lake', 'elk');
+screen('angling', 'fish');                            // a fishing word and nothing else: Fish, not the hunt finder
 
 /* ---- Distinctive screen words still win outright. */
 screen('deer cams', 'cams');
@@ -237,6 +240,7 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
     ok(`hunt finder, no rules yet: "${s}" is left to fishing`, !!h.fish && !h.sp && !h.bird, JSON.stringify({ sp: h.sp, bird: h.bird && h.bird[0], fish: !!h.fish }));
   }
   hunt('elk hunting at fish lake', 'elk', Q);
+  screen('angling at duck fork', 'fish', null, Q);    // no screen word and nothing read yet: still Fish
   hunt('deer season', 'deer', Q);
 }
 
@@ -293,7 +297,31 @@ async function arriving() {
     JSON.stringify({ state: F.box.T_state(), pending: !!q.pending, sp: !!q.sp }));
 }
 
-arriving().then(() => {
+/* ---- The rules land while another screen is showing: nothing happens there. The
+        sentence waits, and runs when he comes back to Fish. */
+async function elsewhere() {
+  const C = page(false, { on: true });
+  C.type('trout near me');
+  C.box.tab = 'contacts'; C.renders.length = 0; C.gps.length = 0;   // he went to Contacts before they landed
+  await settle();
+  ok('rules land while on Contacts: no location is asked for', C.box.T_state() === 'ready' && C.gps.length === 0, 'gps=' + C.gps.join(','));
+  ok('and Contacts is not redrawn', C.renders.length === 0, 'renders=' + C.renders.join(','));
+  const kept = C.box.T_fish();
+  ok('the sentence is kept for the Fish screen', kept.q === 'trout near me' && !!(kept.parsed && kept.parsed.pending), JSON.stringify({ q: kept.q }));
+  C.box.tab = 'fish'; C.box.render();                 // he taps Fish
+  const p = C.box.T_fish().parsed || {};
+  ok('back on Fish, the sentence runs and asks for the location there', !p.pending && !!p.sp && p.place && p.place.kind === 'gps' && C.gps.join() === 'fish', JSON.stringify({ pending: !!p.pending, gps: C.gps }));
+
+  const H = page(false, { on: true });
+  H.type('trout near home');
+  H.box.tab = 'remind';
+  await settle();
+  H.box.tab = 'fish'; H.box.render();
+  const q = H.box.T_fish().parsed || {};
+  ok('back on Fish, the trout near home results appear', !q.pending && !!q.sp && rowsIn(H.box.T_vFish()) > 0, JSON.stringify({ pending: !!q.pending }));
+}
+
+arriving().then(elsewhere).then(() => {
   console.log(`${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 }, e => { console.log('  FAIL threw: ' + e.stack); process.exit(1); });

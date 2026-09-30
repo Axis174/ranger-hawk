@@ -51,9 +51,9 @@ function fishLoad(again) {
     /* A sentence typed into the hunt finder before the rules arrived was read without
        them, so "fishing at Sheep Creek Lake" went to bighorn sheep. Read it again. */
     if (FR && typeof fq !== 'undefined' && fq.text && !fq.touched && typeof fParse === 'function') fq.parsed = fParse(fq.text);
-    /* The same for the fishing finder: "trout near home" sent from the Menu before the
-       rules arrived was left on "Loading the fishing rules". Run it now. */
-    if (FR && fish.q && fish.parsed && fish.parsed.pending) fishRun(fish.q);
+    /* A sentence the fishing finder was given before the rules arrived ("trout near
+       home" from the Menu) is run by vFish, so only when the Fish screen is showing:
+       never a location prompt or a redraw on another screen. */
     if (tab === 'fish' || tab === 'today' || (tab === 'seasons' && typeof seasonsMode !== 'undefined' && seasonsMode === 'find')) render();
   });
 }
@@ -1167,6 +1167,9 @@ function vFishState(now) {
 }
 function vFish() {
   if (fishState === 'idle') fishLoad();
+  /* A sentence given before the rules arrived is read now the Fish screen is showing,
+     whether the rules landed here or while he was on another screen. */
+  if (FR && fish.q && fish.parsed && fish.parsed.pending) fishRead(fish.q);
   if (!FR) return fishState === 'failed' ? `<p class="empty">The fishing rules are not on this phone yet. Open this once with a signal.</p><div class="acts" style="padding:10px 0 0"><button class="btn" data-fretry="1">Try again</button></div>` : '<p class="empty">Loading the fishing rules&hellip;</p>';
   if (!FP) FP = F_NOPLACES();
   const now = fNow();
@@ -1182,18 +1185,19 @@ function vFish() {
 }
 
 /* -------------------------------------------------------------- events ---- */
-function fishRun(text) {
+function fishRun(text) { fishRead(text); render(); }
+/* Read a sentence into the fishing finder without drawing the screen. */
+function fishRead(text) {
   fish.q = text; fish.show = 12;
   const q = text.trim() ? fishParse(text, true) : null;   // anything typed on the Fish tab is about fishing
   /* Nothing in the sentence was recognised. The list of waters is searched for its
      words, and if that finds nothing the screen says so in as many words. */
-  if (q && !q.water && !q.sp && !q.place && !q.county && !q.unknown && !q.protected) { fish.mode = 'rules'; fish.parsed = null; render(); return; }
+  if (q && !q.water && !q.sp && !q.place && !q.county && !q.unknown && !q.protected) { fish.mode = 'rules'; fish.parsed = null; return; }
   fish.parsed = q;
   if (q && q.place && q.place.kind === 'gps' && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(p => { q.place = { kind: 'gps', label: 'where I am', lat: p.coords.latitude, lon: p.coords.longitude }; render(); },
       () => { q.place = null; render(); }, { enableHighAccuracy: true, timeout: 15000 });
   }
-  render();
 }
 document.addEventListener('submit', e => { if (e.target.id === 'fishform') { e.preventDefault(); fishRun($('fishq').value); } });
 document.addEventListener('input', e => {
