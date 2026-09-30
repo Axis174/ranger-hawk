@@ -148,17 +148,33 @@ function goMatch(text) {
   return goHit(t, 'weak');
 }
 
+/* Is the text nothing but one of this screen's own words? */
+function goBare(dest, text) {
+  const t = String(text || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return (dest.keys || []).concat(dest.weak || []).indexOf(t) >= 0;
+}
+
+/* Scroll the tags heading to the top. The first time, the tag data is still
+   loading and the screen is too short to get it there, so try again until it lands. */
+function goLand(n) {
+  const a = $('lotags');
+  if (a) a.scrollIntoView();
+  if (typeof LOT !== 'undefined' && !LOT && n < 20) setTimeout(() => goLand(n + 1), 150);
+}
+
 function goOpen(dest, extra) {
   closeSheet();
   if (dest.act === 'truck' && typeof tripBack === 'function') { tripBack(); return; }
   if (dest.act === 'trip' && typeof tripForm === 'function') { tripForm(); return; }
   tab = dest.tab;
   if (dest.mode && typeof seasonsMode !== 'undefined') seasonsMode = dest.mode;
-  if (dest.id === 'tags' && typeof contactsMode !== 'undefined') contactsMode = 'tags';
   render();
-  window.scrollTo(0, 0);
+  /* The tags row lives at the foot of Contacts, so land on it rather than on the
+     top of a long screen. (v27 set a contactsMode that nothing declares or reads.) */
+  if (dest.id === 'tags' && $('lotags')) goLand(0); else window.scrollTo(0, 0);
   const q = (extra && extra.q) || null;
   if (q && dest.mode === 'find' && typeof fRun === 'function') setTimeout(() => fRun(q), 30);
+  if (q && dest.tab === 'fish' && typeof fishRun === 'function') setTimeout(() => fishRun(q), 30);
 }
 
 /* What a typed sentence does. Screen words first, then the finders. */
@@ -166,7 +182,10 @@ function goSubmit(text) {
   const raw = String(text || '').trim();
   if (!raw) return;
   const dest = goMatch(raw);
-  if (dest) { goOpen(dest, {}); return; }
+  /* A screen word alone opens the screen. A sentence that carries more than the
+     screen word ("trout near home", "fishing in carbon county") also goes to that
+     screen's finder with the whole sentence, or the Menu's own example does nothing. */
+  if (dest) { goOpen(dest, goBare(dest, raw) ? {} : { q: raw }); return; }
   // Not a screen name. Let the parsers that already understand sentences try.
   if (typeof fishParse === 'function') {
     try {

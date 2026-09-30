@@ -867,7 +867,7 @@ function vContacts() {
       <span class="pill"></span><span><span class="t">${esc(m.name)}</span></span><span class="v">&rsaquo;</span></a>`).join('');
     h += `</div><p class="note" style="padding:12px 2px">${esc(DB.community.policy || '')}</p>`;
   }
-  h += `<div class="sec-title" style="margin-top:26px">Landowner tags, state by state</div>` + vTags();
+  h += `<div class="sec-title" id="lotags" style="margin-top:26px;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 76px)">Landowner tags, state by state</div>` + vTags();
   return h;
 }
 
