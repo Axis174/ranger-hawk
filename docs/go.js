@@ -122,11 +122,11 @@ function goSuggest() {
    b. Take any water's name out of the sentence. Fish Lake, Duck Fork and the WMA
       and walk-in waters carry screen words and animals in their names, and a
       name is not a request: "deer near fish lake", "kokanee at deer creek".
-   c. What is left names a fish, something to hunt, or a hunting word.
+   c. What is left names a fish, a fishing word, something to hunt, or a hunting word.
    d. A distinctive screen word other than Fish's still wins outright, because
       "deer cams" and "draw odds elk" name a screen and the hunt finder would
-      otherwise claim them. Then: something to hunt and no fish -> the hunt
-      finder. A WMA or walk-in property said on its own -> Access. A fish, a
+      otherwise claim them. Then: something to hunt and no fish and no fishing
+      word -> the hunt finder ("fishing at duck fork" stays fishing). A WMA or walk-in property said on its own -> Access. A fish, a
       water, or anything fishParse can use -> the fishing finder. Otherwise the
       screen word the sentence holds, with no search, as v27 did, and failing
       that v27's fallback, the hunt finder. */
@@ -170,12 +170,16 @@ function goFish(d) {
 function goGame(d) {
   try { return typeof fGame === 'function' && fGame(d); } catch (e) { return false; }
 }
+/* A fishing word said as one ("fishing", "ice fishing", "angling"), not the "fish" in
+   Fish Lake. It beats any animal and any hunting word: "fishing at duck fork",
+   "fishing permit". Works with or without the fishing data. */
+function goFishWord(d) {
+  try { return typeof fFishWord === 'function' && fFishWord(d); } catch (e) { return false; }
+}
 /* A hunting word: the Hunt screen's own words and a few more. Season dates' words
-   are left out, because "season" and "open" are fishing words too. A fishing word
-   in the same sentence ("fishing permit") cancels it. */
+   are left out, because "season" and "open" are fishing words too. */
 const GO_HUNT_MORE = ['hunting', 'hunts', 'hunter', 'hunters', 'tag', 'tags', 'permit', 'permits'];
 function goHuntWord(d) {
-  if (typeof F_FISH_WORD !== 'undefined' && F_FISH_WORD.test(d)) return false;
   return GO_DEST.filter(x => x.tab === 'seasons' && x.id !== 'dates')
     .reduce((a, x) => a.concat(x.keys || [], x.weak || []), GO_HUNT_MORE)
     .some(k => d.indexOf(' ' + k + ' ') >= 0);
@@ -191,7 +195,7 @@ function goRoute(text) {
   const strong = goHit(d, 'keys', 'fish');
   if (strong) return { dest: strong, q: raw };
   const fish = goFish(d), game = goGame(d), word = goHuntWord(d);
-  if ((game || word) && !fish) {
+  if ((game || word) && !fish && !goFishWord(d)) {
     if (game) return { hunt: true };
     /* A hunting word and no animal: its screen, as v27 ("my points" -> Draw odds). The
        Find a hunt screen is the hunt finder, so it gets the sentence: "hunt near fish lake". */
@@ -205,7 +209,9 @@ function goRoute(text) {
   let f = null, one = null;
   try { if (typeof fishParse === 'function') { f = fishParse(raw, false); one = fishParse(raw, true); } } catch (e) { /* not loaded */ }
   if (fish || w || (one && one.water) || (f && (f.sp || f.water || f.county || f.protected || f.place || f.unknown))) return { fish: true };
-  const s = goHit(t, 'keys') || goHit(t, 'weak');   /* "i want to go fishing": the plain screen, as v27 */
+  /* "i want to go fishing": the plain screen, as v27. A fishing word with no screen
+     word ("angling at duck fork" before the rules arrive) is still the Fish screen. */
+  const s = goHit(t, 'keys') || goHit(t, 'weak') || (goFishWord(d) ? GO_DEST.find(x => x.id === 'fish') : null);
   return s ? { dest: s } : { hunt: true };
 }
 

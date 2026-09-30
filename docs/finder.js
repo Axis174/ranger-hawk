@@ -53,8 +53,12 @@ function fParse(text) {
      is not about fishing. */
   /* Until the fishing rules arrive no water's name is known, so the "fish" in "deer
      near Fish Lake" cannot be told from a fishing word. While they are on their way,
-     an animal to hunt and no fish means a hunt; the sentence is read again when they land. */
-  if (typeof fishParse === 'function') { const fq_ = fishParse(text); if (fq_ && !(fq_.pending && !fq_.sp && typeof fGame === 'function' && fGame(fWords(text)))) return { text, fish: fq_ }; }
+     an animal to hunt with no fish and no fishing word means a hunt ("fishing at duck
+     fork" is still fishing); the sentence is read again when they land. */
+  if (typeof fishParse === 'function') {
+    const fq_ = fishParse(text), w_ = fWords(text);
+    if (fq_ && !(fq_.pending && !fq_.sp && typeof fGame === 'function' && fGame(w_) && !(typeof fFishWord === 'function' && fFishWord(w_)))) return { text, fish: fq_ };
+  }
   const t = fWords(text);
   /* A water named in a sentence that is not about fishing. Its name must not be
      read as an animal ("Duck Fork Reservoir", "Moose Pond", "Sheep Creek Lake"), so

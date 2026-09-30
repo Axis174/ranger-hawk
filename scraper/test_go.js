@@ -27,9 +27,11 @@ const DATA = {
   rules: load('fishing_rules.json'), places: load('fishing_places.json'), notices: load('fishing_notices.json')
 };
 
-/* One page. withFishing false is the first run with no signal: the fishing rules
-   have not arrived, so no water's name is known. */
-function page(withFishing) {
+/* One page. withFishing false is the first run: the fishing rules have not arrived,
+   so no water's name is known. net.on says whether a fetch of docs/data succeeds. */
+const FILES = { 'fishing_rules.json': DATA.rules, 'fishing_places.json': DATA.places, 'fishing_notices.json': DATA.notices };
+function page(withFishing, net) {
+  net = net || { on: false };
   const runs = [], timers = [], landed = [];
   let nextTimer = 1;
   const box = {
@@ -37,7 +39,10 @@ function page(withFishing) {
     document: { addEventListener() {} },
     window: { scrollTo() {}, addEventListener() {} },
     navigator: {}, localStorage: { getItem: () => null, setItem() {} },
-    fetch: () => Promise.reject(new Error('no network in tests')),
+    fetch(url) {
+      const j = FILES[String(url).split('/').pop()];
+      return net.on && j ? Promise.resolve({ ok: true, json: () => Promise.resolve(j) }) : Promise.reject(new Error('no network in tests'));
+    },
     /* The finders are started 30 ms after the screen is drawn: run those at once.
        Anything later (the tags landing retries) waits in a queue the test can inspect. */
     setTimeout(fn, ms) { if (!(ms > 30)) { fn(); return 0; } const id = nextTimer++; timers.push({ id, fn }); return id; },
@@ -57,7 +62,7 @@ function page(withFishing) {
   vm.createContext(box);
   vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.T_fq = () => fq;', box);
   vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
-    '\n;this.T_fish = () => fish; this.T_vFish = vFish;' +
+    '\n;this.T_fish = () => fish; this.T_vFish = vFish; this.T_state = () => fishState;' +
     ' this.T_set = function (r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); fishState = "ready"; };', box);
   if (withFishing) box.T_set(DATA.rules, DATA.places, DATA.notices);
   vm.runInContext(fs.readFileSync(GO, 'utf8') + '\n;this.T_go = { goSubmit, goOpen, GO_DEST };', box);
@@ -73,7 +78,7 @@ function page(withFishing) {
     const r = { tab: box.tab, mode: box.seasonsMode, run: runs.join('+') || 'none' };
     if (r.run === 'fish') {
       const html = box.T_vFish(), p = box.T_fish().parsed || {};
-      r.rows = (html.match(/data-f[wp]="/g) || []).length;
+      r.rows = rowsIn(html);
       r.unknown = /does not know a water called/.test(html);
       r.nomatch = /Nothing in the guidebook's list matched/.test(html);
       r.water = p.water ? p.water.needle : null;
@@ -89,6 +94,7 @@ function page(withFishing) {
   return { box, type, timers, landed };
 }
 
+const rowsIn = html => (html.match(/data-f[wp]="/g) || []).length;
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {
   if (cond) { pass++; return; }
@@ -175,6 +181,19 @@ fishing('bass');
 hunt('carbon county', null);                          // a county alone stays with the hunt finder, as v27
 hunt('sheep near sheep creek', 'sheep');
 hunt('chukar near fish springs', 'chukar');
+hunt('deer season', 'deer');                          // not Season dates: the animal decides
+hunt('elk permit', 'elk');                            // not Reminders: the animal decides
+
+/* ---- A fishing word beats any animal; a hunting word and an animal with no fishing word is a hunt. */
+function fishTab(text, pg) {
+  const r = (pg || P).type(text);
+  ok(`"${text}" goes to the Fish screen, not the Hunt screen`, r.tab === 'fish' && r.run !== 'hunt', show(r));
+  return r;
+}
+for (const s of ['fishing at elk lake', 'ice fishing at goose lake', 'fishing at sheep creek lake', 'fishing at duck fork']) fishTab(s);
+fishing('fishing at sheep creek lake', ['reads Sheep Creek Lake', r => r.water === 'sheep creek lake']);
+fishing('fishing at duck fork', ['reads Duck Fork', r => r.water === 'duck fork']);
+hunt('elk hunting at fish lake', 'elk');
 
 /* ---- Distinctive screen words still win outright. */
 screen('deer cams', 'cams');
@@ -212,6 +231,13 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
   hunt('deer near antelope island', 'deer', Q);
   screen('deer cams', 'cams', null, Q);
   screen('i want to go fishing', 'fish', null, Q);
+  for (const s of ['fishing at elk lake', 'ice fishing at goose lake', 'fishing at sheep creek lake', 'fishing at duck fork']) {
+    fishTab(s, Q);
+    const h = Q.box.fParse(s);                        // the hunt finder, if the sentence is typed there
+    ok(`hunt finder, no rules yet: "${s}" is left to fishing`, !!h.fish && !h.sp && !h.bird, JSON.stringify({ sp: h.sp, bird: h.bird && h.bird[0], fish: !!h.fish }));
+  }
+  hunt('elk hunting at fish lake', 'elk', Q);
+  hunt('deer season', 'deer', Q);
 }
 
 /* ---- The tags row lands on the tags, and leaving Contacts ends the landing. */
@@ -229,8 +255,45 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
   const before = jumps;
   P.timers.splice(0).forEach(t => t.fn());
   ok('leaving and coming back to Contacts does not jump to the tags', P.timers.length === 0 && jumps === before, 'jumps after=' + (jumps - before));
+  /* The landing only happens on Contacts. Another row does not land, and if some other
+     link moves him off Contacts before the data arrives, the retry does nothing. */
+  jumps = 0;
+  G.goOpen(contacts, {});
+  ok('the Contacts row itself does not land on the tags', jumps === 0 && P.timers.length === 0, 'jumps=' + jumps);
+  G.goOpen(tags, {});
+  P.box.tab = 'seasons';                              // an in-page link, not the Menu, changed the screen
+  P.timers.splice(0).forEach(t => t.fn());
+  ok('a retry after the screen has changed does not scroll', jumps === 1, 'jumps=' + jumps);
   delete P.box.els.lotags;
 }
 
-console.log(`${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+/* ---- A fishing question asked before the rules arrive is answered when they do,
+        with no second keystroke: while they load, and after a failed load and Try again. */
+const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(r => setImmediate(r)); };
+async function arriving() {
+  const L = page(false, { on: true });
+  const r = L.type('trout near home');                // the Fish screen starts the load
+  ok('before the rules land, "trout near home" waits on the fishing finder', r.run === 'fish' && r.tab === 'fish' && r.rows === 0, show(r));
+  await settle();
+  const p = L.box.T_fish().parsed || {};
+  ok('when the rules land, the trout near home results appear by themselves',
+    L.box.T_state() === 'ready' && !p.pending && !!p.sp && p.place && p.place.kind === 'home' && rowsIn(L.box.T_vFish()) > 0,
+    JSON.stringify({ state: L.box.T_state(), pending: !!p.pending, sp: !!p.sp }));
+
+  const net = { on: false }, F = page(false, net);
+  F.type('trout near home');
+  await settle();
+  ok('with no signal the load fails', F.box.T_state() === 'failed', F.box.T_state());
+  net.on = true;
+  F.box.fishLoad(true);                               // what Try again does
+  await settle();
+  const q = F.box.T_fish().parsed || {};
+  ok('after Try again, the trout near home results appear by themselves',
+    F.box.T_state() === 'ready' && !q.pending && !!q.sp && rowsIn(F.box.T_vFish()) > 0,
+    JSON.stringify({ state: F.box.T_state(), pending: !!q.pending, sp: !!q.sp }));
+}
+
+arriving().then(() => {
+  console.log(`${pass} passed, ${fail} failed`);
+  process.exit(fail ? 1 : 0);
+}, e => { console.log('  FAIL threw: ' + e.stack); process.exit(1); });

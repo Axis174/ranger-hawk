@@ -51,6 +51,9 @@ function fishLoad(again) {
     /* A sentence typed into the hunt finder before the rules arrived was read without
        them, so "fishing at Sheep Creek Lake" went to bighorn sheep. Read it again. */
     if (FR && typeof fq !== 'undefined' && fq.text && !fq.touched && typeof fParse === 'function') fq.parsed = fParse(fq.text);
+    /* The same for the fishing finder: "trout near home" sent from the Menu before the
+       rules arrived was left on "Loading the fishing rules". Run it now. */
+    if (FR && fish.q && fish.parsed && fish.parsed.pending) fishRun(fish.q);
     if (tab === 'fish' || tab === 'today' || (tab === 'seasons' && typeof seasonsMode !== 'undefined' && seasonsMode === 'find')) render();
   });
 }
@@ -868,6 +871,11 @@ const F_FISH_WORD = /\b(fish|fishing|fished|fishes|fishery|angl\w+|fly\s*fish\w*
 const F_HUNT_WORD = /\b(hunt\w*|shoot\w*|tags?|draw|rifle|archery|muzz\w*|decoys?)\b/;
 /* Places whose names hold a fishing word or a fish, and are not about fishing. */
 const F_FISH_NOISE = /\b(fish springs|fish haven|browns park|browns hole)\b/g;
+/* A fishing word said as a fishing word, not as part of a name. Before the rules
+   arrive no water is known, so "fish" just before a water word ("Fish Lake", "Fish
+   Creek") is taken as a name: "deer near fish lake" is still a hunt. */
+const F_FISH_NAME = /\bfish\s+(lakes?|creeks?|reservoirs?|ponds?|river|fork|bay|springs?|haven|slough|canal|dam)\b/g;
+const fFishWord = t => F_FISH_WORD.test(String(t).toLowerCase().replace(F_FISH_NOISE, ' ').replace(F_FISH_NAME, ' '));
 /* Does the sentence name something to hunt? The hunt finder's own lists decide. */
 function fGame(rest) {
   if (typeof F_SPECIES === 'undefined') return false;
