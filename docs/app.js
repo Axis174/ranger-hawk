@@ -936,7 +936,7 @@ const TABS = [
   ['access', 'Access', '<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'],
   ['fish', 'Fish', '<path d="M3 12c3-4.5 7-6 11-6 3 0 5.5 2.5 7 6-1.500 3.500-4 6-7 6-4 0-8-1.500-11-6z"/><path d="M3 7.500v9"/><circle cx="16" cy="11" r=".9"/>'],
   ['cams', 'Cams', '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.2"/>'],
-  ['seasons', 'Seasons', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
+  ['seasons', 'Hunt', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
   ['remind', 'Remind', '<path d="M18 8a6 6 0 1 0-12 0c0 7-2 8-2 8h16s-2-1-2-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/>'],
   ['contacts', 'Contacts', '<path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><circle cx="11" cy="11" r="2.5"/><path d="M7.5 17c.8-1.7 2-2.5 3.5-2.5s2.7.8 3.5 2.5"/>']
 ];
@@ -949,11 +949,21 @@ function renderChrome() {
     `<button data-home="${esc(h.id)}" aria-pressed="${h.id === home}">${esc(h.label.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase())}</button>`
   ).join('');
   const n = alerts();
-  $('tabs').innerHTML = TABS.map(([k, label, path]) =>
+  /* Four screens on the bar and a Menu, rather than eight tabs at 47px with 9px
+     labels. Every tab value and view function is unchanged - Access, Cams,
+     Reminders and Contacts moved behind the Menu, they did not go away. If
+     go.js has not loaded, fall back to all eight rather than stranding four. */
+  const onBar = typeof GO_BAR !== 'undefined' ? TABS.filter(([k]) => GO_BAR.indexOf(k) >= 0) : TABS;
+  const hidden = TABS.length - onBar.length;
+  const badge = k => k === 'remind' && n ? `<span class="badge">${n}</span>` : '';
+  $('tabs').innerHTML = onBar.map(([k, label, path]) =>
     `<button data-tab="${k}"${tab === k ? ' aria-current="page"' : ''}>
-      <span style="position:relative"><svg viewBox="0 0 24 24">${path}</svg>${k === 'remind' && n ? `<span class="badge">${n}</span>` : ''}</span>
-      <span>${label}</span></button>`).join('');
-  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Seasons', remind: 'Reminders', contacts: 'Contacts' }[tab];
+      <span style="position:relative"><svg viewBox="0 0 24 24">${path}</svg>${badge(k)}</span>
+      <span>${label}</span></button>`).join('')
+    + (hidden ? `<button data-go="1"${onBar.every(([k]) => k !== tab) ? ' aria-current="page"' : ''}>
+      <span style="position:relative"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>${n && GO_BAR.indexOf('remind') < 0 ? `<span class="badge">${n}</span>` : ''}</span>
+      <span>Menu</span></button>` : '');
+  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts' }[tab];
   if (tab === 'today') $('title').innerHTML = '<img src="icons/rangerhawk-wordmark.svg" alt="Ranger Hawk">'; else $('title').textContent = ttl;
 }
 function render() {

@@ -52,6 +52,8 @@ nav.tabs button{background:none;border:0;padding:8px 2px 9px;cursor:pointer;disp
   justify-items:center;color:var(--faint);font-size:10.5px;font-weight:600;letter-spacing:.02em}
 nav.tabs button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button{font-size:11.5px;min-width:0;letter-spacing:0}
+nav.tabs button svg{width:23px;height:23px}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
 nav.tabs button>span{display:inline-flex}
 .badge{position:absolute;top:-6px;right:-11px;line-height:1;background:var(--crit);color:#fff;
@@ -150,7 +152,6 @@ footer.legal{padding:26px 16px 10px;font-size:11.5px;color:var(--faint);line-hei
   background:var(--surface);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .mapbar .btn{flex:0 0 auto;padding:8px 11px;font-size:12px}
 .maplibregl-popup-content{font:13px/1.4 "Public Sans",system-ui,sans-serif;color:#1c1c1c;border-radius:4px}
-nav.tabs button{font-size:10px;min-width:0}
 .legend{display:flex;flex-wrap:wrap;gap:3px 10px;padding:6px 12px;background:var(--surface);border-top:1px solid var(--line);
   font-size:10.5px;color:var(--body)}
 .legend span,.own{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
@@ -193,7 +194,6 @@ table.odds tr.me td{background:var(--accent-soft);font-weight:700;color:var(--in
 .row .v.dv small{display:block}
 
 /* trail camera log */
-nav.tabs button{font-size:9.5px;letter-spacing:0}
 .camgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .camgrid button{position:relative;border:0;padding:0;background:#000;border-radius:3px;overflow:hidden;cursor:pointer;aspect-ratio:16/9}
 .camgrid img{width:100%;height:100%;object-fit:cover;display:block}
@@ -209,8 +209,6 @@ nav.tabs button{font-size:9.5px;letter-spacing:0}
 
 /* fishing */
 :root{--fish:#15709A}
-nav.tabs button{font-size:9px;padding-inline:0}
-nav.tabs button svg{width:20px;height:20px}
 .fchipline{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .row .s.fchipline:empty{display:none}
 .fstretch{margin:10px 16px 0;border:1px solid var(--hair);border-radius:4px;overflow:hidden;background:var(--surface)}

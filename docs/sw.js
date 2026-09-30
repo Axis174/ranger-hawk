@@ -8,9 +8,9 @@
 
    Data is network-first with a cache fallback: a live refresh wins when there
    is signal, and the last good copy is there when there is none. */
-const VERSION = 'ranger-hawk-v26';
+const VERSION = 'ranger-hawk-v27';
 const SHELL = [
-  './', './index.html', './app.js', './cams.js', './finder.js', './fishing.js', './contacts.js', './trip.js', './roads.js', './styles.css', './data/cam_rules.json', './data/hunt_units_2026.json', './data/landowner_tags.json',
+  './', './index.html', './app.js', './cams.js', './finder.js', './fishing.js', './contacts.js', './trip.js', './roads.js', './go.js', './styles.css', './data/cam_rules.json', './data/hunt_units_2026.json', './data/landowner_tags.json',
   './manifest.webmanifest', './icons/rangerhawk-wordmark.svg', './icons/icon-192.png', './icons/icon-512.png',
   './data/bird_access.json', './data/seasons.json', './data/config.json',
   './vendor/suncalc.js', './data/lake_level.json', './data/units_geo.json', './data/snow.json', './data/draw_odds.json', './data/udot.json',
