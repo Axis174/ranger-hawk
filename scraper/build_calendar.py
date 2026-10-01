@@ -61,6 +61,9 @@ L = ["BEGIN:VCALENDAR", "VERSION:2.0",
 
 def ev(uid, start, end, summary, desc, alarms=(), allday=True, cat="SEASON"):
     L.append("BEGIN:VEVENT")
+    # The UID suffix is the repo's first name and stays that way on purpose: a UID is
+    # only an identifier, and changing it could duplicate events in calendars that
+    # imported the feed. Do not "fix" it to ranger-hawk.
     L.append(f"UID:{uid}@utah-hunt-atlas")
     L.append(f"DTSTAMP:{STAMP}")
     if allday:

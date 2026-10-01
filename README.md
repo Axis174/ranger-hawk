@@ -2,7 +2,7 @@
 
 **Live at https://rangerhawk.com** &middot; calendar feed at https://rangerhawk.com/hunt.ics
 
-_Formerly "Utah Hunt Atlas" (the repo keeps that slug). The name goes back to RangerHawk, a hunting and fishing community site first built in 2016._
+_Formerly "Utah Hunt Atlas"; the repo was renamed `ranger-hawk` on 2026-10-01. The name goes back to RangerHawk, a hunting and fishing community site first built in 2016._
 
 A personal, installable phone app plus a daily data refresh for Utah hunting —
 birds (pheasant, chukar, duck, ptarmigan) and big game (deer and elk, archery
@@ -47,15 +47,18 @@ light to read as small text on white.
 
 ## Moving this to another GitHub account
 
-`./move-to-personal.sh <username>` creates the repo under that account, pushes,
-enables Pages, waits for the deploy and verifies the live URLs. Sign in first
-with `gh auth login`, then `gh auth switch --user <username>`.
+Use GitHub's own transfer (repo *Settings → Danger Zone → Transfer ownership*). It keeps
+the history, and the old address redirects.
 
 The app answers at the custom domain **rangerhawk.com** (DNS at Cloudflare, two
-DNS-only CNAME records to `<account>.github.io`). After a move, set the custom
-domain on the new repo's Pages settings and repoint both CNAME records at the new
-account; the public address, the home screen icon and the calendar subscription
-all stay the same.
+DNS-only CNAME records to `<account>.github.io`). After a transfer, set the custom
+domain on the repo's Pages settings again if it did not carry over, and repoint both
+CNAME records at the new account; the public address, the home screen icon and the
+calendar subscription all stay the same.
+
+The calendar's event ids end in `@utah-hunt-atlas`, the repo's first name. Leave them:
+an id is only an identifier, nobody sees it, and changing it could duplicate events in
+calendars that imported the feed.
 
 ## Setup, once
 
