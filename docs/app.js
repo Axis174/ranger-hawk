@@ -732,6 +732,7 @@ function vDraw() {
     <p class="fine">These are UDWR's published <b>${yr} results</b>, not a forecast: what happened to people who applied with your number of points.
     More people gain points every year, so the same points usually buy a little less next time. Your points are kept on this phone only.
     Source: wildlife.utah.gov/biggame/odds. Always confirm at utahdraws.com before applying.</p>`;
+  if (typeof paidLink === 'function') h += paidLink('draw');
   return h;
 }
 function sheetDraw(code) {
@@ -963,14 +964,15 @@ function renderChrome() {
     + (hidden ? `<button data-go="1"${onBar.every(([k]) => k !== tab) ? ' aria-current="page"' : ''}>
       <span style="position:relative"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>${n && GO_BAR.indexOf('remind') < 0 ? `<span class="badge">${n}</span>` : ''}</span>
       <span>Menu</span></button>` : '');
-  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts' }[tab];
+  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts', privacy: 'Privacy', money: 'How Ranger Hawk makes money' }[tab];
   if (tab === 'today') $('title').innerHTML = '<img src="icons/rangerhawk-wordmark.svg" alt="Ranger Hawk">'; else $('title').textContent = ttl;
 }
 function render() {
+  if (typeof siteCount === 'function') siteCount(tab);   /* the visitor count: off unless COUNTER_CODE is set in site.js */
   renderChrome();
   if (MAP && tab !== 'map') { try { MAP.remove(); } catch (e) { /* already gone */ } MAP = null; }
   if (tab === 'map' && MAP) { renderChrome(); return; }
-  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts }[tab];
+  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts, privacy: (typeof vPrivacy === 'function' ? vPrivacy : () => '<p class="empty">This page did not load.</p>'), money: (typeof vMoney === 'function' ? vMoney : () => '<p class="empty">This page did not load.</p>') }[tab];
   $('view').innerHTML = v();
   document.body.classList.toggle('on-map', tab === 'map');
   if (tab === 'map') initMap();

@@ -31,7 +31,7 @@ a{color:var(--accent)}
 /* shell */
 #app{display:flex;flex-direction:column;min-height:100%;padding-bottom:calc(var(--tabh) + env(safe-area-inset-bottom,0px))}
 header.bar{background:var(--surface);border-bottom:1px solid var(--line);
-  position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+  position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:20}
 .bar-in{display:flex;align-items:center;gap:12px;padding:11px 16px}
 .bar h1{font-size:17px;font-weight:700;letter-spacing:-.01em;flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -242,3 +242,5 @@ details.fgroup>summary{padding:10px 12px;font-weight:600;font-size:13.5px;color:
 details.fgroup>summary .fdates{display:inline;margin-left:6px;font-weight:400}
 details.fgroup .fstretch{margin:0 0 0 0;border:0;border-top:1px solid var(--hair);border-radius:0}
 details.fgroup .warnbox{margin:0 12px 10px}
+.priv ul{margin:10px 0 0;padding-left:18px}
+.priv li{font-size:13px;line-height:1.55;margin:0 0 7px;color:var(--body)}

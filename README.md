@@ -405,6 +405,33 @@ prove a test catches it.
 - Flaming Gorge, Bear Lake and Lake Powell are shared with Wyoming, Idaho and
   Arizona. Only Utah's rules are here.
 
+## Privacy, money and paid links (v29)
+
+Two plain-text screens sit behind the Menu: **Privacy** (what is kept on the phone, what
+leaves it, whether visitors are counted) and **How Ranger Hawk makes money**. Both are in
+`docs/site.js`, with the Menu rows in `docs/go.js` (`privacy` is the search word for the
+first, `money` for the second). Their wording is fixed and was written to match what the
+code does: if you change what the app stores or what it sends over the network, change the
+Privacy screen in the same commit. Nothing in v29 earns money.
+
+**The paid-link slot.** `docs/data/paid_links.json` ships as `{"links": []}`. To add one,
+append `{"slot": "draw", "company": "Name", "label": "What the link says", "url": "https://..."}`.
+Only `https://` links draw. `draw` is the only slot a screen uses today (the foot of Draw
+odds, after the agency's source paragraph, which is never edited); a new placement means a
+`paidLink('slot')` call in that screen and the slot added to `PL_PLACED` in `site.js`. The
+link is always drawn marked **Paid link** with `rel="sponsored noopener"`. Neither is
+optional: the mark is what the Privacy and money screens promise, and `sponsored` is what
+search engines and the affiliate networks expect. The money screen lists the companies of
+the links that are drawn, so it stays true by itself.
+
+**The visitor count (off).** `COUNTER_CODE` at the top of `docs/site.js` is empty, so no
+request is ever made and the Privacy screen says visitors are not counted. Setting it to a
+GoatCounter site code turns on one image request per screen per app open (the screen name
+only, plus the referring site on the first), to GoatCounter's `/count` pixel endpoint, with
+no script loaded. Setting it also swaps the "Counting visitors" paragraph on the Privacy
+screen for the one that names GoatCounter. Leave it empty until there is a GoatCounter
+site code. Tests: `node scraper/test_site.js`.
+
 ## On social media
 
 **Facebook and Instagram are deliberately not scraped.** They are auth-walled,

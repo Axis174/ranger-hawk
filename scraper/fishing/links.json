@@ -334,6 +334,11 @@
    "reach": "none",
    "why": "About two miles below Pineview Dam: USGS's outline of the reservoir ends 3.4 km away. The closed stretch is only the first half mile below the dam. (Audit of 2026-09-27.)"
   },
+  "p135": {
+   "water": "ogden-river-weber",
+   "reach": "none",
+   "why": "About 3.8 miles (6 km) below Pineview Dam in a straight line: this point is 2.8 km farther down the valley than Ogden River Angler Access, which is about two miles below the dam. UDWR's closed stretch runs 'From Pineview Dam downstream to the first bridge, approximately one-half mile.' (Audit of 2026-10-02.)"
+  },
   "a262": {
    "water": "community:old-fort-ponds-uintah",
    "why": "Named for the pond."

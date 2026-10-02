@@ -46,7 +46,11 @@ const GO_DEST = [
   { id: 'trip', title: 'Trip plan', sub: 'Tell someone where you are going', tab: 'today', act: 'trip',
     keys: ['trip plan', 'exit plan', 'tell someone', 'back by'], weak: ['trip', 'safety'] },
   { id: 'truck', title: 'Back to the truck', sub: 'Bearing and distance, works with no signal', tab: 'today', act: 'truck',
-    keys: ['back to truck', 'back to the truck', 'where am i', 'my location', 'coordinates'], weak: ['truck', 'lost', 'sar', 'rescue'] }
+    keys: ['back to truck', 'back to the truck', 'where am i', 'my location', 'coordinates'], weak: ['truck', 'lost', 'sar', 'rescue'] },
+  { id: 'privacy', title: 'Privacy', sub: 'What stays on your phone and what leaves it', tab: 'privacy',
+    keys: ['privacy', 'privacy policy'], weak: ['cookies', 'tracking'] },
+  { id: 'money', title: 'How Ranger Hawk makes money', sub: 'Free today; how it may earn later', tab: 'money',
+    keys: ['paid link', 'paid links'], weak: ['money', 'affiliate', 'commission', 'sponsored'] }
 ];
 
 /* ------------------------------------------------------- suggestions ---- */
