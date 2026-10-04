@@ -274,6 +274,7 @@ function goPanelHtml() {
   let h = `<h3>What do you want to do?</h3>
     <div style="padding:0 16px"><input class="search" id="goq" placeholder="Type or say it - elk by the cabin, trout near home" autocomplete="off"></div>`;
 
+  h += `<div style="padding:0 16px">`;   /* the sheet sits outside .wrap, so the lists get the same inset as the title and input */
   if (sugg.length) {
     h += `<div class="sec-title">Right now</div><div class="card">`
       + sugg.map((s, i) => goRow(s.title, s.sub, `data-go-s="${i}"`, s.urgent)).join('')
@@ -283,7 +284,7 @@ function goPanelHtml() {
   h += `<div class="sec-title">Everything</div><div class="card">`
     + GO_DEST.map(d => goRow(d.title, d.sub, `data-go-d="${esc(d.id)}"`)).join('')
     + `</div>
-    <p class="fine" style="padding:10px 16px 0">Tap anything above, or type a sentence and the app will work out where it goes. It all works with no signal.</p>`;
+    <p class="fine" style="padding:10px 0 0">Tap anything above, or type a sentence and the app will work out where it goes. It all works with no signal.</p></div>`;
   return h;
 }
 

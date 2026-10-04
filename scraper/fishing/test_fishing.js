@@ -39,7 +39,7 @@ class TestDate extends Date {
 }
 const box = {
   console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
-  document: { addEventListener() {} }, window: { scrollTo() {}, addEventListener() {} },
+  document: { addEventListener(type, fn) { (box.LIS[type] = box.LIS[type] || []).push(fn); } }, LIS: {}, window: { scrollTo() {}, addEventListener() {} },
   navigator: {}, localStorage: { getItem: () => null, setItem() {} },
   fetch: () => Promise.reject(new Error('no network in tests')),
   $: () => null, render() {}, openSheet() {}, loadWx() {}, tab: 'fish', home: 'heber',
@@ -55,9 +55,11 @@ const box = {
   fmt: d => String(d), d0: s => new Date(s), unitsAt: () => []
 };
 vm.createContext(box);
+/* The app's own point-in-unit code, so the hunt finder can tell whether a water's point is under a unit. */
+{ const src = fs.readFileSync(D('app.js'), 'utf8'); vm.runInContext(src.slice(src.indexOf('function inRing'), src.indexOf('async function whereAmI')), box); }
 vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.fParse = fParse; this.vFind = vFind; this.fq = fq;', box);
 vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
-  '\n;this.T = { set(r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); }, fUtah, fNow, fDayAfter, fFlip, fStale, fOpens, fPlaceChips, fPlaceRes, fGroupsFor, fSpearFor, fKokaneeNow, fStatewideHtml, fishRun, fTokens, FTWIN: () => FTWIN, linked: () => FLINKED, fPoint, fSpan, fResolve, fSummary, fAmendState, fNotices, fishParse, fishWaterIn, fishMatches, fRuleNow, fHeld, fUnreadFor, fChips, fEdition, fStanding, fish, FW: () => FW, FAM: () => FAM, FPL: () => FPL, vFish, sheetFishWater, sheetFishPlace, cardFish, fishAnswer };', box);
+  '\n;this.T = { set(r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); }, fUtah, fNow, fDayAfter, fFlip, fStale, fOpens, fPlaceChips, fPlaceRes, fGroupsFor, fSpearFor, fKokaneeNow, fStatewideHtml, fishRun, fTokens, FTWIN: () => FTWIN, linked: () => FLINKED, fPoint, fSpan, fResolve, fSummary, fAmendState, fNotices, fishParse, fishWaterIn, fishMatches, fRuleNow, fHeld, fUnreadFor, fChips, fEdition, fStanding, fish, FW: () => FW, FAM: () => FAM, FPL: () => FPL, vFish, sheetFishWater, sheetFishPlace, cardFish, fishAnswer, fHuntOffer, F_FISH, fWaterNames: () => { fWaterNames(); return [fNames, fShort]; } };', box);
 const T = box.T;
 const R = load('fishing_rules.json'), P = load('fishing_places.json'), N = load('fishing_notices.json');
 T.set(R, P, N);
@@ -284,7 +286,7 @@ ok('hunt finder: "ducks near deer creek reservoir" is a hunt that also names a w
 ok('hunt finder: "elk near strawberry reservoir"', hp('elk near strawberry reservoir'), 'hunt:elk+strawberry reservoir');
 ok('hunt finder: "duck hunting near fish lake"', hp('duck hunting near fish lake'), 'hunt:duck+fish lake');
 ok('hunt finder: "trout near the cabin"', hp('trout near the cabin'), 'fish:trout');
-ok('hunt finder: a unit that shares its name with a water stays a hunt ("panguitch lake")', hp('panguitch lake'), 'hunt:+panguitch lake');
+ok('hunt finder: a unit name inside a water\'s name is the water, so "panguitch lake" alone is the water (round 3)', hp('panguitch lake'), 'fish:panguitch lake');
 ok('hunt finder: "archery panguitch lake"', hp('archery panguitch lake'), 'hunt:+panguitch lake');
 
 const near = T.fishMatches(T.fishParse('trout near the cabin'));
@@ -735,6 +737,50 @@ ok('"spearfishing at pineview" and "can i spearfish at yuba reservoir" are fishi
 ok('"june sucker at utah lake" gets the list of protected fish and then Utah Lake', [/June sucker is on the guidebook's list of fish that must be let go/.test(ans('june sucker at utah lake')), />Utah Lake</.test(ans('june sucker at utah lake')), /Statewide limit/.test(ans('june sucker at utah lake'))], [true, true, false]);
 ok('"virgin river chub" is the fish, "virgin river rules" is the river', [T.fishParse('virgin river chub', true).protected.name, T.fishParse('virgin river chub', true).water, fp('virgin river rules')[2]], ['Virgin River chub', null, 'virgin river']);
 ok('"middle provo rules" finds the two places on the middle Provo', [fp('middle provo rules')[2], T.fishParse('middle provo rules', true).water.refs.map(r => r.p).sort()], ['middle provo', ['p10573', 'p223']]);
+
+
+/* ---- the Fish box offers the hunt when the sentence is a hunting one. The offer reads the
+        sentence with every water's name taken out first, with the hunt finder's own species reader
+        (fGameIn), so a hunting word that is only part of a water's name never offers it. */
+ok('Fish box: "deer near fish lake" offers the deer hunt', T.fHuntOffer('deer near fish lake'), 'Hunting? Find deer hunts');
+ok('Fish box: other animals use the hunt finder\'s own words', ['Deer near Fish Lake', 'elk near the cabin', 'pheasant near home', 'ducks at willard bay', 'mountain goat', 'bighorn sheep near fish lake', 'fish lake deer'].map(s => T.fHuntOffer(s)),
+  ['Hunting? Find deer hunts', 'Hunting? Find elk hunts', 'Hunting? Find pheasant hunts', 'Hunting? Find duck hunts', 'Hunting? Find mountain goat hunts', 'Hunting? Find bighorn sheep hunts', 'Hunting? Find deer hunts']);
+ok('Fish box: a hunting word beside a water\'s name still offers the hunt ("deer creek reservoir rules deer")', T.fHuntOffer('deer creek reservoir rules deer'), 'Hunting? Find deer hunts');
+ok('Fish box: a hunting word that is only part of a water\'s name never offers the hunt',
+  ['Deer Creek Reservoir rules', 'deer creek reservoir', 'Duck Fork', 'duck fork rules', 'Duck Fork Reservoir', 'Bear Lake', 'bear lake cutthroat', 'Antelope Island', 'antelope island fishing', 'Moose Pond', 'moose pond',
+    'Sheep Creek Lake', 'sheep creek lake rules', 'quail creek reservoir bass', 'Swan Creek', 'Goose Creek', 'Deer Valley Lakes', 'Duck Creek Springs Lake', 'trout at deer creek'].map(s => T.fHuntOffer(s)),
+  Array(19).fill(null));
+ok('Fish box: fishing sentences do not offer the hunt', ['trout near home', 'bass', 'walleye at utah lake', 'bull trout', 'is pineview open', 'kokanee near the cabin', 'fishing in carbon county', ''].map(s => T.fHuntOffer(s)), Array(8).fill(null));
+{
+  /* Every water by every name the app knows it by (full and short), alone and in three fishing sentences, and every fish
+     the app names: none of them offers a hunt. 13 waters carry an animal's name (Deer Creek Reservoir, Duck Fork Reservoir,
+     Moose Pond, Quail Creek Reservoir, Sheep Creek and Lake, Swan Creek, Deer Valley Lakes and Ponds, Duck Creek Pond and
+     Springs Lake...), so this is the check that none of them leaks. */
+  const [full, short] = T.fWaterNames(), bad = [];
+  for (const [needle] of full.concat(short)) for (const t of ['%s', 'trout at %s', '%s rules', 'is %s open']) { const s = t.replace('%s', needle.trim()); if (T.fHuntOffer(s)) bad.push(s); }
+  ok('Fish box: no water name, full or short, alone or in a fishing sentence, offers a hunt', bad.slice(0, 5), []);
+  ok('Fish box: no fish name offers a hunt', T.F_FISH.map(f => f[1].toLowerCase()).filter(w => T.fHuntOffer(w) || T.fHuntOffer('catch ' + w + ' near home')), []);
+}
+{
+  /* The chip is drawn above the fishing results, and the results are still there. */
+  box.T.fish.now = '2026-09-27T12:00'; box.T.fish.mode = 'near';
+  T.fishRun('deer near fish lake');
+  let html = T.vFish();
+  const chip = html.indexOf('data-fhunt="1">Hunting? Find deer hunts</button>'), first = html.indexOf('data-fw="'), second = html.indexOf('class="sec-title"');
+  ok('Fish box: "deer near fish lake" draws the "Hunting? Find deer hunts" chip above the results, and the Fish Lake results beneath', [chip > 0, chip < first, chip < second, first > 0, />fish lake</i.test(html), /data-fw="fish-lake-sevier"/.test(html)], [true, true, true, true, true, true]);
+  ok('Fish box: only one hunt chip', (html.match(/data-fhunt=/g) || []).length, 1);
+  /* Tapping it opens Hunt > Find a hunt with the same sentence, the mirror of the hunt finder's "Fishing at ..." chip. */
+  box.tab = 'fish'; box.seasonsMode = 'dates';
+  const el = { dataset: { fhunt: '1' } };
+  (box.LIS.click || []).forEach(fn => fn({ target: { closest: sel => (sel.indexOf('[data-fhunt]') >= 0 ? el : null) } }));
+  ok('Fish box: tapping the chip opens Hunt > Find a hunt with the same sentence, read as deer', [box.tab, box.seasonsMode, box.fq.text, box.fq.parsed.sp, box.fq.parsed.fish === undefined], ['seasons', 'find', 'deer near fish lake', 'deer', true]);
+  T.fishRun('deer creek reservoir rules');
+  html = T.vFish();
+  ok('Fish box: "deer creek reservoir rules" draws no hunt chip and still shows the reservoir', [/data-fhunt=/.test(html), /Deer Creek Reservoir/.test(html)], [false, true]);
+  T.fishRun('trout near home'); html = T.vFish();
+  ok('Fish box: "trout near home" draws no hunt chip', /data-fhunt=/.test(html), false);
+  box.T.fish.now = null; box.T.fish.q = ''; box.T.fish.parsed = null;
+}
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

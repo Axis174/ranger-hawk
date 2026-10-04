@@ -1176,7 +1176,8 @@ function vFish() {
   let h = fBanners(now);
   h += `<form id="fishform" style="margin-top:12px"><input class="search" id="fishq" placeholder="trout near the cabin, or a water by name" value="${esc(fish.q)}" autocomplete="off"></form>
     <div class="seg" style="margin-top:10px">${[['near', 'Near'], ['rules', 'By water'], ['state', 'Statewide'], ['now', 'In force']].map(m => `<button data-fmode="${m[0]}" aria-pressed="${fish.mode === m[0] && !fish.parsed}">${m[1]}</button>`).join('')}</div>`;
-  if (fish.parsed) return h + `<div class="chipsrow"><button class="chip" data-fclear="1" aria-pressed="true">${esc(fish.q)} &times;</button></div>` + fishAnswer(fish.parsed) + F_FOOT();
+  if (fish.parsed) { const hunt = fHuntOffer(fish.q);
+    return h + `<div class="chipsrow"><button class="chip" data-fclear="1" aria-pressed="true">${esc(fish.q)} &times;</button>${hunt ? `<button class="chip" data-fhunt="1">${esc(hunt)}</button>` : ''}</div>` + fishAnswer(fish.parsed) + F_FOOT(); }
   if (fish.mode === 'near') h += `<div class="chipsrow">${['trout', 'bass', 'walleye', 'catfish', 'perch', 'crappie', 'bluegill', 'wiper', 'kokanee'].map(k => { const f = F_FISH.find(x => x[0] === k); return `<button class="chip" data-fsp="${k}">${esc(f[1])}</button>`; }).join('')}</div>` + vFishNear(now);
   if (fish.mode === 'rules') h += vFishRules(now);
   if (fish.mode === 'state') h += vFishState(now);
@@ -1185,6 +1186,20 @@ function vFish() {
 }
 
 /* -------------------------------------------------------------- events ---- */
+/* The Fish box is for fishing, but the same words can be a hunting sentence ("deer near fish
+   lake"). When the hunt finder's own species reader finds something to hunt, one chip offers
+   the hunt. It reads the sentence with every water's name taken out first (Deer Creek Reservoir,
+   Duck Fork, Bear Lake, Antelope Island, Elk Meadows), so a hunting word that is only part of a
+   water's name never offers it. Returns the chip's wording, or null. */
+function fHuntOffer(text) {
+  if (typeof fGameIn !== 'function' || !FR || !String(text || '').trim()) return null;
+  const t = fW(text), w = fishWaterIn(t, false) || fishWaterIn(t, 'two') || fishWaterIn(t, true);
+  let rest = w ? w.rest : t;
+  if (typeof F_PLACE_NOISE !== 'undefined') rest = rest.replace(F_PLACE_NOISE, ' ');
+  const g = fGameIn(rest.replace(F_FISH_NOISE, ' ').replace(/\bbull trout\b/g, ' '));   // a fish, not an elk
+  const name = g.gap ? g.gap[0] : g.bird ? (typeof F_BIRD_CHIP !== 'undefined' && F_BIRD_CHIP[g.bird[0]]) || g.bird[1] : g.sp ? F_LABEL[g.sp] : null;
+  return name ? 'Hunting? Find ' + name.toLowerCase() + ' hunts' : null;
+}
 function fishRun(text) { fishRead(text); render(); }
 /* Read a sentence into the fishing finder without drawing the screen. */
 function fishRead(text) {
@@ -1206,8 +1221,10 @@ document.addEventListener('input', e => {
   const n = $('fishq'); if (n) { n.focus(); n.setSelectionRange(s, s); }
 });
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-fp],[data-fw],[data-fmode],[data-fsp],[data-fclear],[data-fmore],[data-fretry]');
+  const t = e.target.closest('[data-fp],[data-fw],[data-fmode],[data-fsp],[data-fclear],[data-fmore],[data-fretry],[data-fhunt]');
   if (!t) return;
+  /* The mirror of the hunt finder's "Fishing at ..." chip: the same sentence, in Hunt > Find a hunt. */
+  if (t.dataset.fhunt) { const s = fish.q; tab = 'seasons'; if (typeof seasonsMode !== 'undefined') seasonsMode = 'find'; render(); window.scrollTo(0, 0); if (typeof fRun === 'function') fRun(s); return; }
   if (t.dataset.fretry) { fishLoad(true); render(); return; }
   if (!FR) return;
   if (t.dataset.fp) { const p = FPL[t.dataset.fp]; if (p) { openSheet(sheetFishPlace(p)); if (typeof loadWx === 'function') loadWx(p.lat, p.lon); } return; }

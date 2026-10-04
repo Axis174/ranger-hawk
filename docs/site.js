@@ -101,7 +101,7 @@ function vPrivacy() {
   <div class="sec-title">What leaves your phone</div><div class="card"><div class="card-b priv">
     <ul>
       <li><b>Loading the app.</b> The files come from rangerhawk.com, which is hosted on GitHub Pages. GitHub logs the IP address of every visitor for security. If the map or terrain is not saved yet, the pieces for the area on screen come from there too.</li>
-      <li><b>Fonts.</b> The lettering loads from Google Fonts, so Google receives your IP address and browser type when the app opens online.</li>
+      <li><b>Fonts.</b> The lettering is served from rangerhawk.com itself, along with the rest of the app. Nothing is loaded from Google or any other font service.</li>
       <li><b>Forecasts.</b> When you open a place while online, the app asks the National Weather Service for the forecast there. It sends the coordinates of the place you tapped, not your own.</li>
       <li><b>Road cameras.</b> Road camera pictures, when the app shows them, load from the camera addresses the Utah Department of Transportation publishes.</li>
       <li><b>Links you tap.</b> Directions open in Apple Maps with the place's coordinates. Agency pages and other sites open in your browser. Once you leave, that site's own privacy rules apply.</li>

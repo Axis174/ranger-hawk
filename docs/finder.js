@@ -45,6 +45,109 @@ function fLoad() {
   if (!ODDS) loadOdds();
   if (!UNITS) fetch('data/units_geo.json').then(r => r.json()).then(j => { UNITS = j.units; if (tab === 'seasons') render(); }).catch(() => {});
 }
+/* What a sentence says to hunt, read from text that already has its place names taken out:
+   { gap, bird, sp }. The one place the hunt finder's species words are tested; the Fish box
+   asks it too (fHuntOffer in fishing.js), so there is no second word list. */
+function fGameIn(st) {
+  const o = { gap: null, bird: null, sp: null };
+  for (const g of F_BIRD_GAPS) if (g[1].test(st)) { o.gap = g; break; }
+  if (!o.gap) for (const b of F_BIRDS) if (b[2].test(st)) { o.bird = b; break; }
+  if (!o.gap && !o.bird) for (const [k, re] of F_SPECIES) if (re.test(st)) { o.sp = k; break; }
+  return o;
+}
+/* A water as a place to hunt around. Only STILL waters (a lake, a reservoir, a pond) can be:
+   a river or creek crosses many hunt units and has no one point. A place counts only when the
+   fishing data marks it a lake or pond, it has a point, and its own name (before any comma, with
+   any bracket taken out) says lake, reservoir or pond - some "lake" places in the data are river
+   stretches ("Provo River, Middle, from Deer Creek Reservoir...") or areas ("Uinta Mountains,
+   Dry Gulch") and must never become a spot. The label is the place's name and county exactly as
+   the Fish screen writes them. */
+const F_STILL_WORD = /\b(reservoirs?|lakes?|ponds?|res)\b/g;
+const F_MOVING_WORD = /\b(rivers?|creeks?|streams?|forks?|tributar(?:y|ies)|inlets?|inflows?|canals?|sloughs?)\b/g;
+const fPlaceBase = p => String(p.n).split(',')[0].replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+/* A still water's own name must END in lake, lakes, reservoir, pond or ponds (or begin "Lake "),
+   and must not hold a mountain word: "Thousand Lake Mountain" and "Tushar (Beaver) Mountain
+   Lakes" are tagged lakes in the data but are a mountain and an area, not a water with a shore. */
+const fStillBase = p => fPlaceBase(p).replace(/\s*(&|and)\s*state park$/, '').replace(/\s+no\.?\s*\d+$/, '');   // "Yuba Reservoir & State Park", "Blanding Reservoir No. 4"
+const fStillPlace = p => !!p && p.lat != null && p.lon != null && (p.k === 'lake' || p.k === 'pond') &&
+  (/\b(reservoirs?|lakes?|ponds?|res)$/.test(fStillBase(p)) || /^lake\s/.test(fStillBase(p))) && !/\b(mountains?|mtns?|peaks?|plateau|range)\b/.test(fStillBase(p));
+/* Waters too big for one point to stand for: Lake Powell's point is not on the lake and misses 14
+   of the 19 units its shore touches; Flaming Gorge's point is in Wyoming. Never used as a spot. */
+const F_BIG_WATERS = ['lake powell', 'flaming gorge reservoir'];
+/* A water named after one of these is a vague phrase ("a little reservoir", "the kids pond"),
+   not the water of that name. */
+const F_VAGUE_BEFORE = /^(a|an|the|some|any|this|that)$/;
+const fWaterLabel = p => p.n + (p.c ? ', ' + p.c + ' Co.' : '');
+const fWaterPlace = p => ({ kind: 'water', id: p.id, label: fWaterLabel(p), lat: p.lat, lon: p.lon });
+/* The LAST water word in the name decides: "Deer Creek Reservoir" is a reservoir, "Provo River
+   Delta" a river, "Lake Fork" a fork. A name with neither is not called a river. */
+function fNamedMoving(name) {
+  let last = null, m;
+  for (const re of [F_STILL_WORD, F_MOVING_WORD]) { const g = new RegExp(re.source, 'g'); while ((m = g.exec(name))) if (!last || m.index > last.i) last = { i: m.index, moving: re === F_MOVING_WORD }; }
+  return !!(last && last.moving);
+}
+/* What a water named in a sentence is, for the hunt finder. fWaterRead says what KIND of water
+   it is and never looks at the words around it:
+     { one: place } | { many: [places] } | { big: place } | { river: true } | { nopoint: true } |
+     { plain: true } (a still water the name check keeps out, or a short still name: it blocks a
+     unit name inside it but says nothing and makes no place) | null (not a water to the finder).
+   Only a water NAMED IN FULL can become a place (wtr.short is a shorter way of saying it, "duck
+   fork", "carbon county", "skyline drive": too close to ordinary words, towns and counties). A
+   short name still counts as a water for the two things that cost nothing: a unit name inside it
+   is not a unit, and a short name that is a river or creek gets the river line. The river line and
+   the "no map point" line need the full name to END in a water word, so a hunting property
+   ("Stewart Lake WMA") or a range ("Uinta Mountains") never gets one; "no map point" is only for
+   a still water with no lake or pond place in the data at all. */
+const F_MOVING_END = /\b(rivers?|creeks?|streams?|forks?|tributar(?:y|ies)|inlets?|inflows?|canals?|sloughs?)$/;
+const F_STILL_END = /\b(reservoirs?|lakes?|ponds?|res)$/;
+const fRefName = r => String((r.p ? (FPL[r.p] || {}).n : (FW[r.w] || FCOM[r.w] || {}).name) || '').split(',')[0].replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+const F_AREA_WORD = /\b(mountains?|mtns?|peaks?|plateau|range)\b/;   // "Wasatch Mtn State Park Pond", "Monroe Mountain Lakes": an area, not a shore
+function fWaterRead(wtr) {
+  const r = fWaterKind(wtr);
+  return r && r.plain && F_AREA_WORD.test(wtr.needle) ? null : r;   // an area name never blocks the unit named in it
+}
+function fWaterKind(wtr) {
+  if (!wtr || typeof FPL === 'undefined' || typeof FBYW === 'undefined') return null;
+  if (wtr.short) {
+    const names = (wtr.refs || []).map(fRefName).filter(Boolean);
+    if (!F_STILL_END.test(wtr.needle) && names.length && names.every(fNamedMoving)) return { river: true };
+    return names.some(n => F_STILL_END.test(n)) ? { plain: true } : null;
+  }
+  if (fNamedMoving(wtr.needle)) return F_MOVING_END.test(wtr.needle) ? { river: true } : null;
+  const pts = [], any = [], add = p => { if (!p) return; if (p.lat != null && p.lon != null && (p.k === 'lake' || p.k === 'pond') && any.indexOf(p) < 0) any.push(p); if (fStillPlace(p) && pts.indexOf(p) < 0) pts.push(p); };
+  for (const r of wtr.refs || []) { if (r.p) add(FPL[r.p]); if (r.w) (FBYW[r.w] || []).forEach(add); }
+  const big = pts.find(p => F_BIG_WATERS.indexOf(fPlaceBase(p)) >= 0);
+  if (big) return { big };
+  if (pts.length === 1) return { one: pts[0] };
+  if (pts.length > 1) return { many: pts };
+  if (!F_STILL_END.test(wtr.needle)) return null;
+  return any.length ? { plain: true } : { nopoint: true };
+}
+/* What fWaterRead gives, less the cases a vague phrase turns off: a name directly after a, an,
+   the, some, any, this or that is not turned into a place or a line (null), so "deer near a big
+   lake" reads exactly as it always did. A river keeps its line: it resolves nothing. */
+function fWaterSpot(wtr, text) {
+  const r = fWaterRead(wtr);
+  if (!r || r.river || r.plain) return r && r.river ? r : null;
+  if (text != null) {
+    const t = fWords(text), i = t.indexOf(' ' + wtr.needle + ' ');
+    if (i >= 0 && F_VAGUE_BEFORE.test(t.slice(0, i).trim().split(' ').pop())) return null;
+  }
+  return r;
+}
+/* A species was found, no place was, and the sentence names a water: set q.place to its one
+   point, or q.waterPick (which one?), or q.waterNote (why the question is still Where?). */
+function fWaterApply(q) {
+  q.waterNote = null; q.waterPick = null;
+  if (q.place || !q.sp || !q.waterHit) return;
+  const s = fWaterSpot(q.waterHit, q.text);
+  if (!s) return;
+  if (s.one) q.place = fWaterPlace(s.one);
+  else if (s.many) q.waterPick = s.many;
+  else if (s.big) { q.waterNote = 'big'; q.waterBig = fWaterLabel(s.big); }
+  else if (s.river) q.waterNote = 'river';
+  else if (s.nopoint) q.waterNote = 'nopoint';
+}
 /* Read the sentence. Anything not found becomes a question. */
 function fParse(text) {
   /* Fishing is asked first. Utah's waters borrow the names of its game ("Sheep Creek
@@ -73,9 +176,7 @@ function fParse(text) {
   const wtr2 = wtr || (typeof fishWaterIn === 'function' ? fishWaterIn(text, 'two') : null);
   const q = { text, sp: null, bird: null, gap: null, wp: null, place: null, alsoUnit: null, pt: null, wantAntlerless: /\b(cow|antlerless|doe|meat|freezer)\b/.test(t), wantGeneral: /\b(general|over the counter|otc|no draw|guaranteed)\b/.test(t), wantLE: /\b(limited|draw|le |trophy|bonus)\b/.test(t) };
   const st = (wtr2 ? wtr2.rest : t).replace(F_PLACE_NOISE, ' ');   // species read from text with place names removed
-  for (const g of F_BIRD_GAPS) if (g[1].test(st)) { q.gap = g; break; }
-  if (!q.gap) for (const b of F_BIRDS) if (b[2].test(st)) { q.bird = b; break; }
-  if (!q.gap && !q.bird) for (const [k, re] of F_SPECIES) if (re.test(st)) { q.sp = k; break; }
+  { const g = fGameIn(st); q.gap = g.gap; q.bird = g.bird; q.sp = g.sp; }
   for (const [k, re] of F_WEAPON) if (re.test(t)) { q.wp = k; break; }
   const m = /(\d{1,2})\s*(?:bonus|preference)?\s*(?:points?|pts)/.exec(t); if (m) q.pt = +m[1];
   let hitAlias = null;
@@ -96,14 +197,34 @@ function fParse(text) {
   }
   if (!q.place && /\b(here|where i am|my location|gps|right now)\b/.test(t)) q.place = { kind: 'gps' };
   if (!q.place && UNITS) {                                   // a unit named outright, longest match wins
-    const hit = fUnitNames().find(([needle]) => t.includes(needle));
+    const all = fUnitNames();
+    /* A unit name that lies inside the words of a water the fishing data knows - a still water
+       or a river, by its full name or a short one ("joes valley reservoir", "diamond fork",
+       "panguitch lake") - is the water, not the unit, whatever the water's point is under and
+       whether or not the sentence has "the" in front of it. A unit named OUTSIDE those words
+       wins as before. The water is then handled by the water rules (fWaterApply below). */
+    let a0 = -1, a1 = -1;
+    if (wtr2 && fWaterRead(wtr2)) { const i = t.indexOf(' ' + wtr2.needle + ' '); if (i >= 0) { a0 = i + 1; a1 = i + 1 + wtr2.needle.length; } }
+    /* One exception: a SHORT name that is exactly a unit's name ("pine valley", "east canyon", "san
+       juan", "nine mile") is the unit named outright; the short name is only an alias of a water. */
+    /* Compare spans. A unit match that lies inside the water's words, or is exactly them, is the
+       water. One that is longer and contains them ("Panguitch Lake/Zion" around "panguitch lake",
+       "San Juan Bull Elk", "Utah Lake Extended Archery Area") is a unit named outright, and so is
+       a match when the word "unit" or "units" comes straight after the water ("the panguitch lake
+       unit"), with or without an article. */
+    const unitWord = a0 >= 0 && /^(units?)( |$)/.test(t.slice(a1 + 1).trimStart());
+    const clear = needle => { if (wtr2 && wtr2.short && needle.trim() === wtr2.needle) return true; let p = t.indexOf(needle); while (p >= 0) { const s0 = p + 1, e0 = p + needle.length - 1; if (a0 < 0 || unitWord || !(s0 >= a0 && e0 <= a1)) return true; p = t.indexOf(needle, p + 1); } return false; };
+    const hit = all.find(([needle]) => clear(needle));
     if (hit) q.place = { kind: 'unit', label: hit[1], units: UNITS.filter(u => u.n.split(',')[0] === hit[1]).map(u => u.n) };
   }
   /* Nothing to hunt was named and a water was. If it is not also the name of a hunt
      unit, the sentence is about that water, and fishing can answer it. If it is both
      ("Panguitch Lake"), the hunt finder keeps it and offers the water in one tap. */
   if (wtr && !q.sp && !q.bird && !q.gap && !q.wp && !(q.place && q.place.kind === 'unit') && !(typeof F_HUNT_WORD !== 'undefined' && F_HUNT_WORD.test(wtr.rest))) return { text, fish: fishParse(text, true) };
-  if (wtr2) q.alsoWater = wtr2.needle;
+  if (wtr2) { q.alsoWater = wtr2.needle; q.waterHit = wtr2; }
+  /* Big game and a water, and nothing else gave a place (a home word, GPS words and a unit
+     named outright all came first and still win). */
+  fWaterApply(q);
   return q;
 }
 const fBase = n => (n || '').split(',')[0].replace(/\s*\(.*\)\s*/, '').trim().toLowerCase();
@@ -325,22 +446,29 @@ const fGapNotice = g => `<div class="warnbox" style="margin-top:12px"><b>${esc(g
 function vFind() {
   fLoad();
   const q = fq.parsed || null;
+  if (q && !q.fish && q.place && q.place.kind === 'gps' && q.place.lat == null) fGpsEnsure();   // never left waiting with nothing pending
   let h = `<form id="findform" style="margin-top:12px"><input class="search" id="findq" placeholder="pheasant near home, elk by my cabin, or trout near the cabin" value="${esc(fq.text)}"><div class="acts" style="padding:8px 0 0"><button class="btn" type="submit">Find hunts</button></div></form>
     <p class="fine" style="padding-left:2px">Try: "elk by the cabin", "pheasant near home", "chukar where I am", "archery deer near Torrey", "limited entry elk Wasatch, 7 points", "trout near the cabin", "Strawberry Reservoir rules". Works with no signal.</p>`;
   if (!q) return h;
   if (q.fish) return h + (FR ? fStale(fNow(), null, false) : '') + fishAnswer(q.fish) + (FR ? F_FOOT() : '');    // fishing answers from the guidebook rules and UDWR's places
   if (q.gap) return h + fGapNotice(q.gap);                 // named it, but there is no data to stand behind
-  if (q.bird) return h + fBirdView(q);                     // birds answer from seasons + access, not hunt units
+  if (q.bird) return h + (q.gpsErr ? `<div class="warnbox" style="margin-top:4px">${esc(q.gpsErr)}</div>` : '') + fBirdView(q);                     // birds answer from seasons + access, not hunt units
   if (!HU || !UNITS) return h + '<p class="empty">Loading the hunt lists&hellip;</p>';
   // Questions first
   const water = q.alsoWater ? `<div class="warnbox" style="margin-top:4px"><b>That sentence also names a water.</b> This answer is about hunting. For the fishing rules:</div>
     <div class="chipsrow"><button class="chip" data-fask="usewater" data-fval="${esc(q.alsoWater)}">Fishing at ${esc(q.alsoWater)}</button></div>` : '';
   if (!q.sp) return h + water + fAsk('What do you want to hunt?', Object.entries(F_LABEL).concat(F_BIRDS.map(b => ['bird:' + b[0], F_BIRD_CHIP[b[0]]])), 'sp');
-  if (!q.place) return h + fAsk('Where?', (DB.config.homes || []).map(x => [x.id, x.label]).concat([['gps', 'Where I am now']]), 'place') + '<p class="fine" style="padding-left:2px">Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
+  /* The same Where? question every time, with a line above it when the sentence named a water
+     that could not be turned into a place. */
+  const ask = note => (q.gpsErr ? `<div class="warnbox" style="margin-top:4px">${esc(q.gpsErr)}</div>` : '') + (note ? `<div class="warnbox" style="margin-top:4px">${esc(note)}</div>` : '') + fAsk('Where?', (DB.config.homes || []).map(x => [x.id, x.label]).concat([['gps', 'Where I am now']]), 'place') + '<p class="fine" style="padding-left:2px">Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
+  if (!q.place && q.waterPick) return h + fAsk('Which one?', q.waterPick.map(p => [p.id, fWaterLabel(p)]), 'wplace') + '<p class="fine" style="padding-left:2px">More than one water has that name. Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
+  if (!q.place) return h + ask(q.waterNote === 'river' ? F_RIVER_LINE : q.waterNote === 'nopoint' ? F_NOPOINT_LINE : q.waterNote === 'big' ? q.waterBig + ' touches many hunt units. Pick a place, name a unit, or use Where I am now.' : '');
   if (q.place.kind === 'gps' && !q.place.lat) return h + `<p class="empty">Getting a GPS fix&hellip;</p>`;
   const myUnits = q.place.units || (q.place.lat ? unitsAt(q.place.lon, q.place.lat).map(u => u.n) : []);
+  const isWater = q.place.kind === 'water';
   if (!myUnits.length) return h + `<p class="empty">No hunt boundary found under ${esc(q.place.label || 'that spot')}. Try naming a unit.</p>`;
   const res = fResults(q, myUnits);
+  if (isWater) h += `<div class="warnbox" style="margin-top:4px">Units at one point on ${esc(q.place.label)}${/\.$/.test(q.place.label) ? '' : '.'} A lake can touch more than one hunt unit. Check the unit boundary map before you hunt.</div>`;
   h += `<div class="sec-title">${esc(F_LABEL[q.sp])}${q.wp ? ' &middot; ' + esc(q.wp) : ''} &middot; ${esc(q.place.label || 'here')}</div>
     <p class="fine" style="padding-left:2px">Hunt boundaries under that spot: <b>${fList(myUnits)}</b>. One place can sit in several overlapping hunts, so check the boundary on the map before you buy.</p>`;
   /* Only offer the switch for units that would actually answer. The boundary layer and the
@@ -356,7 +484,45 @@ function vFind() {
   h += `<p class="fine" style="padding-left:2px">General dates from the 2026 guidebook; unit lists from UDWR's 2026 hunt boundaries; draw odds from UDWR's published results. Over-the-counter permits still have sale dates and, for some hunts, caps. Confirm at wildlife.utah.gov before you buy.</p>`;
   return h;
 }
+const F_RIVER_LINE = 'A river runs through many hunt units. Pick a place, name a unit, or use Where I am now.';
+const F_NOPOINT_LINE = 'Ranger Hawk has no map point for that water. Pick a place, name a unit, or use Where I am now.';
 const fAsk = (question, opts, key) => `<div class="sec-title">${esc(question)}</div><div class="chipsrow">${opts.map(([v, l]) => `<button class="chip" data-fask="${key}" data-fval="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
+/* Ask the phone where it is, the way the Today screen's "Where am I" does, and answer from it.
+   The request belongs to the SENTENCE, not to one parse of it: when the fishing rules land and
+   the sentence is read again (fishing.js), the new parse is waiting for the same fix, and gets
+   it from here. A refusal, a timeout or no location service is said in words, never a silent
+   nothing, and the screen is never left on "Getting a GPS fix" with nothing pending. */
+let fGpsReq = null;                                        // { text, state: 'pending' | 'fix' | 'err', lat, lon, msg }
+function fGpsStart(text) {
+  const r = fGpsReq = { text, state: 'pending' };
+  if (!navigator.geolocation) { r.state = 'err'; r.msg = 'This phone is not sharing location with the app.'; return r; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    if (fGpsReq !== r) return;
+    r.state = 'fix'; r.lat = pos.coords.latitude; r.lon = pos.coords.longitude; fGpsApply(); render();
+  }, err => {
+    if (fGpsReq !== r) return;
+    r.state = 'err';
+    r.msg = err && err.code === 1 ? 'No GPS fix: ' + (err.message || 'location was refused') + '. Allow location for this app in the phone settings and try again.' : 'No GPS fix yet. Try again in the open.';
+    fGpsApply(); render();
+  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+  return r;
+}
+/* Put the recorded result on the current answer if it is still waiting for a fix and is the same sentence. */
+function fGpsApply() {
+  const q = fq.parsed, r = fGpsReq;
+  if (!q || q.fish || !q.place || q.place.kind !== 'gps' || q.place.lat != null || !r || r.text !== fq.text) return;
+  if (r.state === 'fix') { q.place = { kind: 'gps', label: 'where I am', lat: r.lat, lon: r.lon }; q.gpsErr = null; }
+  else if (r.state === 'err') { q.place = null; q.gpsErr = r.msg; }
+}
+/* An answer that is waiting for a fix: use the recorded result, or start a request if none is on its way. */
+function fGpsEnsure() {
+  if (!fGpsReq || fGpsReq.text !== fq.text) fGpsStart(fq.text);
+  fGpsApply();
+}
+function fGps(q) {                                         // the chip, or a sentence that says "where I am"
+  q.gpsErr = null; q.place = { kind: 'gps' };
+  fGpsStart(fq.text); fGpsApply();
+}
 function fRun(text) {
   fq.text = text; fq.touched = false; fq.parsed = fParse(text);
   if (fq.parsed.fish) {
@@ -367,10 +533,7 @@ function fRun(text) {
     }
     render(); return;
   }
-  if (fq.parsed.place && fq.parsed.place.kind === 'gps' && navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(p => { fq.parsed.place = { kind: 'gps', label: 'where I am', lat: p.coords.latitude, lon: p.coords.longitude }; render(); },
-      () => { fq.parsed.place = null; render(); }, { enableHighAccuracy: true, timeout: 15000 });
-  }
+  if (fq.parsed.place && fq.parsed.place.kind === 'gps') fGps(fq.parsed);
   render();
 }
 document.addEventListener('submit', e => { if (e.target.id === 'findform') { e.preventDefault(); fRun($('findq').value.trim()); } });
@@ -379,9 +542,11 @@ document.addEventListener('click', e => {
   fq.touched = true;                                       // answers given by tapping are not thrown away by a later re-read
   const q = (fq.parsed && !fq.parsed.fish) ? fq.parsed : fParse(''); const v = t.dataset.fval;
   if (t.dataset.fask === 'sp') { if (v.indexOf('bird:') === 0) { q.bird = fBird(v.slice(5)); q.sp = null; } else { q.sp = v; q.bird = null; } }
+  if (t.dataset.fask === 'sp' && q.sp) fWaterApply(q);     // "hunt near fish lake", then the animal: the water becomes the place now
+  if (t.dataset.fask === 'wplace') { const p = (q.waterPick || []).find(x => x.id === v); if (p) { q.place = fWaterPlace(p); q.waterPick = null; } }
   if (t.dataset.fask === 'usewater') { fq.parsed = { text: fq.text, fish: fishParse(v, true) }; render(); return; }
   if (t.dataset.fask === 'useunit') { q.place = { kind: 'unit', label: v, units: (UNITS || []).filter(u => u.n.split(',')[0] === v).map(u => u.n) }; q.alsoUnit = null; }
   if (t.dataset.fask === 'wp') q.wp = v === 'any' ? null : v, q.wpAsked = true;
-  if (t.dataset.fask === 'place') { const h = (DB.config.homes || []).find(x => x.id === v); q.place = h ? { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon } : { kind: 'gps' }; if (!h) { fq.parsed = q; fRun(fq.text); return; } }
+  if (t.dataset.fask === 'place') { const h = (DB.config.homes || []).find(x => x.id === v); q.place = h ? { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon } : { kind: 'gps' }; if (!h) { fq.parsed = q; fGps(q); render(); return; } else q.gpsErr = null; }
   fq.parsed = q; render();
 });
