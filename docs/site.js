@@ -8,7 +8,7 @@
 /* Visitor count. Empty string = off: no request is made and the Privacy screen says so.
    Set this to a GoatCounter site code (the part before .goatcounter.com) to switch it on;
    the Privacy screen changes with it. See README, "Privacy, money and paid links". */
-const COUNTER_CODE = '';
+const COUNTER_CODE = 'rangerhawk';
 
 /* ------------------------------------------------------------ paid links --- */
 /* data/paid_links.json is { "links": [ { slot, company, label, url } ] }. Loaded the way

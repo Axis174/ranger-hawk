@@ -424,13 +424,13 @@ optional: the mark is what the Privacy and money screens promise, and `sponsored
 search engines and the affiliate networks expect. The money screen lists the companies of
 the links that are drawn, so it stays true by itself.
 
-**The visitor count (off).** `COUNTER_CODE` at the top of `docs/site.js` is empty, so no
-request is ever made and the Privacy screen says visitors are not counted. Setting it to a
-GoatCounter site code turns on one image request per screen per app open (the screen name
-only, plus the referring site on the first), to GoatCounter's `/count` pixel endpoint, with
-no script loaded. Setting it also swaps the "Counting visitors" paragraph on the Privacy
-screen for the one that names GoatCounter. Leave it empty until there is a GoatCounter
-site code. Tests: `node scraper/test_site.js`.
+**The visitor count (on since v31).** `COUNTER_CODE` at the top of `docs/site.js` is
+`rangerhawk`, so the app sends one image request per screen per app open (the screen name
+only, plus the referring site on the first) to GoatCounter's `/count` pixel endpoint, with
+no script loaded. The numbers are at rangerhawk.goatcounter.com. The Privacy screen names
+GoatCounter in its "Counting visitors" paragraph. Emptying the code switches counting off
+and swaps that paragraph back by itself. GoatCounter's free plan is for non-commercial
+use: revisit it before the first paid link goes live. Tests: `node scraper/test_site.js`.
 
 ## On social media
 

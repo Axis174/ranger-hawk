@@ -12,7 +12,7 @@ const source = fs.readFileSync(path.join(ROOT, 'docs', 'site.js'), 'utf8');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-/* One page. code is the COUNTER_CODE to test with ('' is the shipped value). */
+/* One page. code is the COUNTER_CODE to test with ('' is off; the shipped value is the live site code). */
 function page(code, opts) {
   opts = opts || {};
   const sent = [], renders = [], fetches = [];
@@ -30,7 +30,7 @@ function page(code, opts) {
     }
   };
   vm.createContext(box);
-  vm.runInContext(source.replace("const COUNTER_CODE = '';", 'const COUNTER_CODE = ' + JSON.stringify(code) + ';') +
+  vm.runInContext(source.replace(/const COUNTER_CODE = '[^']*';/, 'const COUNTER_CODE = ' + JSON.stringify(code) + ';') +
     '\n;this.T = { paidLink, vPrivacy, vMoney, siteCount, plLoad, plShown,' +
     ' setLinks: l => { PL = { links: l }; plState = "ready"; }, state: () => plState };', box);
   return { T: box.T, box, sent, renders, fetches };
@@ -189,7 +189,7 @@ async function run() {
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);
-    ok('sw.js is v30 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v30'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/paid_links.json'") > 0);
+    ok('sw.js is v31 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v31'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/paid_links.json'") > 0);
   }
 
   console.log(`${pass} passed, ${fail} failed`);
