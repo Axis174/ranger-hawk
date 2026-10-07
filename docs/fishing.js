@@ -949,6 +949,27 @@ function fishWaterIn(text, short) {
   }
   return null;
 }
+/* Every water the sentence names, not only the first one fishWaterIn keeps: full names first,
+   then two-word short names, each in the shape fishWaterIn returns. A name that runs over words
+   an earlier one already took ("diamond fork" taken, then a shorter name inside it) is skipped. */
+function fishWatersIn(text) {
+  if (!FR) return [];
+  const t = fW(text), out = [], spans = [];
+  const take = (needle, refs, short) => {
+    const i = t.indexOf(needle); if (i < 0) return;
+    const s0 = i + 1, e0 = i + needle.length - 1;
+    if (spans.some(([a, b]) => s0 < b && e0 > a)) return;
+    spans.push([s0, e0]);
+    out.push(short ? { needle: needle.trim(), refs, short: true } : { needle: needle.trim(), refs });
+  };
+  for (const [needle, refs] of fWaterNames()) take(needle, refs, false);
+  for (const [needle, refs] of fShort) {
+    if (needle.trim().indexOf(' ') < 0) continue;
+    if (t.indexOf(needle) >= 0 && fSplitsGame(t, needle.trim())) continue;
+    take(needle, refs, true);
+  }
+  return out;
+}
 /* "in carbon county", "san juan co": the county, and the sentence without it. */
 function fCountyIn(t) {
   for (const n of F_COUNTIES.slice().sort((a, b) => b.length - a.length)) {

@@ -201,21 +201,37 @@ function fParse(text) {
     /* A unit name that lies inside the words of a water the fishing data knows - a still water
        or a river, by its full name or a short one ("joes valley reservoir", "diamond fork",
        "panguitch lake") - is the water, not the unit, whatever the water's point is under and
-       whether or not the sentence has "the" in front of it. A unit named OUTSIDE those words
-       wins as before. The water is then handled by the water rules (fWaterApply below). */
-    let a0 = -1, a1 = -1;
-    if (wtr2 && fWaterRead(wtr2)) { const i = t.indexOf(' ' + wtr2.needle + ' '); if (i >= 0) { a0 = i + 1; a1 = i + 1 + wtr2.needle.length; } }
-    /* One exception: a SHORT name that is exactly a unit's name ("pine valley", "east canyon", "san
-       juan", "nine mile") is the unit named outright; the short name is only an alias of a water. */
-    /* Compare spans. A unit match that lies inside the water's words, or is exactly them, is the
+       whether or not the sentence has "the" in front of it. This holds for EVERY water the
+       sentence names, not only the one the fishing rules keep: "elk diamond fork near strawberry
+       reservoir" names two waters, and "diamond" is a piece of the first, so it is not Diamond Mtn.
+       A unit named OUTSIDE all those words wins as before. The water is then handled by the water
+       rules (fWaterApply below), which answer for the one water kept. */
+    const spans = [];
+    for (const w of (typeof fishWatersIn === 'function' ? fishWatersIn(text) : [])) {
+      if (!fWaterRead(w)) continue;                            // an area name ("wasatch mountain") never blocks a unit
+      const i = t.indexOf(' ' + w.needle + ' ');
+      if (i >= 0) spans.push({ a0: i + 1, a1: i + 1 + w.needle.length, short: !!w.short, needle: w.needle });
+    }
+    /* Compare spans. A unit match that lies inside a water's words, or is exactly them, is the
        water. One that is longer and contains them ("Panguitch Lake/Zion" around "panguitch lake",
-       "San Juan Bull Elk", "Utah Lake Extended Archery Area") is a unit named outright, and so is
-       a match that is the whole water name when the word "unit" or "units" comes straight after it
-       ("the panguitch lake unit"), with or without an article. A needle that is only a FRAGMENT of the
-       water's name ("diamond" in "diamond fork unit", "valley" in "joes valley unit") is still the
-       water: the water rules answer as they do without the word "unit". */
-    const unitWord = a0 >= 0 && /^(units?)( |$)/.test(t.slice(a1 + 1).trimStart());
-    const clear = needle => { if (wtr2 && wtr2.short && needle.trim() === wtr2.needle) return true; let p = t.indexOf(needle); while (p >= 0) { const s0 = p + 1, e0 = p + needle.length - 1; if (a0 < 0 || !(s0 >= a0 && e0 <= a1) || (unitWord && s0 === a0 && e0 === a1)) return true; p = t.indexOf(needle, p + 1); } return false; };
+       "San Juan Bull Elk", "Utah Lake Extended Archery Area") is a unit named outright. So is a
+       short name that is exactly a unit's name ("pine valley", "east canyon", "san juan", "nine
+       mile"): the short name is only an alias of a water. So is a match that is the whole water
+       name when the word "unit" or "units" comes straight after it ("the panguitch lake unit"),
+       with or without an article. A needle that is only a FRAGMENT of a water's name ("diamond" in
+       "diamond fork unit", "valley" in "joes valley unit") is still the water: the water rules
+       answer as they do without the word "unit". */
+    const unitWord = sp => /^(units?)( |$)/.test(t.slice(sp.a1 + 1).trimStart());
+    const clear = needle => {
+      if (spans.some(sp => sp.short && needle.trim() === sp.needle)) return true;
+      let p = t.indexOf(needle);
+      while (p >= 0) {
+        const s0 = p + 1, e0 = p + needle.length - 1;
+        if (!spans.some(sp => s0 >= sp.a0 && e0 <= sp.a1 && !(unitWord(sp) && s0 === sp.a0 && e0 === sp.a1))) return true;
+        p = t.indexOf(needle, p + 1);
+      }
+      return false;
+    };
     const hit = all.find(([needle]) => clear(needle));
     if (hit) q.place = { kind: 'unit', label: hit[1], units: UNITS.filter(u => u.n.split(',')[0] === hit[1]).map(u => u.n) };
   }

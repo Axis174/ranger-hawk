@@ -414,6 +414,30 @@ screen('fishing permit', 'fish');
       const b = answer('elk diamond fork unit');
       ok('"elk diamond fork unit": the river line and Where?, no rows', !b.q.place && b.q.waterNote === 'river' && b.asks && b.rows === 0 && b.txt.indexOf(RIVER) >= 0, JSON.stringify([b.q.place, b.q.waterNote]));
     }
+    /* Two waters in one sentence: a unit name inside the words of EITHER water is that water, not the unit. The place is the water the parser keeps (Strawberry Reservoir, a full name), as it is without the other water. */
+    for (const sen of ['elk diamond fork near strawberry reservoir', 'elk strawberry reservoir near diamond fork', 'deer near diamond fork and strawberry reservoir']) {
+      const b = answer(sen), sp = sen.split(' ')[0];
+      ok(`"${sen}": ${sp}, the place is the water Strawberry Reservoir, not a unit (no Diamond Mtn from the fragment "diamond")`, b.q.sp === sp && b.q.place && b.q.place.kind === 'water' && b.q.place.label === 'Strawberry Reservoir, Wasatch Co.' && b.units.indexOf('Diamond Mtn') < 0, JSON.stringify([b.q.sp, b.q.place]));
+    }
+    {
+      const b = answer('elk diamond fork near strawberry reservoir'), b0 = answer('elk near strawberry reservoir');
+      ok('"elk diamond fork near strawberry reservoir" answers exactly as "elk near strawberry reservoir" does', same(b.q.place, b0.q.place) && b.rows === b0.rows && b.asks === b0.asks, JSON.stringify([b.q.place, b0.q.place]));
+    }
+    /* What must not change. */
+    {
+      const q = P.box.fParse('elk diamond fork');
+      ok('"elk diamond fork" alone: elk, no place, the river note, as before', q.sp === 'elk' && !q.place && q.waterNote === 'river', JSON.stringify([q.sp, q.place, q.waterNote]));
+      for (const sen of ['elk diamond mtn', 'elk diamond mountain']) {
+        const b = P.box.fParse(sen);
+        ok(`"${sen}": the unit Diamond Mtn, as before`, b.place && b.place.kind === 'unit' && b.place.label === 'Diamond Mtn', JSON.stringify(b.place));
+      }
+      const g = P.box.fParse('tushar mountain goat');
+      ok('"tushar mountain goat": the animal is mountain goat, as before', g.sp === 'mountain goat', JSON.stringify(g.sp));
+      const pv = P.box.fParse('deer pine valley');
+      ok('"deer pine valley": the Pine Valley unit (a short name that is exactly a unit\'s name), as before', pv.place && pv.place.kind === 'unit' && pv.place.label === 'Pine Valley', JSON.stringify(pv.place));
+      const pl = P.box.fParse('the panguitch lake unit');
+      ok('"the panguitch lake unit": the unit Panguitch Lake, as before', pl.place && pl.place.kind === 'unit' && pl.place.label === 'Panguitch Lake', JSON.stringify(pl.place));
+    }
     /* A river whose name holds a unit's name stays consistent with the water's point, but is still silent about the unit: it is the river, not the unit Ogden. */
     for (const sen of ['ogden river unit', 'elk ogden river unit']) {
       const b = answer(sen), b0 = answer(sen.replace(/ unit$/, ''));
