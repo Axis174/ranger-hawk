@@ -394,8 +394,40 @@ screen('fishing permit', 'fish');
   {
     const b = answer('elk in the panguitch lake unit');
     ok('"elk in the panguitch lake unit": the old answer, 10 rows', b.rows === 10, 'rows=' + b.rows);
-    const c = answer('elk in the joes valley reservoir unit');
-    ok('"unit" after another water\'s name also means a unit, never a water spot', c.q.place && c.q.place.kind === 'unit' && c.txt.indexOf('Units at one point') < 0, JSON.stringify(c.q.place));
+    /* "unit" after a water's name does not make a FRAGMENT of that name the unit ("valley" in "joes valley reservoir"): the answer is the one the same sentence gives without "unit". */
+    const c = answer('elk in the joes valley reservoir unit'), c0 = answer('elk in the joes valley reservoir');
+    ok('"elk in the joes valley reservoir unit": no unit is picked from a fragment of the water\'s name (not Valley Mtns); after "the" it is the plain Where? screen, no rows', !c.q.place && !c.q.waterNote && !c.q.waterPick && c.asks && c.rows === 0 && c.units.indexOf('Valley Mtns') < 0 && c.txt.indexOf('Units at one point') < 0, JSON.stringify(c.q.place));
+    ok('"elk in the joes valley reservoir unit" answers exactly as it does without the word "unit"', same(c.q.place, c0.q.place) && c.asks === c0.asks && c.rows === c0.rows, JSON.stringify([c.q.place, c0.q.place]));
+    const d = answer('elk joes valley reservoir unit'), d0 = answer('elk joes valley reservoir');
+    ok('"elk joes valley reservoir unit": the water is the place (Joes Valley Reservoir, units at its point, the one-point caution), not Valley Mtns', d.q.place && d.q.place.kind === 'water' && d.q.place.label === 'Joes Valley Reservoir, Emery Co.' && d.units.indexOf('Valley Mtns') < 0 && d.units.indexOf('Manti') >= 0 && d.txt.indexOf(CAUTION('Joes Valley Reservoir, Emery Co.')) >= 0, JSON.stringify(d.q.place));
+    ok('"elk joes valley reservoir unit" answers exactly as it does without the word "unit"', same(d.q.place, d0.q.place) && d.rows === d0.rows, JSON.stringify([d.q.place, d0.q.place]));
+    for (const sen of ['elk diamond fork unit', 'elk joes valley unit']) {      // short names: no unit from a fragment; the same answer as for the name alone
+      const b = answer(sen), b0 = answer(sen.replace(/ unit$/, ''));
+      ok(`"${sen}": no unit is picked from a fragment of the water's name (not Diamond Mtn, not Valley Mtns); the same as without "unit"`, !b.q.place && same(b.q.place, b0.q.place) && b.q.waterNote === b0.q.waterNote && b.asks && b.rows === 0, JSON.stringify(b.q.place));
+    }
+    /* No animal typed: read the sentence itself (fParse), as the Menu does before it decides which finder to open. */
+    for (const sen of ['diamond fork unit', 'joes valley unit']) {
+      const b = P.box.fParse(sen), b0 = P.box.fParse(sen.replace(/ unit$/, ''));
+      ok(`"${sen}" (no animal): no unit is picked from a fragment of the water's name, the same as without "unit"`, !b.place && same(b.place, b0.place) && b.waterNote === b0.waterNote && b.alsoWater === b0.alsoWater, JSON.stringify(b.place));
+    }
+    {
+      const b = answer('elk diamond fork unit');
+      ok('"elk diamond fork unit": the river line and Where?, no rows', !b.q.place && b.q.waterNote === 'river' && b.asks && b.rows === 0 && b.txt.indexOf(RIVER) >= 0, JSON.stringify([b.q.place, b.q.waterNote]));
+    }
+    /* A river whose name holds a unit's name stays consistent with the water's point, but is still silent about the unit: it is the river, not the unit Ogden. */
+    for (const sen of ['ogden river unit', 'elk ogden river unit']) {
+      const b = answer(sen), b0 = answer(sen.replace(/ unit$/, ''));
+      ok(`"${sen}": the river answer, not the unit Ogden, and the same as without "unit"`, !(b.q.place && b.q.place.kind === 'unit') && same(b.q.place, b0.q.place) && b.q.waterNote === b0.q.waterNote && b.r.run === b0.r.run, JSON.stringify([b.q.place, b.q.waterNote, b.r.run]));
+    }
+    for (const sen of ['elk in the beaver dam reservoir unit', 'deer near the deer valley unit', 'elk nine mile reservoir unit']) {
+      const b = answer(sen);
+      ok(`"${sen}": no unit is picked from a fragment of the water's name`, !(b.q.place && b.q.place.kind === 'unit'), JSON.stringify(b.q.place));
+    }
+    /* The name IS the unit's name: the unit, as before. */
+    for (const [sen, label] of [['elk nine mile unit', 'Nine Mile'], ['elk east canyon unit', 'East Canyon'], ['deer pine valley unit', 'Pine Valley'], ['elk san juan unit', 'San Juan'], ['deer escalante unit', 'Escalante'], ['elk panguitch lake unit', 'Panguitch Lake'], ['deer near the panguitch lake units', 'Panguitch Lake']]) {
+      const b = answer(sen);
+      ok(`"${sen}": the water's name is the unit's name, so "unit" means the unit ${label}`, b.q.place && b.q.place.kind === 'unit' && b.q.place.label === label, JSON.stringify(b.q.place));
+    }
   }
   /* Round 3 item 4: a still water the name check keeps out, but which has a point, gets the plain Where? screen, no "no map point" line. */
   for (const sen of ['deer near willard peak pond', 'elk near tushar mountain lakes']) {

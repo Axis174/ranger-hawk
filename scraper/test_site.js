@@ -189,7 +189,7 @@ async function run() {
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);
-    ok('sw.js is v31 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v31'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/paid_links.json'") > 0);
+    ok('sw.js is v32 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v32'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/paid_links.json'") > 0);
   }
 
   console.log(`${pass} passed, ${fail} failed`);

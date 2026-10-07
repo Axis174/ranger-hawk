@@ -1,7 +1,7 @@
 {
   "name": "Ranger Hawk",
   "short_name": "Ranger Hawk",
-  "description": "Access, seasons, permits and migration data for Utah hunting.",
+  "description": "Access, seasons, permits, fishing rules and migration data for Utah hunting and fishing.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
