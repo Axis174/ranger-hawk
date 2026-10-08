@@ -74,7 +74,7 @@ function tripForm() {
 }
 async function tripBack() {
   openSheet('<h3>Back to truck</h3><p class="where">Getting a GPS fix. Works with no signal.</p>');
-  if (!UNITS) { try { const j = await (await fetch('data/units_geo.json')).json(); UNITS = j && j.units ? j.units : null; } catch (e) { /* offline and never cached */ } }
+  if (!UNITS) { try { const j = await (await fetch('data/' + STATE + '/units_geo.json')).json(); UNITS = j && j.units ? j.units : null; } catch (e) { /* offline and never cached */ } }
   if (!navigator.geolocation) { openSheet('<h3>Back to truck</h3><p class="where">This phone is not sharing location with the app.</p>'); return; }
   navigator.geolocation.getCurrentPosition(pos => {
     const lat = pos.coords.latitude, lon = pos.coords.longitude, tr = TRIP && TRIP.truck;

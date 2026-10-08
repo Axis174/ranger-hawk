@@ -26,7 +26,7 @@ try { home = localStorage.getItem('ha.home') || 'nsl'; } catch (e) { /* private 
 async function load() {
   const grab = async (f, dflt) => {
     try {
-      const r = await fetch('data/' + f, { cache: 'no-cache' });
+      const r = await fetch('data/' + STATE + '/' + f, { cache: 'no-cache' });
       if (!r.ok) throw new Error(r.status);
       const j = await r.json();
       return j && j.offline ? dflt : j;
@@ -183,7 +183,7 @@ async function whereAmI() {
   if (!navigator.geolocation) { openSheet('<h3>Where am I</h3><p class="where">This phone is not sharing location with the app.</p>'); return; }
   if (!UNITS) {
     try {
-      const r = await fetch('data/units_geo.json');
+      const r = await fetch('data/' + STATE + '/units_geo.json');
       const j = await r.json();
       UNITS = j && j.units ? j.units : null;
     } catch (e) { UNITS = null; }
@@ -253,7 +253,7 @@ const DEM_MAXZOOM = 12;
 const MAP_CACHE = 'ranger-hawk-maps';
 const MAP_ASSETS = ['vendor/maplibre-gl.js', 'vendor/maplibre-gl.css', 'vendor/pmtiles.js', 'vendor/basemaps.js', 'vendor/maplibre-contour.js',
   'maps/sprites/light.json', 'maps/sprites/light.png', 'maps/sprites/light@2x.json', 'maps/sprites/light@2x.png',
-  'data/units_geo.json', 'data/raw_dwr_properties.json', 'data/raw_wia_properties.json']
+  'data/' + STATE + '/units_geo.json', 'data/' + STATE + '/raw_dwr_properties.json', 'data/' + STATE + '/raw_wia_properties.json']
   .concat(['Noto Sans Regular', 'Noto Sans Medium', 'Noto Sans Italic'].flatMap(f =>
     ['0-255', '256-511', '8192-8447'].map(r => 'maps/fonts/' + encodeURIComponent(f) + '/' + r + '.pbf')));
 let MAP = null, mapLibs = null;
@@ -533,7 +533,7 @@ async function initMap() {
   MAP.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
   MAP.on('moveend', () => { try { const c = MAP.getCenter(); localStorage.setItem('ha.mapview', JSON.stringify({ c: [c.lng, c.lat], z: MAP.getZoom() })); } catch (e) { /* private mode */ } });
   MAP.on('load', async () => {
-    const grab = async f => { try { const j = await (await fetch('data/' + f)).json(); return j && !j.offline ? j : null; } catch (e) { return null; } };
+    const grab = async f => { try { const j = await (await fetch('data/' + STATE + '/' + f)).json(); return j && !j.offline ? j : null; } catch (e) { return null; } };
     const [dwr, wia, ug] = await Promise.all([grab('raw_dwr_properties.json'), grab('raw_wia_properties.json'), grab('units_geo.json')]);
     if (!MAP || !MAP.getStyle()) return;
     if (dwr) {
@@ -684,7 +684,7 @@ const myPts = () => draw.pts[ptsKey()] || 0;
 function loadOdds() {
   if (ODDS || oddsLoading) return;
   oddsLoading = true;
-  fetch('data/draw_odds.json').then(r => r.json()).then(j => { ODDS = j && j.years ? j : null; })
+  fetch('data/' + STATE + '/draw_odds.json').then(r => r.json()).then(j => { ODDS = j && j.years ? j : null; })
     .catch(() => { ODDS = null; }).finally(() => { oddsLoading = false; if (tab === 'seasons') render(); });
 }
 function oddsAt(h, pts) {
@@ -815,7 +815,7 @@ function vReminders() {
 
 /* ------------------------------------------------------- landowner tags ---- */
 function vTags() {
-  if (!LOT) { fetch('data/landowner_tags.json').then(r => r.json()).then(j => { LOT = j; if (tab === 'contacts') render(); }).catch(() => { LOT = { states: [] }; }); return '<p class="empty">Loading&hellip;</p>'; }
+  if (!LOT) { fetch('data/' + STATE + '/landowner_tags.json').then(r => r.json()).then(j => { LOT = j; if (tab === 'contacts') render(); }).catch(() => { LOT = { states: [] }; }); return '<p class="empty">Loading&hellip;</p>'; }
   const S = LOT.states || [], s = S.find(x => x.st === lotState) || S[0];
   if (!s) return '';
   const badge = { yes: ['Can be sold', 'var(--brand)'], direct: ['Sold direct only', 'var(--warn)'], no: ['Not for sale', 'var(--crit)'], silent: ['Rule is silent', 'var(--muted)'] }[s.sell] || ['', 'var(--muted)'];

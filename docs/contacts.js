@@ -6,7 +6,7 @@ async function acLoad() {
   if (acState !== 'idle') return;
   acState = 'loading';
   try {
-    const response = await fetch('data/access_contacts.json', { cache: 'no-cache' });
+    const response = await fetch('data/' + STATE + '/access_contacts.json', { cache: 'no-cache' });
     if (!response.ok) throw new Error('Access contacts unavailable');
     const data = await response.json();
     if (!data || !Array.isArray(data.properties)) throw new Error('Invalid access contacts');

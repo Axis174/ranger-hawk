@@ -11,7 +11,7 @@
 const COUNTER_CODE = 'rangerhawk';
 
 /* ------------------------------------------------------------ paid links --- */
-/* data/paid_links.json is { "links": [ { slot, company, label, url } ] }. Loaded the way
+/* data/ut/paid_links.json is { "links": [ { slot, company, label, url } ] }. Loaded the way
    contacts.js loads its file: fetched once into a global, then the screen is redrawn. */
 let PL = null, plState = 'idle';
 
@@ -23,7 +23,7 @@ const PL_PLACED = ['draw'];
 function plLoad() {
   if (plState !== 'idle') return;
   plState = 'loading';
-  fetch('data/paid_links.json', { cache: 'no-cache' })
+  fetch('data/' + STATE + '/paid_links.json', { cache: 'no-cache' })
     .then(r => { if (!r.ok) throw new Error('Paid links unavailable'); return r.json(); })
     .then(j => {
       PL = { links: j && Array.isArray(j.links) ? j.links : [] };

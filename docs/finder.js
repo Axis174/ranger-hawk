@@ -41,9 +41,9 @@ function fUnitNames() {
 
 function fLoad() {
   if (typeof fishLoad === 'function') fishLoad();
-  if (!HU) fetch('data/hunt_units_2026.json').then(r => r.json()).then(j => { HU = j; if (tab === 'seasons') render(); }).catch(() => { HU = { hunts: {} }; });
+  if (!HU) fetch('data/' + STATE + '/hunt_units_2026.json').then(r => r.json()).then(j => { HU = j; if (tab === 'seasons') render(); }).catch(() => { HU = { hunts: {} }; });
   if (!ODDS) loadOdds();
-  if (!UNITS) fetch('data/units_geo.json').then(r => r.json()).then(j => { UNITS = j.units; if (tab === 'seasons') render(); }).catch(() => {});
+  if (!UNITS) fetch('data/' + STATE + '/units_geo.json').then(r => r.json()).then(j => { UNITS = j.units; if (tab === 'seasons') render(); }).catch(() => {});
 }
 /* What a sentence says to hunt, read from text that already has its place names taken out:
    { gap, bird, sp }. The one place the hunt finder's species words are tested; the Fish box

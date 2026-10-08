@@ -24,9 +24,9 @@
    5. Every warning travels with the rule. A sheet opened from the map, from a
       search or from the hunt finder carries the same warnings as the Fish tab.
 
-   Data: data/fishing_rules.json (scraper/build_fishing.py, from the guidebook PDF),
-   data/fishing_places.json (scraper/build_fishing_places.py, from UDWR's layers),
-   data/fishing_notices.json (the daily job, UDWR's list of emergency changes).
+   Data: data/ut/fishing_rules.json (scraper/build_fishing.py, from the guidebook PDF),
+   data/ut/fishing_places.json (scraper/build_fishing_places.py, from UDWR's layers),
+   data/ut/fishing_notices.json (the daily job, UDWR's list of emergency changes).
 
    Loaded after app.js; shares its globals ($, esc, miles, DB, home, render, tab). */
 'use strict';
@@ -41,7 +41,7 @@ function fishLoad(again) {
   if (fishState === 'loading' || fishState === 'ready') return;
   if (fishState === 'failed' && !again && Date.now() - fishTried < 20000) return;   // a failed load is tried again, but not in a loop
   fishState = 'loading'; fishTried = Date.now();
-  const grab = f => fetch('data/' + f, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => (j && !j.offline ? j : null)).catch(() => null);
+  const grab = f => fetch('data/' + STATE + '/' + f, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => (j && !j.offline ? j : null)).catch(() => null);
   Promise.all([grab('fishing_rules.json'), grab('fishing_places.json'), grab('fishing_notices.json')]).then(([r, p, n]) => {
     FR = (r && r.waters && r.statewide && r.community && r._edition) ? r : null;
     FP = p && Array.isArray(p.places) ? p : F_NOPLACES();

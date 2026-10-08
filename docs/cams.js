@@ -176,7 +176,7 @@ function camDay(site, iso) {
 const camMoon = iso => { if (!SUN) return null; const f = SUN.getMoonIllumination(new Date(iso)).fraction; return f < 0.25 ? 'Dark moon' : f < 0.75 ? 'Half moon' : 'Bright moon'; };
 
 /* ---------------------------------------------------------------- rules --- */
-function camLoadRules() { if (camRules) return; camRules = {}; fetch('data/cam_rules.json').then(r => r.json()).then(j => { camRules = j && j.states ? j : {}; if (tab === 'cams') render(); }).catch(() => {}); }
+function camLoadRules() { if (camRules) return; camRules = {}; fetch('data/' + STATE + '/cam_rules.json').then(r => r.json()).then(j => { camRules = j && j.states ? j : {}; if (tab === 'cams') render(); }).catch(() => {}); }
 function camRuleBox(site) {
   const st = (site && site.state) || 'UT', r = camRules && camRules.states && camRules.states[st];
   if (!r) return `<div class="warnbox" style="margin-top:12px">Trail camera rules differ by state and change often. Check the state wildlife agency before you hang a camera.</div>`;

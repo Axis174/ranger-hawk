@@ -30,7 +30,7 @@ const ROAD_KIND = {
 function roadLoad(then) {
   if (ROADS || roadsLoading) { if (ROADS && then) then(); return; }
   roadsLoading = true;
-  fetch('data/udot.json').then(r => r.json())
+  fetch('data/' + STATE + '/udot.json').then(r => r.json())
     .then(j => { ROADS = j && typeof j === 'object' ? j : { key: false }; })
     .catch(() => { ROADS = { key: false, note: 'Road data is not on this phone yet. Open this once with a signal.' }; })
     .finally(() => { roadsLoading = false; if (then) then(); });
