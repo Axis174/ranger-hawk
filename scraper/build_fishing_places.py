@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build docs/data/fishing_places.json: where to fish, and which rules go with it.
+"""Build docs/data/ut/fishing_places.json: where to fish, and which rules go with it.
 
 Places come from UDWR's own public data, never from a list made up by hand:
   * the Fish Utah planner (a water's position, the point UDWR gives for
@@ -32,7 +32,7 @@ import json, math, os, re, sys, time, urllib.parse, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, "docs", "data")
+DATA = os.path.join(ROOT, "docs", "data", "ut")
 SRC = os.path.join(ROOT, "scraper", "fishing")
 CACHE = os.path.join(SRC, ".cache")
 OUT = os.path.join(DATA, "fishing_places.json")

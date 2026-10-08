@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build docs/data/fishing_rules.json from UDWR's Utah Fishing Guidebook (PDF).
+"""Build docs/data/ut/fishing_rules.json from UDWR's Utah Fishing Guidebook (PDF).
 
 The guidebook is 173 named waters carrying 314 separate rules, layered over one
 statewide table, and amended mid-year by signed emergency notices. Retyping that
@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sources as S
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, "docs", "data")
+DATA = os.path.join(ROOT, "docs", "data", "ut")
 SRC = os.path.join(ROOT, "scraper", "fishing")
 OUT = os.path.join(DATA, "fishing_rules.json")
 UA = {"User-Agent": "ranger-hawk/1.0 (rangerhawk.com)"}

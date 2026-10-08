@@ -14,7 +14,7 @@ import json, os
 from datetime import date, datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, "docs", "data")
+DATA = os.path.join(ROOT, "docs", "data", "ut")
 OUT = os.path.join(ROOT, "docs", "hunt.ics")
 
 S = json.load(open(os.path.join(DATA, "seasons.json")))
@@ -137,7 +137,7 @@ for i, c in enumerate([c for c in C["contacts"] if c.get("priority") == "high"])
        alarms=[(2, f"Call {c['name']}"), (0, f"Call {c['name']} today")], cat="TASK")
 
 # ---- fishing ----------------------------------------------------------------
-# Read from docs/data/fishing_rules.json, which scraper/build_fishing.py builds
+# Read from docs/data/ut/fishing_rules.json, which scraper/build_fishing.py builds
 # from the guidebook. Nothing here is typed in by hand, so the calendar cannot
 # disagree with the rules the app shows. Four kinds of entry:
 #   * the last day of each emergency change (grouped by day)

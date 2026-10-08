@@ -13,7 +13,7 @@ ASK = re.compile(
     r"contact (?:the )?landowner|landowner (?:must|should) be contacted|call|by phone|written permission|permission from",
     re.IGNORECASE,
 )
-DATA_DIR = Path(__file__).resolve().parents[1] / "docs" / "data"
+DATA_DIR = Path(__file__).resolve().parents[1] / "docs" / "data" / "ut"
 SOURCE = (
     "Utah Division of Wildlife Resources: Walk-In Access and property layers, "
     "as pulled by the daily job. The wording is UDWR's own."
@@ -230,7 +230,7 @@ def main(data_dir=None):
         "_built": datetime.date.today().isoformat(), "properties": properties,
     }
     output.write_text(json.dumps(document, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print("wrote docs/data/access_contacts.json: {} properties, {} ask for contact, {} with a number".format(
+    print("wrote docs/data/ut/access_contacts.json: {} properties, {} ask for contact, {} with a number".format(
         len(properties), sum(entry["needs_contact"] for entry in properties),
         sum(bool(entry["phones"]) for entry in properties),
     ))

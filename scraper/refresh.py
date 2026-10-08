@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refresh every dataset the atlas uses, and report what changed.
 
-Writes docs/data/*.json and docs/data/changelog.json. Designed to run headless
+Writes docs/data/ut/*.json and docs/data/ut/changelog.json. Designed to run headless
 in GitHub Actions on a cron. Never fails the build on a single bad source - it
 records the failure and carries on, because a dead upstream should not blank
 out the app.
@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sources as S
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, "docs", "data")
+DATA = os.path.join(ROOT, "docs", "data", "ut")
 UA = {"User-Agent": "ranger-hawk/1.0 (personal hunting reference; contact via repo)"}
 os.makedirs(DATA, exist_ok=True)
 

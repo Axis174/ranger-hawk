@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build docs/data/draw_odds.json from UDWR's published draw result PDFs.
+"""Build docs/data/ut/draw_odds.json from UDWR's published draw result PDFs.
 
 UDWR prints one block per hunt code: a row per point level, residents on the
 left and nonresidents on the right, then a Totals row. This reads the text layer
@@ -15,7 +15,8 @@ Needs `pdftotext` (brew install poppler). Not part of the daily job.
 import json, os, re, subprocess, sys, tempfile, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "docs", "data", "draw_odds.json")
+DATA = os.path.join(ROOT, "docs", "data", "ut")
+OUT = os.path.join(DATA, "draw_odds.json")
 BASE = "https://wildlife.utah.gov/pdf/bg/{y4}/{y2}_{name}.pdf"
 REPORTS = [("bg-odds", "Limited entry and once-in-a-lifetime"),
            ("deer_odds", "General-season buck deer"),
