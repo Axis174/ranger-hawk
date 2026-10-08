@@ -201,7 +201,7 @@ class FileTests(unittest.TestCase):
         first = self.run_builder()
         self.assertEqual(first.returncode, 0)
         self.assertEqual(first.stdout.strip(),
-                         "wrote docs/data/access_contacts.json: 1 properties, 1 ask for contact, 0 with a number")
+                         "wrote docs/data/ut/access_contacts.json: 1 properties, 1 ask for contact, 0 with a number")
         old = json.loads(self.output.read_text(encoding="utf-8"))
         old["_built"] = "2000-01-01"
         self.output.write_text(json.dumps(old, indent=1) + "\n", encoding="utf-8")

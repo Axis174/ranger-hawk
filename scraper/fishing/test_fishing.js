@@ -26,7 +26,7 @@ if (!process.env.FISH_TEST_ZONE) {
   process.exit(bad ? 1 : 0);
 }
 const ROOT = path.resolve(__dirname, '..', '..'), D = p => path.join(ROOT, 'docs', p);
-const load = f => JSON.parse(fs.readFileSync(D('data/' + f), 'utf8'));
+const load = f => JSON.parse(fs.readFileSync(D('data/ut/' + f), 'utf8'));
 
 /* The clock is stopped, so that the suite gives the same answer on any day it is
    run: noon in Utah on Sept. 27, 2026, the day the rules were built. A test that
@@ -38,7 +38,7 @@ class TestDate extends Date {
   static now() { return CLOCK != null ? CLOCK : Date.now(); }
 }
 const box = {
-  console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
+  console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl, STATE: 'ut',
   document: { addEventListener(type, fn) { (box.LIS[type] = box.LIS[type] || []).push(fn); } }, LIS: {}, window: { scrollTo() {}, addEventListener() {} },
   navigator: {}, localStorage: { getItem: () => null, setItem() {} },
   fetch: () => Promise.reject(new Error('no network in tests')),

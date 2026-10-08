@@ -15,7 +15,7 @@ const entry = (extra = {}) => Object.assign({
 function context(fetcher = () => Promise.reject(new Error('no network in tests'))) {
   const calls = [], listeners = [], sheets = [], stats = { renders: 0 };
   const box = {
-    console, JSON, Object, Array, String, Number, RegExp, Promise,
+    console, JSON, Object, Array, String, Number, RegExp, Promise, STATE: 'ut',
     document: { addEventListener(type, listener) { listeners.push({ type, listener }); } },
     fetch(url, options) { calls.push([url, options]); return fetcher(); },
     esc, openSheet(html) { sheets.push(html); }, render() { stats.renders++; }, tab: 'contacts'
@@ -77,7 +77,7 @@ async function run() {
   ok('lookup starts loading and returns null for now', loaded.T.acFor('dwr:230'), null);
   ok('pending state is loading', loaded.T.state().state, 'loading');
   loaded.T.acFor('dwr:0'); loaded.T.acLoad();
-  ok('loading starts exactly one fetch with no-cache', loaded.calls, [['data/access_contacts.json', { cache: 'no-cache' }]]);
+  ok('loading starts exactly one fetch with no-cache', loaded.calls, [['data/ut/access_contacts.json', { cache: 'no-cache' }]]);
   finish({ ok: true, json: async () => data });
   await settle();
   ok('successful load is ready and keeps JSON', [loaded.T.state().state, loaded.T.state().data], ['ready', data]);

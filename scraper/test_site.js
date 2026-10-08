@@ -18,7 +18,7 @@ function page(code, opts) {
   const sent = [], renders = [], fetches = [];
   class FakeImage { set src(v) { sent.push(v); } }
   const box = {
-    console, JSON, Object, Array, String, Number, RegExp, Promise, Set, Math, encodeURIComponent,
+    console, JSON, Object, Array, String, Number, RegExp, Promise, Set, Math, encodeURIComponent, STATE: 'ut',
     esc, tab: 'today', render() { renders.push(box.tab); },
     navigator: { onLine: opts.online !== false },
     document: { referrer: opts.referrer == null ? '' : opts.referrer },
@@ -72,12 +72,12 @@ async function run() {
 
   /* ---- the file loads like contacts.js does, and the shipped file is empty */
   {
-    const shipped = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'data', 'paid_links.json'), 'utf8'));
+    const shipped = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'data', 'ut', 'paid_links.json'), 'utf8'));
     ok('the shipped paid_links.json is { links: [] }', Array.isArray(shipped.links) && shipped.links.length === 0 && Object.keys(shipped).length === 1);
     const { T, fetches } = page('', { fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve(shipped) }) });
     ok('first call draws nothing', T.paidLink('draw') === '');
     await settle();
-    ok('it fetched data/paid_links.json once', fetches.length === 1 && fetches[0] === 'data/paid_links.json', fetches.join(','));
+    ok('it fetched data/ut/paid_links.json once', fetches.length === 1 && fetches[0] === 'data/ut/paid_links.json', fetches.join(','));
     ok('and is ready', T.state() === 'ready');
     T.paidLink('draw');
     ok('it does not fetch again', fetches.length === 1);
@@ -189,7 +189,9 @@ async function run() {
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);
-    ok('sw.js is v34 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v34'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/paid_links.json'") > 0);
+    ok('sw.js is v35 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v35'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/ut/paid_links.json'") > 0);
+    const scripts = idx.match(/<script\b[^>]*>/g) || [];
+    ok('index.html loads state.js first before app.js and sw.js lists it', scripts[0] === '<script src="state.js">' && scripts.indexOf('<script src="app.js">') > 0 && sw.indexOf("'./state.js'") > 0);
   }
 
   console.log(`${pass} passed, ${fail} failed`);

@@ -12,7 +12,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.resolve(__dirname, '..'), D = p => path.join(ROOT, 'docs', p);
-const load = f => JSON.parse(fs.readFileSync(D('data/' + f), 'utf8'));
+const load = f => JSON.parse(fs.readFileSync(D('data/ut/' + f), 'utf8'));
 const GO = process.env.GO_JS || D('go.js');
 /* The app's own point-in-unit code (app.js), so a water's point is turned into hunt units the way the app does it. */
 const APP_SRC = fs.readFileSync(D('app.js'), 'utf8');
@@ -38,7 +38,7 @@ function page(withFishing, net) {
   const runs = [], timers = [], landed = [], renders = [], gps = [];
   let nextTimer = 1;
   const box = {
-    console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
+    console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl, STATE: 'ut',
     document: { addEventListener(type, fn) { (box.LISTENERS[type] = box.LISTENERS[type] || []).push(fn); } },
     LISTENERS: {},
     window: { scrollTo() {}, addEventListener() {} },
