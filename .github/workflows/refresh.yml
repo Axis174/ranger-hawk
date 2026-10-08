@@ -51,7 +51,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, os, pathlib
-          p = pathlib.Path('docs/data/changelog.json')
+          p = pathlib.Path('docs/data/ut/changelog.json')
           if not p.exists():
               print('no changelog'); raise SystemExit
           run = json.loads(p.read_text())['runs'][0]
