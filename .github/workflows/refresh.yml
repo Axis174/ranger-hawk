@@ -78,6 +78,22 @@ jobs:
               f.write(txt + "\n")
           PY
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The five suites run against the data just written, BEFORE it is committed.
+      # Any red suite fails the step and the job stops here: nothing is committed
+      # or deployed. (No continue-on-error, no if: always() on these or on the
+      # commit step.)
+      - name: Test the refreshed data
+        run: |
+          node scraper/test_go.js
+          node scraper/test_site.js
+          node scraper/test_contacts.js
+          node scraper/fishing/test_fishing.js
+          python3 -m unittest scraper.test_access_contacts
+
       - name: Commit refreshed data
         run: |
           git config user.name  "hunt-atlas-bot"
