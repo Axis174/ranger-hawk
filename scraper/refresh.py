@@ -96,6 +96,15 @@ def load_prev(name):
 
 
 def save(name, obj):
+    # "checked" is the run's timestamp, and nothing reads it (the phone, the tests and
+    # the README never do). Rewriting a file that differs only by that stamp put a
+    # ~940 KB commit in .git every night, so the file is written only when its data
+    # changes, and "checked" is therefore the last time the data changed.
+    prev = load_prev(name)
+    if isinstance(prev, dict) and isinstance(obj, dict) and "checked" in obj:
+        drop = lambda d: {k: v for k, v in d.items() if k != "checked"}
+        if drop(prev) == drop(obj):
+            return
     json.dump(obj, open(os.path.join(DATA, name), "w"), separators=(",", ":"))
 
 
