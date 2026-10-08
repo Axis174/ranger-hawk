@@ -62,7 +62,7 @@ async function migrateMapData() {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    migrateMapData()
+    migrateMapData().catch(() => { /* a failed carry-over must not stop the clean-up or the claim below */ })
       .then(() => caches.keys())
       .then(ks => Promise.all(ks.filter(k => k !== VERSION && k !== MAPS).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
