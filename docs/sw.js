@@ -48,9 +48,22 @@ async function mapRange(req) {
     'Content-Range': `bytes ${start}-${end}/${size}`, 'Content-Length': String(end - start + 1) } });
 }
 
+// Keep the saved map's data at its new paths without replacing a newer saved copy.
+async function migrateMapData() {
+  const cache = await caches.open(MAPS);
+  for (const newPath of ['./data/ut/units_geo.json', './data/ut/raw_dwr_properties.json', './data/ut/raw_wia_properties.json']) {
+    const oldPath = newPath.replace('/ut/', '/');
+    const oldResponse = await cache.match(oldPath);
+    if (!oldResponse) continue;
+    if (!(await cache.match(newPath))) await cache.put(newPath, oldResponse.clone());
+    await cache.delete(oldPath);
+  }
+}
+
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys()
+    migrateMapData()
+      .then(() => caches.keys())
       .then(ks => Promise.all(ks.filter(k => k !== VERSION && k !== MAPS).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
