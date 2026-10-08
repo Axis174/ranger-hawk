@@ -114,7 +114,7 @@ map on the phone once; after that the map never needs a connection.
 by my cabin with a rifle" and get the hunts that exist there this year: the app
 reads species, weapon, place and points from the sentence, finds the hunt
 boundaries under the place with the unit shapes it carries, matches them to
-UDWR's 2026 hunt-type unit lists (`docs/data/hunt_units_2026.json`, from UDWR's
+UDWR's 2026 hunt-type unit lists (`docs/data/ut/hunt_units_2026.json`, from UDWR's
 ArcGIS services) and to the draw results, and asks a question when something is
 missing. Sub-unit hunts are marked as maybes. No signal needed; no AI service -
 a keyword reader, so it says exactly why it answered what it did.
@@ -128,7 +128,7 @@ alert anyone with no signal** - that needs the server described under
 
 **Landowner tags** (Contacts) — a 16-state plain-language guide to landowner
 permit programs and whether a tag may lawfully be sold to a hunter
-(`docs/data/landowner_tags.json`, researched 2026-09-21 from statutes, rules and
+(`docs/data/ut/landowner_tags.json`, researched 2026-09-21 from statutes, rules and
 agency pages, with a confidence level per state). Utah note: the vouchers that
 may be sold are Landowner Association vouchers under R657-43; mitigation permits
 under R657-44 are not sellable; CWMU vouchers are designated, not sold.
@@ -144,7 +144,7 @@ into visits (frames under five minutes apart count once) and charts them by hour
 against legal shooting light for that date, with moon phase and a plain read-out
 ("20% of visits were in legal light - this is mostly a night spot"). Each site
 carries its state and land type, and the screen shows that state's trail camera
-rule from `docs/data/cam_rules.json`, in red when a seasonal ban is in force
+rule from `docs/data/ut/cam_rules.json`, in red when a seasonal ban is in force
 today. Nothing is uploaded; there is no account and no backup. Tested on 130
 real Stealth Cam photos from 2018: 0.3 s a photo on a laptop, 30 flagged blank.
 Known weakness of the sort: frames of the camera being handled score highest,
@@ -190,7 +190,7 @@ recompute against that home everywhere.
 ## The data
 
 Refreshed daily at 5:15 a.m. Mountain by `.github/workflows/refresh.yml`.
-Everything lands in `docs/data/`.
+Everything lands in `docs/data/ut/`.
 
 | File | What it is |
 |---|---|
@@ -425,7 +425,7 @@ first, `money` for the second). Their wording is fixed and was written to match 
 code does: if you change what the app stores or what it sends over the network, change the
 Privacy screen in the same commit. Nothing in v29 earns money.
 
-**The paid-link slot.** `docs/data/paid_links.json` ships as `{"links": []}`. To add one,
+**The paid-link slot.** `docs/data/ut/paid_links.json` ships as `{"links": []}`. To add one,
 append `{"slot": "draw", "company": "Name", "label": "What the link says", "url": "https://..."}`.
 Only `https://` links draw. `draw` is the only slot a screen uses today (the foot of Draw
 odds, after the agency's source paragraph, which is never edited); a new placement means a
@@ -512,7 +512,7 @@ Checked 2026-09-20 against what is current and maintained on GitHub.
 
 ### Trail camera rules by state
 
-`docs/data/cam_rules.json`, researched 2026-09-21. High confidence (agency or
+`docs/data/ut/cam_rules.json`, researched 2026-09-21. High confidence (agency or
 state code read directly): Utah, Arizona, Nevada, Idaho (new for 2026), Alaska.
 Medium (legal-code mirrors or consistent reporting): Kansas, Montana, New
 Mexico, Wyoming, Colorado, Oregon, Washington. Low: California. **Re-check every
@@ -522,7 +522,7 @@ labels it as not legal advice.
 
 ### Draw odds
 
-`docs/data/draw_odds.json` (about 600 KB) is built by `scraper/build_odds.py`
+`docs/data/ut/draw_odds.json` (about 600 KB) is built by `scraper/build_odds.py`
 from three UDWR PDFs per year - limited entry and once-in-a-lifetime, general
 buck deer, antlerless - at `wildlife.utah.gov/pdf/bg/<year>/`. 2025: 917 hunts.
 2024: 882. **The parser checks itself:** every hunt's rows must add up to the
