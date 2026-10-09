@@ -747,6 +747,12 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
     const back = app(S.store);
     ok('Home towns: a page opened later on the same phone reads the same towns, order and words', same(chosen(back), ['moab', 'ogd', 'prv']) && same(back.box.anchorsChosen().map(a => a.words), [['moab'], ['The Shop', 'elk camp'], []]), JSON.stringify(back.box.anchorsChosen().map(a => a.words)));
     ok('Home towns: the words typed reach the finders at once ("elk near the shop" is Ogden, home)', (() => { S.type('elk near the shop'); const q = S.box.T_fq().parsed; return q.place && q.place.kind === 'home' && q.place.id === 'ogd'; })(), JSON.stringify(S.box.T_fq().parsed && S.box.T_fq().parsed.place));
+    /* The input event stores words as they are typed, so a phone locked before the field loses focus keeps them. */
+    (S.box.LISTENERS.input || []).forEach(fn => fn({ target: { dataset: { townWords: 'prv' }, value: ' river camp, ' } }));
+    ok('Home towns: words are stored as they are typed, before the field loses focus', same(kept(S).find(e => e.id === 'prv').words, ['river camp']), S.store.get('ha.anchors'));
+    ok('Home towns: the Menu takes "change my home" to the Home towns page', S.type('change my home').tab === 'towns', JSON.stringify(S.type('change my home')));
+    ok('Home towns: ...while "elk near home" still goes to the hunt finder', S.type('elk near home').run === 'hunt', JSON.stringify(S.type('elk near home')));
+    typed(S, 'prv', '');   // back to no words for Provo, as the checks below expect
 
     S.box.tab = 'towns';
     tap(S, { anchor: 'ogd' });

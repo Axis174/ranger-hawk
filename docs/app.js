@@ -1039,6 +1039,13 @@ document.addEventListener('change', e => {
   const t = e.target;
   if (t && t.dataset && t.dataset.townWords !== undefined && typeof townWords === 'function') townWords(t.dataset.townWords, t.value);
 });
+/* It also saves as the hunter types, so words survive a phone locked or an app closed before the field
+   loses focus. This only stores them: re-reading a held sentence waits for the change above. */
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.townWords !== undefined && typeof anchorSetWords === 'function')
+    anchorSetWords(t.dataset.townWords, String(t.value || '').split(',').map(w => w.trim()).filter(Boolean));
+});
 
 function net() { $('offline').hidden = navigator.onLine; }
 window.addEventListener('online', net);
