@@ -1,4 +1,4 @@
-/* Ranger Hawk - hunt finder. "I want to hunt elk by my cabin" -> the hunts that
+/* Ranger Hawk - hunt finder. "I want to hunt elk near home" -> the hunts that
    exist there this year, with dates, permit type and last year's draw odds.
    Works with no signal: it reads the place, the species and the weapon out of
    the sentence, finds the hunt units under that place with the unit shapes the
@@ -180,15 +180,19 @@ function fParse(text) {
   for (const [k, re] of F_WEAPON) if (re.test(t)) { q.wp = k; break; }
   const m = /(\d{1,2})\s*(?:bonus|preference)?\s*(?:points?|pts)/.exec(t); if (m) q.pt = +m[1];
   let hitAlias = null;
-  for (const h of (DB.config.homes || [])) {
-    const a = (h.aliases || []).find(x => t.includes(fWords(x)));
+  /* A town the hunter chose is found by "home" (the first one) or by a word the hunter gave it,
+     never by its name: Provo, Price, Logan and Ogden sit inside the names of rivers. A word with
+     no letters or digits in it (a stray "!") would match any sentence, so it is skipped. */
+  for (const h of anchorsChosen()) {
+    const a = h.aliases.find(x => fWords(x).trim() && t.includes(fWords(x)));
     if (a) { hitAlias = a; q.place = { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon }; break; }
   }
-  /* "boulder" and "fishlake" are Pete's own words for the Torrey country AND the leading
-     words of real hunt units (Boulder Elk, Boulder/Kaiparowits, Fishlake). The home wins,
-     because they are his words for his own places - but silently swallowing a unit name
-     would plan the wrong hunt, so the collision is surfaced and he can switch in one tap.
-     Only aliases he chose are tested this way, which keeps it from firing on common words. */
+  /* A word the hunter picked for a town can also be the leading word of a real hunt unit (a
+     hunter who calls a town "boulder" meets Boulder Elk and Boulder/Kaiparowits; "fishlake"
+     meets Fishlake). The town wins, because the word is theirs for their own place - but
+     silently swallowing a unit name would plan the wrong hunt, so the collision is surfaced and
+     they can switch in one tap. Only aliases the hunter chose are tested this way, which keeps
+     it from firing on common words. */
   if (hitAlias && UNITS) {
     const needle = fWords(hitAlias).trimEnd();                 // " boulder"
     const bases = [...new Set(UNITS.map(u => u.n.split(',')[0]))];
@@ -314,7 +318,7 @@ const fList = a => a.map(esc).join('; ');
    standing in. The seasons are statewide or by zone, and the question that
    actually matters is which marsh or foothill is closest. So this path answers
    "when" from the season list the app already carries and "where" from the 88
-   access points, which already hold a drive time from each home.
+   access points, which already hold a drive time from each anchor town.
 
    [key, label, what it sounds like in a sentence, season ids, access-point species] */
 const F_BIRDS = [
@@ -373,8 +377,8 @@ function fOpen(s) {
   return ['open', n <= 14 ? 'Open now, ' + n + ' days left' : 'Open now'];
 }
 /* One access point, keeping the drive time relative to the place that was asked
-   about rather than the home toggle at the top of the screen. */
-const fHomeId = place => place ? (place.kind === 'home' ? place.id : null) : home;   // no place named: use the header toggle
+   about rather than the town chosen at the top of the screen. */
+const fHomeId = place => place ? (place.kind === 'home' ? place.id : null) : anchorId();   // no place named: use the header town
 function fBirdRow(p, place, homeZone) {
   const hid = fHomeId(place), d = hid && (p.drive || {})[hid];
   const pz = homeZone ? fPointZone(p) : null;
@@ -395,14 +399,14 @@ function fBirdPlaces(bird, place) {
        minutes-like scale at roughly 43 mph. Without this the list would compare
        a 92-mile drive against a 64-minute one and order them wrongly. */
     if (place && place.lat != null) return miles(place.lat, place.lon, p.lat, p.lon) * 1.4;
-    const h = (DB.config.homes || []).find(x => x.id === hid);
+    const h = anchorById(hid);
     return h ? miles(h.lat, h.lon, p.lat, p.lon) * 1.4 : 1e9;
   };
   return pts.sort((a, b) => key(a) - key(b));
 }
 function fBirdView(q) {
   const bird = q.bird, place = q.place, hid = fHomeId(place);
-  const hrec = hid && (DB.config.homes || []).find(x => x.id === hid);
+  const hrec = hid && anchorById(hid);
   const zone = hrec ? fCountyZone(hrec.county) : null;
   const zoned = !Array.isArray(bird[3]);                 // ducks: the answer depends on the zone
   const pts = fBirdPlaces(bird, place);
@@ -413,7 +417,7 @@ function fBirdView(q) {
        drove from. Torrey is in the Southern Zone, but every waterfowl access
        point the app carries is a northern marsh - quoting southern dates over a
        list of northern places would be a trap. So the seasons shown cover the
-       home's zone and every zone the listed places are actually in. */
+       starting town's zone and every zone the listed places are actually in. */
     const zs = [];
     if (zone) zs.push(zone);
     pts.slice(0, 25).forEach(x => { const z = fPointZone(x); if (z && zs.indexOf(z) < 0) zs.push(z); });
@@ -465,8 +469,8 @@ function vFind() {
   fLoad();
   const q = fq.parsed || null;
   if (q && !q.fish && q.place && q.place.kind === 'gps' && q.place.lat == null) fGpsEnsure();   // never left waiting with nothing pending
-  let h = `<form id="findform" style="margin-top:12px"><input class="search" id="findq" placeholder="pheasant near home, elk by my cabin, or trout near the cabin" value="${esc(fq.text)}"><div class="acts" style="padding:8px 0 0"><button class="btn" type="submit">Find hunts</button></div></form>
-    <p class="fine" style="padding-left:2px">Try: "elk by the cabin", "pheasant near home", "chukar where I am", "archery deer near Torrey", "limited entry elk Wasatch, 7 points", "trout near the cabin", "Strawberry Reservoir rules". Works with no signal.</p>`;
+  let h = `<form id="findform" style="margin-top:12px"><input class="search" id="findq" placeholder="pheasant near home, elk where I am, or trout near home" value="${esc(fq.text)}"><div class="acts" style="padding:8px 0 0"><button class="btn" type="submit">Find hunts</button></div></form>
+    <p class="fine" style="padding-left:2px">Try: "elk near home", "pheasant near home", "chukar where I am", "archery deer Book Cliffs", "limited entry elk Wasatch, 7 points", "trout near home", "Strawberry Reservoir rules". Works with no signal.</p>`;
   if (!q) return h;
   if (q.fish) return h + (FR ? fStale(fNow(), null, false) : '') + fishAnswer(q.fish) + (FR ? F_FOOT() : '');    // fishing answers from the guidebook rules and UDWR's places
   if (q.gap) return h + fGapNotice(q.gap);                 // named it, but there is no data to stand behind
@@ -478,7 +482,7 @@ function vFind() {
   if (!q.sp) return h + water + fAsk('What do you want to hunt?', Object.entries(F_LABEL).concat(F_BIRDS.map(b => ['bird:' + b[0], F_BIRD_CHIP[b[0]]])), 'sp');
   /* The same Where? question every time, with a line above it when the sentence named a water
      that could not be turned into a place. */
-  const ask = note => (q.gpsErr ? `<div class="warnbox" style="margin-top:4px">${esc(q.gpsErr)}</div>` : '') + (note ? `<div class="warnbox" style="margin-top:4px">${esc(note)}</div>` : '') + fAsk('Where?', (DB.config.homes || []).map(x => [x.id, x.label]).concat([['gps', 'Where I am now']]), 'place') + '<p class="fine" style="padding-left:2px">Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
+  const ask = note => (q.gpsErr ? `<div class="warnbox" style="margin-top:4px">${esc(q.gpsErr)}</div>` : '') + (note ? `<div class="warnbox" style="margin-top:4px">${esc(note)}</div>` : '') + fAsk('Where?', anchorsChosen().map(x => [x.id, x.label]).concat([['gps', 'Where I am now']]), 'place') + '<p class="fine" style="padding-left:2px">Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
   if (!q.place && q.waterPick) return h + fAsk('Which one?', q.waterPick.map(p => [p.id, fWaterLabel(p)]), 'wplace') + '<p class="fine" style="padding-left:2px">More than one water has that name. Or name a unit in the sentence, like "Wasatch Mtns" or "Book Cliffs".</p>';
   if (!q.place) return h + ask(q.waterNote === 'river' ? F_RIVER_LINE : q.waterNote === 'nopoint' ? F_NOPOINT_LINE : q.waterNote === 'big' ? q.waterBig + ' touches many hunt units. Pick a place, name a unit, or use Where I am now.' : '');
   if (q.place.kind === 'gps' && !q.place.lat) return h + `<p class="empty">Getting a GPS fix&hellip;</p>`;
@@ -565,6 +569,6 @@ document.addEventListener('click', e => {
   if (t.dataset.fask === 'usewater') { fq.parsed = { text: fq.text, fish: fishParse(v, true) }; render(); return; }
   if (t.dataset.fask === 'useunit') { q.place = { kind: 'unit', label: v, units: (UNITS || []).filter(u => u.n.split(',')[0] === v).map(u => u.n) }; q.alsoUnit = null; }
   if (t.dataset.fask === 'wp') q.wp = v === 'any' ? null : v, q.wpAsked = true;
-  if (t.dataset.fask === 'place') { const h = (DB.config.homes || []).find(x => x.id === v); q.place = h ? { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon } : { kind: 'gps' }; if (!h) { fq.parsed = q; fGps(q); render(); return; } else q.gpsErr = null; }
+  if (t.dataset.fask === 'place') { const h = anchorsChosen().find(x => x.id === v); q.place = h ? { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon } : { kind: 'gps' }; if (!h) { fq.parsed = q; fGps(q); render(); return; } else q.gpsErr = null; }
   fq.parsed = q; render();
 });

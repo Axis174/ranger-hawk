@@ -28,7 +28,8 @@
    data/ut/fishing_places.json (scraper/build_fishing_places.py, from UDWR's layers),
    data/ut/fishing_notices.json (the daily job, UDWR's list of emergency changes).
 
-   Loaded after app.js; shares its globals ($, esc, miles, DB, home, render, tab). */
+   Loaded after app.js; shares its globals ($, esc, miles, DB, render, tab, and the chosen
+   home towns from state.js: anchorsChosen, anchorById, anchorId, anchorLabel). */
 'use strict';
 
 let FR = null, FP = null, FNT = null, fishState = 'idle';
@@ -692,9 +693,9 @@ const F_FOOT = () => `<p class="fine" style="padding:14px 16px 0">Rules are UDWR
 
 /* ------------------------------------------------------------ places ---- */
 function fDrive(p, hid) {
-  const d = (p.d || {})[hid || home];
+  const d = (p.d || {})[hid || anchorId()];
   if (d) return { txt: String(d.min), sub: (p.snap || 0) > 0.5 ? 'min *' : 'min', mins: d.min };
-  const h = (DB.config.homes || []).find(x => x.id === (hid || home));
+  const h = anchorById(hid || anchorId());
   if (!h) return { txt: '--', sub: '', mins: 1e9 };
   const mi = miles(h.lat, h.lon, p.lat, p.lon);
   return { txt: mi.toFixed(0), sub: 'mi', mins: mi * 1.4 };
@@ -734,7 +735,7 @@ function fPlaceChips(p, now) {
   return chips;
 }
 function fPlaceRow(p, now, place) {
-  const hid = place && place.kind === 'home' ? place.id : (place ? null : home);
+  const hid = place && place.kind === 'home' ? place.id : (place ? null : anchorId());
   let v, sub;
   if (place && place.lat != null && place.kind !== 'home') { v = miles(place.lat, place.lon, p.lat, p.lon).toFixed(0); sub = 'mi'; }
   else { const d = fDrive(p, hid); v = d.txt; sub = d.sub; }
@@ -757,9 +758,7 @@ function sheetFishPlace(p) {
   const st = k => d[k] ? esc(d[k].min) + 'm' : '--';
   const num = v => (typeof v === 'number' && isFinite(v)) ? v : 0;
   let h = `<h3>${esc(p.n)}</h3><p class="where">${esc(p.c)} County${p.br ? ' &middot; Blue Ribbon fishery' : ''}${p.cf ? ' &middot; community fishing water' : ''}${p.pt ? ' &middot; ' + esc(p.pt) : ''}</p>
-    <div class="stats"><div class="stat"><div class="k">N Salt Lake</div><div class="v">${st('nsl')}</div></div>
-      <div class="stat"><div class="k">Heber</div><div class="v">${st('heber')}</div></div>
-      <div class="stat"><div class="k">Torrey</div><div class="v">${st('torrey')}</div></div></div>
+    <div class="stats">${anchorsChosen().map(a => `<div class="stat"><div class="k">${esc(a.label)}</div><div class="v">${st(a.id)}</div></div>`).join('')}</div>
     <div class="acts"><a class="btn" href="https://maps.apple.com/?daddr=${(p.nav || [p.lat, p.lon]).map(num).join(',')}&dirflg=d">Directions</a>
       <button class="btn ghost" data-copy="${num(p.lat)}, ${num(p.lon)}">Copy coordinates</button></div>`;
   if (p.note) h += `<div class="warnbox" style="margin:12px 16px 0">${esc(p.note)}</div>`;
@@ -903,7 +902,7 @@ const F_COUNTIES = ['Beaver', 'Box Elder', 'Cache', 'Carbon', 'Daggett', 'Davis'
 let fNames = null, fShort = null;
 const F_KIND = /\s+(reservoirs?|lakes?|ponds?|river|creek|stream|tributar(y|ies)|inflow|inlet|and its tributaries|angler access|wma|walk in access|conservation easement|state park|community fishery)\s*$/;
 /* Words that are a water's short name and also something else the app answers
-   for: an animal, a county, a town, a colour, one of Pete's own words for a home.
+   for: an animal, a county, a town, a colour, a word a hunter may give a home town.
    A short name on this list is never matched; the full name still is. */
 const F_NOT_SHORT = /^(bear|beaver|deer|duck|elk|moose|sheep|quail|swan|otter|pelican|goose|turkey|fish|trout|salmon|pine|spring|willow|cottonwood|clear|dry|lost|big|little|long|deep|blue|green|red|white|east|west|north|south|upper|lower|lake|mill|mud|sand|rock|salt|bull|mountain|boulder|fishlake|heber|torrey|home|cabin|utah|wasatch|summit|weber|cache|carbon|davis|duchesne|emery|garfield|grand|iron|juab|kane|millard|morgan|piute|rich|sanpete|sevier|tooele|uintah|washington|wayne|daggett|provo|ogden|logan|price|monroe|huntington|fairview|ferron|kolob|navajo|manti|uinta|uintas)$/;
 function fWaterNames() {
@@ -1019,8 +1018,10 @@ function fishParse(text, always) {
   const q = { text, sp, water, place: null, county: null };
   if (prot) q.protected = { name: prot.name, sure: prot.sure };
   let left = rest;
-  for (const h of (DB.config.homes || [])) {
-    const a = (h.aliases || []).find(x => t.indexOf(fW(x)) >= 0);
+  /* "home" (the first chosen town) and the hunter's own words for a town; never a town's name,
+     which sits inside river names. A word with no letters or digits would match any sentence. */
+  for (const h of anchorsChosen()) {
+    const a = h.aliases.find(x => fW(x).trim() && t.indexOf(fW(x)) >= 0);
     if (a) { q.place = { kind: 'home', id: h.id, label: h.label, lat: h.lat, lon: h.lon }; left = left.replace(fW(a), ' '); break; }
   }
   if (!q.place && /\b(here|where i am|my location|gps|right now|near me|nearby|closest)\b/.test(t)) q.place = { kind: 'gps' };
@@ -1044,7 +1045,7 @@ function fishMatches(q) {
   let list = (FP.places || []).slice();
   if (q.sp) list = list.filter(p => (p.sp || []).some(s => q.sp[3].test(s[0]) && s[1] !== 'X'));
   if (q.county) list = list.filter(p => p.c === q.county);
-  const key = p => (q.place && q.place.lat != null && q.place.kind !== 'home') ? miles(q.place.lat, q.place.lon, p.lat, p.lon) * 1.4 : fDrive(p, q.place && q.place.kind === 'home' ? q.place.id : home).mins;
+  const key = p => (q.place && q.place.lat != null && q.place.kind !== 'home') ? miles(q.place.lat, q.place.lon, p.lat, p.lon) * 1.4 : fDrive(p, q.place && q.place.kind === 'home' ? q.place.id : anchorId()).mins;
   return list.sort((a, b) => key(a) - key(b));
 }
 function fishAnswer(q) {
@@ -1073,7 +1074,7 @@ function fishAnswer(q) {
   if (q.unknown) h += `<div class="warnbox" style="margin-top:12px"><b>The app does not know a water called "${esc(q.unknown)}".</b> What follows is not an answer about that water. It may be listed under another name or covered by a rule for a group of waters; having no entry by that name is not the same as the statewide rules applying. Try By water, or the county.</div>`;
   if (FP.missing) return h + `<p class="empty">The list of fishing places is not on this phone yet, so the app cannot say what is near. Rules can still be looked up by water on the Fish tab.</p>`;
   if (q.place && q.place.kind === 'gps' && q.place.lat == null) return '<p class="empty">Getting a GPS fix&hellip;</p>';
-  const list = fishMatches(q), from = q.place ? (q.place.label || 'where you are') : hlabel();
+  const list = fishMatches(q), from = q.place ? (q.place.label || 'where you are') : anchorLabel();
   h += `<div class="sec-title">${esc(q.sp ? q.sp[1] : 'Fishing')}${q.county ? ' &middot; ' + esc(q.county) + ' County' : ''} &middot; ${list.length} place${list.length === 1 ? '' : 's'} &middot; from ${esc(from)}</div>`;
   if (q.sp) {
     const row = FROW[q.sp[4]];
@@ -1144,7 +1145,7 @@ function vFishNear(now) {
   let list = (FP.places || []).slice();
   if (fish.county) list = list.filter(p => p.c === fish.county);
   list.sort((a, b) => fDrive(a).mins - fDrive(b).mins);
-  let h = `<div class="sec-title">Closest water from ${esc(hlabel())} &middot; ${list.length} places</div>
+  let h = `<div class="sec-title">Closest water from ${esc(anchorLabel())} &middot; ${list.length} places</div>
     <div class="card">${list.slice(0, fish.show).map(p => fPlaceRow(p, now)).join('')}</div>`;
   if (list.length > fish.show) h += `<div class="acts" style="padding:10px 0 0"><button class="btn ghost" data-fmore="1">Show 20 more</button></div>`;
   h += `<p class="fine" style="padding-left:2px">Minutes are road time from the middle of town. A star means the road stops short of the water. Miles, where shown, are a straight line. ${FLINKED ? '' : '<b>The places and the rules on this phone are from different builds, so no place is matched to its rules. Look each water up under By water.</b> '}The chips say what the app found for that water today. <b>No entry by this name</b> means the guidebook lists no water by that name in that county. It may still be covered by an entry under another name or by a rule for a group of waters, so open the place before you keep a fish. <b>Check group rule</b> means a rule for a group of waters in that county may cover it.</p>`;
@@ -1195,7 +1196,7 @@ function vFish() {
   if (!FP) FP = F_NOPLACES();
   const now = fNow();
   let h = fBanners(now);
-  h += `<form id="fishform" style="margin-top:12px"><input class="search" id="fishq" placeholder="trout near the cabin, or a water by name" value="${esc(fish.q)}" autocomplete="off"></form>
+  h += `<form id="fishform" style="margin-top:12px"><input class="search" id="fishq" placeholder="trout near home, or a water by name" value="${esc(fish.q)}" autocomplete="off"></form>
     <div class="seg" style="margin-top:10px">${[['near', 'Near'], ['rules', 'By water'], ['state', 'Statewide'], ['now', 'In force']].map(m => `<button data-fmode="${m[0]}" aria-pressed="${fish.mode === m[0] && !fish.parsed}">${m[1]}</button>`).join('')}</div>`;
   if (fish.parsed) { const hunt = fHuntOffer(fish.q);
     return h + `<div class="chipsrow"><button class="chip" data-fclear="1" aria-pressed="true">${esc(fish.q)} &times;</button>${hunt ? `<button class="chip" data-fhunt="1">${esc(hunt)}</button>` : ''}</div>` + fishAnswer(fish.parsed) + F_FOOT(); }
@@ -1251,7 +1252,7 @@ document.addEventListener('click', e => {
   if (t.dataset.fp) { const p = FPL[t.dataset.fp]; if (p) { openSheet(sheetFishPlace(p)); if (typeof loadWx === 'function') loadWx(p.lat, p.lon); } return; }
   if (t.dataset.fw) { openSheet(sheetFishWater(t.dataset.fw)); return; }
   if (t.dataset.fmode) { fish.mode = t.dataset.fmode; fish.parsed = null; fish.show = 12; if (fish.mode !== 'rules') fish.q = ''; try { localStorage.setItem('ha.fishmode', fish.mode); } catch (x) { /* private mode */ } render(); window.scrollTo(0, 0); return; }
-  if (t.dataset.fsp) { const f = F_FISH.find(x => x[0] === t.dataset.fsp); fishRun(f[1].toLowerCase() + ' near ' + hlabel().toLowerCase()); return; }
+  if (t.dataset.fsp) { const f = F_FISH.find(x => x[0] === t.dataset.fsp); fishRun(f[1].toLowerCase()); return; }   // no place named: the list is measured from the header town, as the Near list is
   if (t.dataset.fclear) { fish.parsed = null; fish.q = ''; fish.show = 12; render(); return; }
   if (t.dataset.fmore) { fish.show += 20; render(); return; }
 });
