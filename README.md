@@ -48,7 +48,19 @@ a README) are in `~/Documents/Hunt-2026/brand/logo-update/exports/`, regenerated
 `docs/icons/` holds the new tile (charcoal tile, white head, orange eye) as
 `icon-180`, `icon-192`, `icon-256`, `icon-512` and `maskable-512`, plus
 `favicon-32.png`; `rangerhawk-wordmark.svg` is the one-line light lockup in the
-Today header; `sig-tile-180.png` is used only by the email signature, not the app.
+Today header and on the website pages; `sig-tile-180.png` is used only by the email
+signature, not the app. The favicon set is `favicon.svg`, `favicon-16`, `-32` and
+`-48.png` in `docs/icons/` and a 16/32/48 `docs/favicon.ico` at the root (16 px is the
+mark's floor and it reads soft there; that is the locked mark, not a fault).
+`icons/og-image.png` (1200x630) is the picture a shared link shows: the stacked light
+lockup and one line on the dark ground, generated as the og family by `export.py`
+(`python3 export.py --og-only` writes only that family and touches no other export).
+
+Where the mark goes on the site, decided 2026-10-09: the header is charcoal in both
+colour schemes, so the light lockup is the only one used and `theme-color` stays
+`#2C2C2C`; the lockup appears on Today (which serves both sides) and on the website
+pages, so there is no hunt/water swap by tab. No seals and no pattern on the site
+until the directory exists; the Maps layered head is held (strategy section 11).
 
 Colours are charcoal `#2C2C2C`, orange `#E98728` and brand blue `#1D95CA`. Links and
 buttons use a darker blue, `#15709A`, because the brand blue is too light to read as
@@ -516,6 +528,50 @@ no script loaded. The numbers are at rangerhawk.goatcounter.com. The Privacy scr
 GoatCounter in its "Counting visitors" paragraph. Emptying the code switches counting off
 and swaps that paragraph back by itself. GoatCounter's free plan is for non-commercial
 use: revisit it before the first paid link goes live. Tests: `node scraper/test_site.js`.
+
+## Search and AI search (v37)
+
+The app is one page drawn by JavaScript, and most AI crawlers (and some search
+crawlers) do not run JavaScript, so on their own they see an empty shell. Plain HTML
+pages, page metadata and crawl files fix that. Nothing here changes what a screen in
+the app says.
+
+- **`scraper/pages/content.js`** holds every sentence: the name, the one-line
+  description, the titles, the hunting and fishing pages, their questions, the
+  disclaimer and the llms.txt text. Change wording there and nowhere else. The one-line
+  description must read the same in the home page's meta description, Open Graph, the
+  structured data, the manifest and llms.txt; the tests hold them equal.
+- **`scraper/build_pages.js`** writes `docs/hunting/`, `docs/fishing/`, `docs/privacy/`,
+  `docs/how-ranger-hawk-makes-money/`, `docs/404.html`, `docs/sitemap.xml`,
+  `docs/llms.txt`, the manifest's description, and two marked regions of
+  `docs/index.html`: the head tags between `seo:start` and `seo:end`, and a short shell
+  block inside `#view` that people see until the app draws (never hidden; nothing is
+  shown only to crawlers). Counts and the refresh date come from `docs/data/ut` at build
+  time, so no number is typed by hand. The privacy and money pages carry the in-app
+  screens' own HTML from `site.js`, so they cannot say something the app does not.
+  It runs in `refresh.yml` every day, before the tests.
+- **`docs/robots.txt`** is written by hand. Every crawler is allowed, AI search and
+  answer engines and model-training crawlers included; only `/maps/` (the offline map
+  files) is closed. Decision 2026-10-09: allow training too, because the rules are free
+  and reach is the point. To close training later, give the training group its own
+  `Disallow: /`. rangerhawk.com's DNS records are DNS only (grey cloud) at Cloudflare,
+  so Cloudflare's AI-bot blocking never sees the traffic: this file is the whole policy.
+- **Structured data**: Organization, WebSite and WebApplication on the home page;
+  BreadcrumbList on each page; FAQPage on hunting and fishing, built from the same
+  questions the page prints. No ratings, reviews or social profiles until real ones
+  exist. Google shows no app rich result without ratings and stopped showing FAQ
+  results in 2026; the markup is there so engines understand the site, not for stars.
+- **Not counted**: the website pages send no GoatCounter pixel and load no script, so
+  the Privacy screen stays true as written. Search traffic is read in Google Search
+  Console and Bing Webmaster Tools (Pete's accounts).
+- **Offline**: the website pages are not in the service worker's SHELL. The worker
+  keeps each one the first time it is opened; a page never opened falls back to the app
+  when there is no signal.
+- **Wording**: Ranger Hawk is not the state. Never "official", "verified", "licensed",
+  "certified" or "endorsed" except in the disclaimer's own negation, and never a claim
+  that a hunt or a catch is legal. Every page carries the money screen's disclaimer
+  sentence. `scraper/test_pages.js` sweeps for the words and checks every page's head,
+  structured data, sitemap, llms.txt and robots.txt.
 
 ## On social media
 

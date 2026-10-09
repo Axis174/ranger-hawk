@@ -1,7 +1,9 @@
 {
   "name": "Ranger Hawk",
   "short_name": "Ranger Hawk",
-  "description": "Access, seasons, permits, fishing rules and migration data for Utah hunting and fishing.",
+  "description": "Free Utah hunting and fishing app: seasons, hunt units, draw odds, fishing rules, access and offline maps, with the rules in Utah DWR’s words.",
+  "lang": "en-US",
+  "categories": ["sports", "navigation", "travel"],
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

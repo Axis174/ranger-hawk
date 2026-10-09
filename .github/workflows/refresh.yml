@@ -82,7 +82,13 @@ jobs:
         with:
           node-version: '22'
 
-      # The five suites run against the data just written, BEFORE it is committed.
+      # Writes the static pages, sitemap, llms.txt and the home page's head tags from
+      # scraper/pages/content.js and the data just refreshed. A count that disagrees
+      # with the README, or a leftover {placeholder}, fails the job here.
+      - name: Build static pages
+        run: node scraper/build_pages.js
+
+      # The six suites run against the data just written, BEFORE it is committed.
       # Any red suite fails the step and the job stops here: nothing is committed
       # or deployed. (No continue-on-error, no if: always() on these or on the
       # commit step.)
@@ -92,6 +98,7 @@ jobs:
           node scraper/test_site.js
           node scraper/test_contacts.js
           node scraper/fishing/test_fishing.js
+          node scraper/test_pages.js
           python3 -m unittest scraper.test_access_contacts
 
       - name: Commit refreshed data
