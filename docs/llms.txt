@@ -1,10 +1,10 @@
 # Ranger Hawk
 
-> Free Utah hunting and fishing app: seasons, hunt units, draw odds, fishing rules, access and offline maps, with the rules in Utah DWR’s words.
+> Free Utah hunting and fishing app: seasons, hunt units, draw odds, fishing rules in Utah DWR’s own words, access and offline maps.
 
 Ranger Hawk is an installable web app (a PWA) for Utah only. It runs on the phone, keeps what the user enters on the phone, and has no account.
 
-Rule text is Utah DWR’s, shown with its source. A job runs every day that watches Utah DWR’s guidebooks, published results, emergency changes and map services for changes; a new emergency change or a reissued guidebook is read by a person before the app changes. Where the app cannot be sure a rule applies, it says so rather than guessing.
+Fishing rule text is Utah DWR’s, word for word, shown with its source. Hunting season dates are copied by hand from Utah DWR’s guidebooks. A job runs every day that watches Utah DWR’s guidebooks, published results, emergency changes and map services; a new emergency change reaches the app the next morning in Utah DWR’s words, marked as not yet built into the rules until a person has read it, and a reissued guidebook is read by a person before the app changes. Where the app cannot be sure a rule applies, it says so rather than guessing.
 
 It does not book trips, take payments or sell tags. The calendar feed of every deadline is at https://rangerhawk.com/hunt.ics.
 
@@ -12,7 +12,7 @@ Ranger Hawk is an independent app. It is not part of, or endorsed by, the Utah D
 
 ## Pages
 
-- [Hunting in Utah](https://rangerhawk.com/hunting/): Every Utah bird, deer, elk and turkey season with what is open today, the hunts that exist where you want to go, draw odds for your points, offline maps.
+- [Hunting in Utah](https://rangerhawk.com/hunting/): Utah bird, turkey and general deer and elk seasons with what is open today, the hunts where you want to go, draw odds for your points, offline maps.
 - [Fishing in Utah](https://rangerhawk.com/fishing/): The rules for each Utah water, the statewide limits that apply, and every emergency change in force today, in Utah DWR’s words, readable with no signal.
 - [Privacy](https://rangerhawk.com/privacy/): What Ranger Hawk keeps on your phone, what leaves it, and whether visits are counted.
 - [How Ranger Hawk makes money](https://rangerhawk.com/how-ranger-hawk-makes-money/): How Ranger Hawk may earn money, how paid links are marked, and what always stays free: the rules.

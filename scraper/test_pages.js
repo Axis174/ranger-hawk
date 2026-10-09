@@ -190,7 +190,7 @@ for (const p of ALL_PAGES) {
     by('WebApplication')['@id'] === SITE + '/#app' && by('WebSite').publisher['@id'] === SITE + '/#org' && by('WebApplication').publisher['@id'] === SITE + '/#org');
   const wa = by('WebApplication');
   ok('index.html: WebApplication is free, Utah, en-US, with the category and system from content.js', wa.offers.price === '0' && wa.offers.priceCurrency === 'USD' && wa.isAccessibleForFree === true &&
-    wa.areaServed['@type'] === 'State' && wa.areaServed.name === 'Utah' && wa.inLanguage === 'en-US' && wa.applicationCategory === C.APP.applicationCategory &&
+    wa.spatialCoverage['@type'] === 'State' && wa.spatialCoverage.name === 'Utah' && !('areaServed' in wa) && wa.inLanguage === 'en-US' && wa.applicationCategory === C.APP.applicationCategory &&
     wa.operatingSystem === C.APP.operatingSystem && wa.image === SITE + '/icons/og-image.png');
   ok('index.html: Organization logo is icon-512 and exists', by('Organization').logo === SITE + '/icons/icon-512.png' && exists('icons/icon-512.png'));
   const app = fs.readFileSync(path.join(DOCS, 'app.js'), 'utf8');

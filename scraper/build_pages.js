@@ -316,7 +316,7 @@ ${C.SOURCES.map(s => `- [${s.label}](${s.url})`).join('\n')}
       { '@type': 'WebApplication', '@id': SITE + '/#app', name: C.NAME, url: SITE + '/', description: C.ONE_LINE,
         applicationCategory: C.APP.applicationCategory, operatingSystem: C.APP.operatingSystem,
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, isAccessibleForFree: true,
-        areaServed: { '@type': 'State', name: 'Utah' }, inLanguage: 'en-US', publisher: { '@id': SITE + '/#org' }, image: OG_IMAGE },
+        spatialCoverage: { '@type': 'State', name: 'Utah' }, inLanguage: 'en-US', publisher: { '@id': SITE + '/#org' }, image: OG_IMAGE },
     ] };
     const seo = [
       `<title>${esc(C.HOME.title)}</title>`,

@@ -564,9 +564,10 @@ the app says.
 - **Not counted**: the website pages send no GoatCounter pixel and load no script, so
   the Privacy screen stays true as written. Search traffic is read in Google Search
   Console and Bing Webmaster Tools (Pete's accounts).
-- **Offline**: the website pages are not in the service worker's SHELL. The worker
-  keeps each one the first time it is opened; a page never opened falls back to the app
-  when there is no signal.
+- **Offline**: the website pages and `page.css` are in the service worker's SHELL, so
+  once the app has been opened online they open with no signal too. (Without that, a
+  page never opened would get `index.html` at its own address, and the app's relative
+  script paths would not load.)
 - **Wording**: Ranger Hawk is not the state. Never "official", "verified", "licensed",
   "certified" or "endorsed" except in the disclaimer's own negation, and never a claim
   that a hunt or a catch is legal. Every page carries the money screen's disclaimer

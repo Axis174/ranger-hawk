@@ -83,8 +83,8 @@ jobs:
           node-version: '22'
 
       # Writes the static pages, sitemap, llms.txt and the home page's head tags from
-      # scraper/pages/content.js and the data just refreshed. A count that disagrees
-      # with the README, or a leftover {placeholder}, fails the job here.
+      # scraper/pages/content.js and the data just refreshed. A count that is not a
+      # whole number above zero, or a leftover {placeholder}, fails the job here.
       - name: Build static pages
         run: node scraper/build_pages.js
 

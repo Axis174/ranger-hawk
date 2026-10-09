@@ -16,7 +16,7 @@ const NAME = 'Ranger Hawk';
 
 // The most-read sentence on the site: meta description, og:description, JSON-LD,
 // manifest, llms.txt summary. Under 155 characters.
-const ONE_LINE = 'Free Utah hunting and fishing app: seasons, hunt units, draw odds, fishing rules, access and offline maps, with the rules in Utah DWR’s words.';
+const ONE_LINE = 'Free Utah hunting and fishing app: seasons, hunt units, draw odds, fishing rules in Utah DWR’s own words, access and offline maps.';
 
 // The in-app money screen's own words (site.js, "What Ranger Hawk is not"),
 // verbatim; test_pages.js holds them equal.
@@ -33,31 +33,31 @@ const HOME = {
   title: 'Ranger Hawk: Utah hunting and fishing rules, seasons, maps',
   // Shown in index.html before the app draws its first screen, and to anyone
   // reading without JavaScript. The same words people see, never crawler-only.
-  lead: 'Utah hunting and fishing seasons, rules, access and maps on your phone, with the rules in Utah DWR’s own words. Free, no account, and it works with no signal.',
+  lead: 'Utah hunting seasons, draw odds and access, the fishing rules in Utah DWR’s own words, and maps that work with no signal. Free, on your phone, no account.',
 };
 
 const HUNTING = {
   path: '/hunting/',
   title: 'Utah hunting seasons, units, draw odds, access | Ranger Hawk',
-  description: 'Every Utah bird, deer, elk and turkey season with what is open today, the hunts that exist where you want to go, draw odds for your points, offline maps.',
+  description: 'Utah bird, turkey and general deer and elk seasons with what is open today, the hunts where you want to go, draw odds for your points, offline maps.',
   h1: 'Utah hunting, in one free app',
-  lead: 'Ranger Hawk is a free phone app for hunting in Utah. It shows every bird, deer, elk and turkey season with whether it is open today, finds the hunts that exist where you want to go, shows Utah DWR’s published draw results for your points, and maps access and hunt units with no signal.',
+  lead: 'Ranger Hawk is a free phone app for hunting in Utah. It shows the bird and turkey seasons and the general deer and elk seasons with whether each is open today, finds the hunts that exist where you want to go, shows Utah DWR’s published draw results for your points, and maps access and hunt units with no signal.',
   sections: [
     { h2: 'Seasons and deadlines',
-      p: ['Every season for birds, deer, elk and turkey, with its live open or closed state, and the next deadline as a countdown. A calendar feed puts every deadline in your phone’s own calendar.'] },
+      p: ['The bird and turkey seasons and the general deer and elk seasons, each with its live open or closed state, and the next deadline as a countdown. A calendar feed puts every deadline in your phone’s own calendar.'] },
     { h2: 'Find a hunt',
-      p: ['Type a sentence such as “elk near Heber with a rifle” and get the hunts that exist there this year, matched to Utah DWR’s hunt unit lists and draw results. When something is missing it asks, and it says why it answered what it did. It is a keyword reader, not an AI service, and it needs no signal.'] },
+      p: ['Type a sentence such as “elk on the Wasatch with a rifle” and get the hunts that exist there this year, matched to Utah DWR’s hunt unit lists and draw results. When something is missing it asks, and it says why it answered what it did. It is a keyword reader, not an AI service, and it needs no signal.'] },
     { h2: 'Draw odds',
       p: ['Pick the draw, the species, resident or nonresident, and your points, and see what happened last year to people with your points, from Utah DWR’s published draw results. Bonus and random permits are shown separately. Your points stay on your phone.'] },
     { h2: 'Access',
       p: ['{access_points} bird hunting access points, nearest first from a Utah town you choose. Each one opens to its season dates, restrictions, required permits, contact and source.'] },
     { h2: 'Maps that work with no signal',
-      p: ['All of Utah on one map: roads, dirt two-tracks, trails, Utah DWR properties, Walk-In Access, big game hunt unit lines, legal forest roads, BLM travel rules and land ownership. Tap anywhere for the property and hunt units at that spot. Tap Save map once and the map never needs a connection; the GPS button follows you with no signal.',
+      p: ['All of Utah on one map: roads, dirt two-tracks, trails, Utah DWR properties, Walk-In Access, big game hunt unit lines, Forest Service roads open to motor vehicles, BLM travel rules and land ownership. Tap anywhere for the property and hunt units at that spot. Tap Save map once and the map never needs a connection; the GPS button follows you with no signal.',
           '“Where am I” names the big game hunt boundaries you are standing in and the closest access points.'] },
     { h2: 'Trip plan and trail cameras',
       p: ['A trip plan sends your destination and back-by time to a contact as an ordinary text from your phone. A trail camera log sorts your photos with the likely animals first and charts visits against legal shooting light. Both stay on your phone.'] },
     { h2: 'Where the rules come from',
-      p: ['Seasons, hunt units, draw results and access come from Utah DWR’s own guidebooks, published results and map services. A job runs every day that watches those sources for changes, and a reissued guidebook is read by a person before the app changes. Guidebook text is shown in Utah DWR’s words.'] },
+      p: ['Seasons, hunt units, draw results and access come from Utah DWR’s own guidebooks, published results and map services. A job runs every day that watches those sources for changes, and a reissued guidebook is read by a person before the app changes. Season dates are copied by hand from the guidebooks; where the app quotes Utah DWR, it quotes it word for word.'] },
   ],
   faq: [
     { q: 'Is Ranger Hawk free?',
@@ -65,9 +65,9 @@ const HUNTING = {
     { q: 'Does it work without cell signal?',
       a: 'Yes, once it has been opened online. Seasons, access points and the hunt finder work offline, and the full Utah map works offline after you tap Save map on the Map screen.' },
     { q: 'Is Ranger Hawk a Utah DWR app?',
-      a: 'No. It is an independent app, not part of or endorsed by the Utah Division of Wildlife Resources. It shows Utah DWR’s own words and links to the source so you can confirm them.' },
+      a: 'No. It is an independent app, not part of or endorsed by the Utah Division of Wildlife Resources. It says where its information comes from and links to the source so you can confirm it.' },
     { q: 'How do I install it on my phone?',
-      a: 'On iPhone, open rangerhawk.com in Safari and choose Share, then Add to Home Screen. On Android, open it in Chrome and choose Install app from the menu.' },
+      a: 'On iPhone, open rangerhawk.com in Safari and choose Share, then Add to Home Screen. On Android, open it in Chrome and choose Install app or Add to Home screen from the menu.' },
   ],
 };
 
@@ -85,11 +85,11 @@ const FISHING = {
     { h2: 'Statewide limits and rules',
       p: ['The daily limits table, {general_rules} of the general rules, and the general rules for spearfishing.'] },
     { h2: 'Closures and emergency changes',
-      p: ['Every emergency change and statewide closure in force, with the days each one has left.'] },
+      p: ['Every emergency change in force, with the days it has left, and any statewide closure while it runs, with its dates.'] },
     { h2: 'What opening a water shows',
       p: ['From the top down: anything wrong with the rules as a whole today, any closure or emergency change, the water’s own rules stretch by stretch, the statewide limits with the rows that apply marked, and the rules for groups of waters that may also cover it. Where the app cannot be sure which rule applies, it shows every candidate and says so.'] },
     { h2: 'Where the rules come from',
-      p: ['Rules come from Utah DWR’s fishing guidebook and the emergency changes Utah DWR posts beside it; places come from Utah DWR’s map layers. A job runs every day that watches for a new emergency change or a reissued guidebook, and a person reads each one before the app changes. Signs at the water govern where a rule says “as posted”.'] },
+      p: ['Rules come from Utah DWR’s fishing guidebook and the emergency changes Utah DWR posts beside it; places come from Utah DWR’s map layers. A job runs every day that watches for a new emergency change or a reissued guidebook. A new emergency change reaches the app the next morning in Utah DWR’s words, marked as not yet built into the rules until a person has read it; a reissued guidebook is read by a person before the app changes. Signs at the water govern where a rule says “as posted”.'] },
   ],
   faq: [
     { q: 'Where are the fishing rules for a particular Utah water?',
@@ -130,7 +130,7 @@ const NOT_FOUND = {
 const LLMS = {
   details: [
     'Ranger Hawk is an installable web app (a PWA) for Utah only. It runs on the phone, keeps what the user enters on the phone, and has no account.',
-    'Rule text is Utah DWR’s, shown with its source. A job runs every day that watches Utah DWR’s guidebooks, published results, emergency changes and map services for changes; a new emergency change or a reissued guidebook is read by a person before the app changes. Where the app cannot be sure a rule applies, it says so rather than guessing.',
+    'Fishing rule text is Utah DWR’s, word for word, shown with its source. Hunting season dates are copied by hand from Utah DWR’s guidebooks. A job runs every day that watches Utah DWR’s guidebooks, published results, emergency changes and map services; a new emergency change reaches the app the next morning in Utah DWR’s words, marked as not yet built into the rules until a person has read it, and a reissued guidebook is read by a person before the app changes. Where the app cannot be sure a rule applies, it says so rather than guessing.',
     'It does not book trips, take payments or sell tags. The calendar feed of every deadline is at ' + SITE + '/hunt.ics.',
   ],
 };
