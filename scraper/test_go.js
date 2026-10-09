@@ -846,6 +846,12 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
     const w = birds.find(p => p.id === 'bird-008');
     ok('range rule, one point: Wallsburg WMA (centroid) has a range from Heber City and a plain time from Salt Lake City',
       w.centroid && w.drive.heber.reliable === false && w.drive.heber.range[1] === w.drive.heber.min && w.drive.slc.reliable === true && w.drive.slc.range === null, JSON.stringify([w.drive.heber, w.drive.slc]));
+    /* One pair in the data tells the two readings of the miles apart. The file keeps road miles to a tenth, and
+       12.4 of them at 45 mph rounds to a low end of 17; the bake takes the low end from OSRM's own metres, before
+       they are rounded to a tenth, and that gives 16. If a later bake moves this pair, work the low end out again
+       from the unrounded metres before changing the 16: the checks above allow one minute either way. */
+    ok('range rule, unrounded miles: Wallsburg WMA from Heber City has a low end of 16, where its stored 12.4 miles would give 17',
+      Math.round(w.drive.heber.mi * 60 / 45) === 17 && w.drive.heber.range[0] === 16, JSON.stringify(w.drive.heber));
   }
 
   /* 6. What the finders hear: "home" is the first chosen town, a town's name is not a word for it, and the
@@ -936,6 +942,7 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
     const m = W.box.T_fq().parsed;
     ok('a word that is no unit\'s name ("moab") brings no unit offer', m.place.id === 'moab' && !m.alsoUnit && !/That is also the name of a hunt unit/.test(W.box.vFind()), JSON.stringify(m.alsoUnit));
   }
+
 }
 
 /* ---- A fishing question asked before the rules arrive is answered when they do,
