@@ -25,7 +25,9 @@ Run by hand, about once a year or when UDWR's layers change:
     python3 scraper/build_fishing_places.py            # reads UDWR (about 8 minutes, one request every 1.5 s)
     python3 scraper/build_fishing_places.py --cached   # reuse the last pull
     python3 scraper/build_fishing_places.py --drive    # also ask OSRM for drive times
-Not part of the daily job.
+    python3 scraper/build_fishing_places.py --drive-only  # only redo the drive times in the file as it stands (no UDWR pull)
+Drive times are measured from the anchor towns in docs/data/ut/config.json. Run --drive-only whenever
+that list changes; it touches nothing but each place's "d". Not part of the daily job.
 """
 import json, math, os, re, sys, time, urllib.parse, urllib.request
 
@@ -44,6 +46,7 @@ COMMUNITY = AGOL + "/Community_fisheries/FeatureServer/0"
 REGISTRY = AGOL + "/UDWR_Fish_Stocking_Events_1979_2024_VIEW/FeatureServer/0"
 COUNTIES = "https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/UtahCountyBoundaries/FeatureServer/0"
 OSRM = "https://router.project-osrm.org/table/v1/driving/"
+OSRM_COORDS = 100                            # most coordinates asked of the public server in one request
 UTAH = (-114.1, 36.9, -109.0, 42.1)          # the same box scraper/sources.py uses
 
 FAIL, NOTE = [], []
@@ -187,6 +190,103 @@ def pull_planner(reuse):
     return out
 
 
+def anchors_of(config):
+    """The anchor towns from config.json as (id, lat, lon), in the order the file lists them."""
+    return [(a["id"], a["lat"], a["lon"]) for a in config["anchors"]]
+
+
+def osrm_bake(anchors, pts):
+    """Road time and distance from every anchor to every point, from OSRM's public demo server.
+
+    anchors: (id, lat, lon) from anchors_of(). pts: (lat, lon) destinations. Returns one entry per point,
+    {"to": {anchor id: (seconds, metres)}, "snap": metres from the point to the nearest road}, or None for
+    a point whose chunk OSRM never answered. A pair OSRM cannot route is left out of "to"; the caller says so.
+
+    The server is shared, so: at most OSRM_COORDS coordinates in a request (the anchors count), one request
+    every 1.5 s, and on any refusal (429 included) wait, halve the chunk and ask again, three tries a chunk.
+    If the very first chunk gets no answer the server cannot be reached and this raises.
+    """
+    out, na = [None] * len(pts), len(anchors)
+    size, i, tries, answered = OSRM_COORDS - na, 0, 0, False
+    while i < len(pts):
+        chunk = pts[i:i + size]
+        xy = [(a[2], a[1]) for a in anchors] + [(lon, lat) for lat, lon in chunk]
+        url = OSRM + ";".join("%.5f,%.5f" % c for c in xy) + "?sources=" + ";".join(str(k) for k in range(na)) + "&annotations=duration,distance"
+        try:
+            j = json.loads(get(url, tries=1, timeout=180))
+            if j.get("code") != "Ok":
+                raise RuntimeError(j.get("code"))
+        except Exception as e:                # noqa: BLE001
+            tries += 1
+            if tries < 3:
+                size = max(size // 2, 10)     # a refusal: back off and ask for less
+                time.sleep(10 * tries)
+                continue
+            if not answered:
+                raise RuntimeError("OSRM cannot be reached: %r" % (e,))
+            note("OSRM did not answer for points %d-%d: %r" % (i, i + len(chunk), e))
+            i, tries = i + len(chunk), 0
+            time.sleep(1.5)
+            continue
+        for di in range(len(chunk)):
+            to = {}
+            for ai, a in enumerate(anchors):
+                s, m = j["durations"][ai][na + di], j["distances"][ai][na + di]
+                if s is not None and m is not None:
+                    to[a[0]] = (s, m)
+            out[i + di] = {"to": to, "snap": j["destinations"][na + di].get("distance", 0)}
+        answered, i, tries = True, i + len(chunk), 0
+        time.sleep(1.5)
+    return out
+
+
+def point_of(p):
+    """Where OSRM is asked to drive to: UDWR's directions point when there is one, else the water's own."""
+    return tuple(p.get("nav") or [p["lat"], p["lon"]])
+
+
+def drive_of(r, anchors):
+    """A place's "d" from one osrm_bake answer: whole minutes and road miles for each anchor that routed."""
+    return {a[0]: {"min": int(round(r["to"][a[0]][0] / 60)), "mi": round(r["to"][a[0]][1] / 1609.34, 1)}
+            for a in anchors if a[0] in r["to"]}
+
+
+def bake_drive_only():
+    """Redo "d" for every place in the file as it stands, and nothing else (no UDWR pull, no cache).
+
+    Places whose chunk OSRM never answers keep what they had for the anchors that are still in
+    config.json; a stale id is never carried. "snap" is left as it is; a difference is counted in a note.
+    """
+    anchors = anchors_of(json.load(open(os.path.join(DATA, "config.json"))))
+    ids = [a[0] for a in anchors]
+    data = json.load(open(OUT))
+    places = data["places"]
+    try:
+        got = osrm_bake(anchors, [point_of(p) for p in places])
+    except RuntimeError as e:
+        print("  FAIL:", e)
+        print("NOT WRITTEN: %s is unchanged." % OUT)
+        return 1
+    snap_differs = 0
+    for p, r in zip(places, got):
+        if r is None:
+            p["d"] = {k: p["d"][k] for k in ids if k in p.get("d", {})}
+        else:
+            p["d"] = drive_of(r, anchors)
+            snap_differs += abs(round(r["snap"] / 1609.34, 2) - (p.get("snap") or 0)) > 1e-9
+        for k in ids:
+            if k not in p["d"]:
+                note("no drive time from %s to %s (%s)" % (k, p["n"], p["id"]))
+    if snap_differs:
+        note("OSRM's distance to the nearest road now differs for %d places; the stored \"snap\" is kept" % snap_differs)
+    for n in NOTE:
+        print("  note:", n)
+    print("  places=%d; with all %d anchors: %d" % (len(places), len(ids), sum(1 for p in places if all(k in p["d"] for k in ids))))
+    json.dump(data, open(OUT, "w"), separators=(",", ":"), ensure_ascii=False)
+    print("wrote %s: %d KB" % (OUT, os.path.getsize(OUT) // 1024))
+    return 0
+
+
 MON = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
 
 
@@ -200,6 +300,8 @@ ABUND = {"Likely": "L", "Possible": "P", "Invasive Species": "I", "Protected Spe
 
 def main():
     args = sys.argv[1:]
+    if "--drive-only" in args:
+        return bake_drive_only()
     reuse = "--cached" in args
     rules = json.load(open(os.path.join(DATA, "fishing_rules.json")))
     links = json.load(open(os.path.join(SRC, "links.json")))
@@ -488,34 +590,36 @@ def main():
         p.pop("_regs", None)
 
     # ---- drive times from the anchor towns (public places; nothing personal)
-    homes = [(a["id"], a["lat"], a["lon"]) for a in config["anchors"]]
+    anchors = anchors_of(config)
+    ids = [a[0] for a in anchors]
+    old = {p["id"]: p for p in (json.load(open(OUT))["places"] if os.path.exists(OUT) else [])}
+
+    def carry(p):
+        """Keep what the last run baked for this place, anchor by anchor. An id that is no longer an anchor is dropped."""
+        o = old.get(p["id"])
+        if o and o.get("d") and abs(o["lat"] - p["lat"]) < 1e-4 and abs(o["lon"] - p["lon"]) < 1e-4:
+            d = {k: o["d"][k] for k in ids if k in o["d"]}
+            if d:
+                p["d"], p["snap"] = d, o.get("snap")
+
     if "--drive" in args:
-        prev = {}
-        for i in range(0, len(places), 100 - len(homes)):      # 100 coordinates a request, the anchors included
-            chunk = places[i:i + 100 - len(homes)]
-            pts = [(h[2], h[1]) for h in homes] + [((p.get("nav") or [p["lat"], p["lon"]])[1], (p.get("nav") or [p["lat"], p["lon"]])[0]) for p in chunk]
-            url = OSRM + ";".join("%.5f,%.5f" % xy for xy in pts) + "?sources=" + ";".join(str(k) for k in range(len(homes))) + "&annotations=duration,distance"
-            try:
-                j = json.loads(get(url, timeout=180))
-                if j.get("code") != "Ok":
-                    raise RuntimeError(j.get("code"))
-                for hi, h in enumerate(homes):
-                    for pi, p in enumerate(chunk):
-                        d, m = j["durations"][hi][len(homes) + pi], j["distances"][hi][len(homes) + pi]
-                        snap = j["destinations"][len(homes) + pi].get("distance", 0) / 1609.34
-                        if d is None:
-                            continue
-                        p.setdefault("d", {})[h[0]] = {"min": int(round(d / 60)), "mi": round(m / 1609.34, 1)}
-                        p["snap"] = round(snap, 2)
-            except Exception as e:            # noqa: BLE001
-                note("OSRM did not answer for places %d-%d: %r" % (i, i + len(chunk), e))
-            time.sleep(1.5)
+        try:
+            got = osrm_bake(anchors, [point_of(p) for p in places])
+        except RuntimeError as e:
+            got = [None] * len(places)
+            fail(str(e))
+        for p, r in zip(places, got):
+            if r is None:                     # its chunk was never answered
+                carry(p)
+                continue
+            p["d"] = drive_of(r, anchors)
+            p["snap"] = round(r["snap"] / 1609.34, 2)
+            for k in ids:
+                if k not in p["d"]:
+                    note("no drive time from %s to %s (%s)" % (k, p["n"], p["id"]))
     else:
-        old = {p["id"]: p for p in (json.load(open(OUT))["places"] if os.path.exists(OUT) else [])}
         for p in places:
-            o = old.get(p["id"])
-            if o and o.get("d") and abs(o["lat"] - p["lat"]) < 1e-4 and abs(o["lon"] - p["lon"]) < 1e-4:
-                p["d"], p["snap"] = o["d"], o.get("snap")
+            carry(p)
 
     places.sort(key=lambda p: (p["n"].lower(), p["id"]))
     for n in NOTE:
