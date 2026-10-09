@@ -7,8 +7,9 @@ _Formerly "Utah Hunt Atlas"; the repo was renamed `ranger-hawk` on 2026-10-01. T
 A personal, installable phone app plus a daily data refresh for Utah hunting —
 birds (pheasant, chukar, duck, ptarmigan) and big game (deer and elk, archery
 through rifle) — and, since 2026-09-27, Utah fishing: the statewide limits, every
-water with rules of its own, and UDWR's emergency changes. Measured from three
-homes: **North Salt Lake**, **Heber City** and **Torrey**.
+water with rules of its own, and UDWR's emergency changes. Drive times are
+measured from the Utah towns you choose: twelve come with the app, and you pick
+up to three (see "Home towns" below).
 
 Not affiliated with UDWR. Always confirm against the current guidebook and the
 [Utah Hunt Planner](https://hunt.utah.gov/) before you hunt.
@@ -93,13 +94,14 @@ work whether or not you ever open the app.
 ## What it does
 
 **Today** — the next deadline as a countdown, legal shooting light for the day,
-what is open right now, the five closest places to whichever home is selected,
-the Great Salt Lake level, and what is coming. **Where am I** reads the phone's
-GPS and names the big game hunt boundaries you are standing in plus the closest
-access points; it works with no signal once the app has been opened online.
+what is open right now, the five closest places to the town selected in the
+header, the Great Salt Lake level, and what is coming. **Where am I** reads the
+phone's GPS and names the big game hunt boundaries you are standing in plus the
+closest access points; it works with no signal once the app has been opened online.
 
-**Access** — all 88 bird access points, searchable, sorted by real road drive
-time from the selected home. Each one opens to season dates, restrictions,
+**Access** — all 107 bird access points, searchable, sorted by real road drive
+time from the selected town (88 have a routed time; the other 19 show straight-line
+miles, marked as miles). Each one opens to season dates, restrictions,
 required permits, contact, source and confidence, plus a National Weather
 Service forecast for that spot when there is a signal.
 
@@ -111,7 +113,7 @@ GPS button follows you with no signal. **Save map for offline** stores the 65 MB
 map on the phone once; after that the map never needs a connection.
 
 **Find a hunt** (Seasons tab, and a button on Today) — type "I want to hunt elk
-by my cabin with a rifle" and get the hunts that exist there this year: the app
+near home with a rifle" and get the hunts that exist there this year: the app
 reads species, weapon, place and points from the sentence, finds the hunt
 boundaries under the place with the unit shapes it carries, matches them to
 UDWR's 2026 hunt-type unit lists (`docs/data/ut/hunt_units_2026.json`, from UDWR's
@@ -151,9 +153,9 @@ Known weakness of the sort: frames of the camera being handled score highest,
 and an animal at the dark edge of the flash scores low, so nothing is ever
 hidden or deleted automatically.
 
-**Fish** — type "trout near the cabin" or the name of a water. The screen has
+**Fish** — type "trout near home" or the name of a water. The screen has
 four parts. *Near*: 435 places from UDWR's own layers, by road time from the
-selected home, each with a chip saying what the app found for it today. *By
+selected town, each with a chip saying what the app found for it today. *By
 water*: all 179 entries of the guidebook's "Rules for specific waters" and the 64
 community fishing waters. *Statewide*: the daily-limits table, 39 general
 rules and the general rules for spearfishing. *In force*: the statewide kokanee closure and every emergency change, with
@@ -182,8 +184,23 @@ says so in UDWR's own words and points you at UDWR's Walk-In Access map for the 
 It does not carry landowners' personal numbers: this repository is public, and they did
 not agree to be in it.
 
-Switch homes with the **NSL / HEB / TOR** control in the header. Drive times
-recompute against that home everywhere.
+**Home towns** (Menu) — twelve Utah towns come with the app, each shown by a short
+code: Salt Lake City (SLC), Ogden (OGD), Provo (PRV), Logan (LGN), Heber City (HC),
+Vernal (VRN), Price (PRC), Richfield (RCH), Torrey (TOR), Cedar City (CDC), St. George
+(STG) and Moab (MOB). On the Home towns page you pick up to three, in the order you
+tap them; the first is **home**. Under each chosen town there is one box for your own
+words for it, comma separated, and the finders then treat those words, and the word
+"home", as that town: "elk near home" means the first town, and a word you give another
+town means that one. The header shows the code of each chosen town, one chip for one
+town; the pressed chip is the town drive times are measured from, and tapping another
+chip changes the minutes on every screen without changing the order of your towns.
+The towns you choose and your words for them stay on the phone, in its own storage
+(`ha.anchors` and `ha.anchor`); they are not in any data file and nothing is sent. A
+hunter who never opens the page gets Salt Lake City and the app works. The names of the
+towns are not finder words: Provo, Price, Logan and Ogden are also river names, so
+"provo river" is a water, not a town. A phone that had tapped a home chip under v35
+(`ha.home`) is carried over once to Salt Lake City, Heber City and Torrey, with its old
+choice still measuring; words are not carried, so they are typed again once.
 
 ---
 
@@ -194,17 +211,62 @@ Everything lands in `docs/data/ut/`.
 
 | File | What it is |
 |---|---|
-| `bird_access.json` | 88 access points, road-routed from all three homes |
+| `bird_access.json` | 107 access points; 88 carry road-routed drive times from all twelve anchor towns, the other 19 have none |
 | `seasons.json` | Season dates and deadlines. **Hand-maintained** from the guidebooks |
 | `fishing_rules.json` | The fishing guidebook, in UDWR's words, with emergency changes. Built by `scraper/build_fishing.py`, never edited by hand |
 | `fishing_places.json` | 435 places to fish, with the rules each is linked to. Built by `scraper/build_fishing_places.py` |
 | `fishing_notices.json` | UDWR's list of emergency changes to the fishing guidebook, read **daily** |
-| `config.json` | Homes, contacts, landowner calls, permits, trespass law |
+| `config.json` | The twelve anchor towns, contacts, landowner calls, permits, trespass law |
 | `access_contacts.json` | Properties where UDWR asks you to phone the owner first, in UDWR's wording with the owner's name and number removed. Built by `scraper/build_access_contacts.py` from the two property layers. |
 | `migration_utah.json` | 492 USGS ungulate migration features, Utah extent |
 | `raw_*.json` | Verbatim upstream pulls, kept so diffs are auditable |
 | `community.json` | UDWR news and Reddit, filtered for relevance |
 | `changelog.json` | Last 60 runs: what changed, field by field |
+
+### Anchor towns and drive times
+
+`config.json` lists the twelve anchor towns under `anchors`: an `id`, a `label`, the
+header `code`, the `county` and a town-centre point (`lat`, `lon`). They are public
+places on purpose, with no one's home among them; the towns a hunter picks, and the
+hunter's own words for them, are kept on the phone only (see "Home towns" above). The
+points are town centres, not street addresses, and the ids `heber` and `torrey` keep
+the points the app used before v36, so those minutes carried over.
+
+A drive time is baked from every anchor to every place, by road, from OSRM's public
+router. Fishing places carry `d: {<anchor id>: {min, mi}}`; bird access points carry
+`drive: {<anchor id>: {min, mi, reliable, range}}`. Minutes are whole numbers and miles
+are road miles to a tenth. The phone reads the minutes (and the range) for whichever
+anchor is selected in the header. The 19 bird points with no routed time keep an empty
+`drive`, and the phone shows straight-line miles for them. Both bakes are run by hand
+when the anchor list changes or a place moves; neither is in the daily job:
+
+    python3 scraper/build_fishing_places.py --drive-only   # fishing drive times only, in the file as it stands: about five requests, no UDWR pull
+    python3 scraper/build_bird_drive.py                    # bird drive times, for the points that carry one (add --all for every point)
+
+The full `--drive` run of `build_fishing_places.py` bakes the same twelve anchors
+along with a fresh UDWR pull (see "Keeping it current"). Every run is polite to the
+shared server: at most 100 coordinates a request, one request every 1.5 seconds, and
+on a refusal it waits, halves the chunk and asks again. A place whose chunk is never
+answered keeps its old minutes, anchor by anchor, and the run says so.
+
+**The bird range rule.** Eight bird points are marked `"centroid": true` in
+`bird_access.json` (Wallsburg WMA twice, Howard Slough WMA, Willard Spur WMA,
+Farmington Bay WMA, Farmington Bay, Willard Bay Upland Game Area and Ogden Bay WMA).
+Each is the middle of a property, not a place a car stops, so the road finishes down
+dike roads and the routed time overstates the drive. For a centroid point and an
+anchor, `low` is the time the same road miles take at 45 mph, `round(miles * 60 / 45)`,
+worked from OSRM's miles before they are rounded to a tenth. If the road time is at least
+1.5 times `low`, the figure is `reliable: false` with `range: [low, min]`, and the
+phone prints "low-min min *"; otherwise it is `reliable: true` and `range` is null.
+Every figure on every other point is `reliable: true` with no range. The flag is data,
+so the rule survives a rebake. Today 21 of the 96 centroid figures are ranges.
+
+**The calendar uses three fixed anchors.** `hunt.ics` is one file for every
+subscriber, so it cannot follow a phone's choice. `CALENDAR_ANCHORS` in
+`scraper/build_calendar.py` names Salt Lake City, Heber City and Torrey (`slc`,
+`heber`, `torrey`); the "(near ...)" items in the fishing events are waters within 75
+straight-line miles of one of those, and each event says so in those words. The run
+stops with a plain message if one of the three ids is missing from `anchors`.
 
 ### Sources
 - UDWR 2026 Utah Fishing Guidebook, and the emergency changes UDWR posts beside it
@@ -342,7 +404,10 @@ page images before it ships: the 2026 build was, twice, by independent readers
 
 **Once a year, or when UDWR's layers change:**
 
-    python3 scraper/build_fishing_places.py --drive     # about 8 minutes, one request every 1.5 s
+    python3 scraper/build_fishing_places.py --drive     # UDWR pull about 8 minutes, then drive times from the twelve anchor towns
+
+To redo only the drive times (the anchor towns changed), without a UDWR pull, see
+"Anchor towns and drive times" above.
 
 Both builders need `pdftotext` and `pdftohtml` (`brew install poppler`). Neither
 is part of the daily job, on purpose.
@@ -356,7 +421,7 @@ is part of the daily job, on purpose.
 | UDWR property layer (already pulled daily) | 107 angler access points and other properties whose stated purpose includes fishing |
 | UDWR lake registry | a position for 31 guidebook lakes the planner does not carry, each matched by a person |
 | UGRC county outlines | which county a point is in |
-| OSRM | road time from the three homes, from town-level anchors |
+| OSRM | road time and road miles from each of the twelve anchor towns (town-centre points) |
 
 A place is linked to a guidebook entry by itself **only when the whole name and
 the county both match**. Every other link is a decision recorded with its reason
@@ -423,7 +488,9 @@ leaves it, whether visitors are counted) and **How Ranger Hawk makes money**. Bo
 `docs/site.js`, with the Menu rows in `docs/go.js` (`privacy` is the search word for the
 first, `money` for the second). Their wording is fixed and was written to match what the
 code does: if you change what the app stores or what it sends over the network, change the
-Privacy screen in the same commit. Nothing in v29 earns money.
+Privacy screen in the same commit. Nothing in v29 earns money. The **Home towns** page
+(v36) is in `docs/site.js` too, with its Menu row in `docs/go.js`; the code that reads
+and saves the choice is `docs/state.js`, which loads before every other script.
 
 **The paid-link slot.** `docs/data/ut/paid_links.json` ships as `{"links": []}`. To add one,
 append `{"slot": "draw", "company": "Name", "label": "What the link says", "url": "https://..."}`.
@@ -705,10 +772,12 @@ the legal authority.
 - Hunt unit shapes are simplified to about 200 m and overlap by hunt type. Near a
   boundary, the Utah Hunt Planner and the permit govern.
 
-- Home anchors are town-level on purpose. Drive times were computed from a
-  street-level point and stored as minutes, not coordinates.
-- Six large marsh units are mapped at property centroids, so routing runs the
-  last miles down dike roads and overstates the drive. Those show a range.
+- Anchor towns are town-centre points on purpose, so a drive time is from the middle
+  of the town, not from your street. It is stored as minutes, not coordinates.
+- Eight bird access points are mapped at property centroids (the large marsh units and
+  Wallsburg), so routing runs the last miles down dike roads and overstates the drive.
+  Where the road time is 1.5 times the 45 mph time or more, the phone shows a range
+  (see "Anchor towns and drive times").
 - Chukar range points are approximate range centroids, **not parking areas**.
 - Blackhawk WMA's 2026-27 status is unconfirmed — UDWR's layer still carries
   stale 2025-26 closure text.
