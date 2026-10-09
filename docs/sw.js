@@ -13,7 +13,7 @@ const SHELL = [
   './', './index.html', './state.js', './app.js', './cams.js', './finder.js', './fishing.js', './contacts.js', './trip.js', './roads.js', './go.js', './site.js', './styles.css', './fonts/ZillaSlab-500.woff2', './fonts/ZillaSlab-600.woff2', './fonts/ZillaSlab-700.woff2', './fonts/PublicSans-var.woff2', './fonts/IBMPlexMono-400.woff2', './fonts/IBMPlexMono-500.woff2', './fonts/IBMPlexMono-600.woff2', './data/ut/cam_rules.json', './data/ut/hunt_units_2026.json', './data/ut/landowner_tags.json',
   './manifest.webmanifest', './icons/rangerhawk-wordmark.svg', './icons/icon-192.png', './icons/icon-512.png',
   // The website pages (scraper/build_pages.js), so one never opened still opens with no signal.
-  './hunting/', './fishing/', './privacy/', './how-ranger-hawk-makes-money/', './page.css',
+  './hunting/', './fishing/', './privacy/', './how-ranger-hawk-makes-money/', './about/', './page.css',
   './data/ut/bird_access.json', './data/ut/seasons.json', './data/ut/config.json',
   './vendor/suncalc.js', './data/ut/lake_level.json', './data/ut/units_geo.json', './data/ut/snow.json', './data/ut/draw_odds.json', './data/ut/udot.json',
   './data/ut/fishing_rules.json', './data/ut/fishing_places.json', './data/ut/fishing_notices.json', './data/ut/access_contacts.json', './data/ut/paid_links.json'

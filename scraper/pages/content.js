@@ -126,6 +126,26 @@ const NOT_FOUND = {
   lead: 'The app is at the home page. Hunting and fishing are described on their own pages.',
 };
 
+// Pete's about-page copy (brand strategy section 10, 2026-10-07), chosen
+// 2026-10-09 "as written, directory lines held": the two sentences about listing
+// outfitters wait until the directory exists. One phrase was made true to the
+// app: "the rules in the agency's own words, for the state you are standing in,
+// current and audited" became the first sentence below (Utah only today; only
+// the fishing rules are word for word).
+const ABOUT = {
+  label: 'About',
+  title: 'About | Ranger Hawk',
+  description: 'Why Ranger Hawk exists, what the hawk’s eye stands for, and what it never does: book trips, take your money or charge for a rule.',
+  h1: 'About Ranger Hawk',
+  lead: 'Ranger Hawk shows you Utah’s hunting and fishing rules from the agency’s own guidebooks, the fishing rules in the agency’s own words, kept current, and it works when your phone has no signal. It finds the unit, the water and the season, and it tells you plainly when it is not sure.',
+  sections: [
+    { h2: 'The mark',
+      p: ['The mark is a hawk’s eye, because that is the job: see clearly, then act once. The hawk hunts; its cousin the osprey fishes; the orange eye is for the field and the blue eye is for the water.'] },
+    { h2: 'The rules stay free',
+      p: ['We do not book trips and we do not take your money. The rules stay free.'] },
+  ],
+};
+
 // llms.txt (llmstxt.org): H1, a one-paragraph summary, then link lists.
 const LLMS = {
   details: [
@@ -135,4 +155,4 @@ const LLMS = {
   ],
 };
 
-module.exports = { SITE, NAME, APP, ONE_LINE, DISCLAIMER, SOURCES, HOME, HUNTING, FISHING, PRIVACY, MONEY, NOT_FOUND, LLMS };
+module.exports = { SITE, NAME, APP, ONE_LINE, DISCLAIMER, SOURCES, HOME, HUNTING, FISHING, PRIVACY, MONEY, ABOUT, NOT_FOUND, LLMS };

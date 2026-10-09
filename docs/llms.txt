@@ -14,6 +14,7 @@ Ranger Hawk is an independent app. It is not part of, or endorsed by, the Utah D
 
 - [Hunting in Utah](https://rangerhawk.com/hunting/): Utah bird, turkey and general deer and elk seasons with what is open today, the hunts where you want to go, draw odds for your points, offline maps.
 - [Fishing in Utah](https://rangerhawk.com/fishing/): The rules for each Utah water, the statewide limits that apply, and every emergency change in force today, in Utah DWR’s words, readable with no signal.
+- [About](https://rangerhawk.com/about/): Why Ranger Hawk exists, what the hawk’s eye stands for, and what it never does: book trips, take your money or charge for a rule.
 - [Privacy](https://rangerhawk.com/privacy/): What Ranger Hawk keeps on your phone, what leaves it, and whether visits are counted.
 - [How Ranger Hawk makes money](https://rangerhawk.com/how-ranger-hawk-makes-money/): How Ranger Hawk may earn money, how paid links are marked, and what always stays free: the rules.
 
