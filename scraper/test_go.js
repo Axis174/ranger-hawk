@@ -943,6 +943,67 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
     ok('a word that is no unit\'s name ("moab") brings no unit offer', m.place.id === 'moab' && !m.alsoUnit && !/That is also the name of a hunt unit/.test(W.box.vFind()), JSON.stringify(m.alsoUnit));
   }
 
+  /* 7. A sentence already read follows the towns. "near home" names a town, and home moves when the hunter takes the
+        first town off or changes the words, so the held sentence is read again and the answer is for the town the
+        header now shows. A sentence with no town in it, or one waiting on the phone's location, is left alone. */
+  {
+    const F = page(true, null, { app: true, ls: towns(['slc', 'heber']) });
+    F.type('trout near home');
+    const before = placeRows(F.box.T_vFish());
+    ok('held sentence: "trout near home" on the Fish screen is measured from Salt Lake City to begin with', F.box.T_fish().parsed.place.id === 'slc' && F.box.T_vFish().indexOf('from Salt Lake City') >= 0 && before.length > 3 && before.every(r => r[1] === byId[r[0]].d.slc.min), JSON.stringify(before.slice(0, 3)));
+    openTowns(F); tap(F, { town: 'slc' });
+    const after = placeRows(F.box.T_vFish());
+    ok('held sentence: with Salt Lake City taken off, the same "trout near home" is for Heber City, with Heber City\'s minutes and name',
+      F.box.T_fish().parsed.place.id === 'heber' && F.box.T_vFish().indexOf('from Heber City') >= 0 && F.box.T_vFish().indexOf('from Salt Lake City') < 0 && after.length > 3 && after.every(r => r[1] === byId[r[0]].d.heber.min), JSON.stringify([F.box.T_fish().parsed.place, after.slice(0, 3)]));
+
+    const H = page(true, null, { app: true, ls: towns(['slc', 'heber']) });
+    H.box.T_hu(load('hunt_units_2026.json')); H.box.ODDS = load('draw_odds.json');
+    H.type('pheasant near home');
+    ok('held sentence: "pheasant near home" in the hunt finder is Salt Lake City to begin with', H.box.T_fq().parsed.place.id === 'slc' && H.box.vFind().indexOf('by drive from Salt Lake City') >= 0, JSON.stringify(H.box.T_fq().parsed.place));
+    openTowns(H); tap(H, { town: 'slc' });
+    ok('held sentence: ...and with Salt Lake City taken off it is Heber City, and the list says so', H.box.T_fq().parsed.place.id === 'heber' && H.box.vFind().indexOf('by drive from Heber City') >= 0 && H.box.vFind().indexOf('by drive from Salt Lake City') < 0, JSON.stringify(H.box.T_fq().parsed.place));
+
+    const W = page(true, null, { app: true, ls: towns([{ id: 'slc', words: [] }, { id: 'heber', words: ['cabin'] }]) });
+    W.type('trout near the cabin');
+    ok('held sentence: "trout near the cabin" is Heber City while cabin is the word for it', W.box.T_fish().parsed.place && W.box.T_fish().parsed.place.id === 'heber', JSON.stringify(W.box.T_fish().parsed.place));
+    openTowns(W); typed(W, 'heber', 'lodge');
+    ok('held sentence: ...and once the word is changed the sentence is read again and no longer names a town', W.box.T_fish().parsed === null || W.box.T_fish().parsed.place === null, JSON.stringify(W.box.T_fish().parsed && W.box.T_fish().parsed.place));
+
+    const G = page(true, null, { app: true, ls: towns(['slc', 'heber']) });
+    G.type('trout where I am');
+    const held = G.box.T_fish().parsed, asked = G.gps.length;
+    openTowns(G); tap(G, { town: 'slc' }); typed(G, 'heber', 'camp');
+    ok('held sentence: one that waits on the phone\'s location is not read again, and the phone is not asked a second time', asked === 1 && G.gps.length === 1 && G.box.T_fish().parsed === held, JSON.stringify([asked, G.gps.length]));
+    G.box.tab = 'fish'; G.box.fishRun('trout');                 // what the Fish species chip runs
+    const bare = G.box.T_fish().parsed;
+    openTowns(G); typed(G, 'heber', 'den');
+    ok('held sentence: one with no town in it is not read again, and still follows the header town as the list does', bare && bare.place === null && G.box.T_fish().parsed === bare, JSON.stringify(bare && bare.place));
+
+    const T = page(true, null, { app: true, ls: towns(['slc', 'heber']) });
+    T.box.T_hu(load('hunt_units_2026.json')); T.box.ODDS = load('draw_odds.json');
+    T.type('elk');
+    tap(T, { fask: 'place', fval: 'heber' });
+    openTowns(T); tap(T, { town: 'slc' });
+    ok('held sentence: a town the hunter tapped in the hunt finder is not thrown away when the towns change', T.box.T_fq().parsed.place && T.box.T_fq().parsed.place.id === 'heber', JSON.stringify(T.box.T_fq().parsed.place));
+  }
+
+  /* 8. Words typed for a town survive taking the town off and choosing it again on the same page, so a slip of the
+        thumb does not lose them. They are not written anywhere else and are gone when the page is closed. */
+  {
+    const K = app(towns([{ id: 'slc' }, { id: 'heber', words: ['cabin', 'tree top'] }]));
+    openTowns(K); tap(K, { town: 'heber' });
+    ok('words kept: taking Heber City off drops it from the saved choice', same(kept(K), [{ id: 'slc', words: [] }]), K.store.get('ha.anchors'));
+    tap(K, { town: 'heber' });
+    ok('words kept: choosing it again brings its words back, last in order', same(kept(K), [{ id: 'slc', words: [] }, { id: 'heber', words: ['cabin', 'tree top'] }]) && /data-town-words="heber" value="cabin, tree top"/.test(view(K)), K.store.get('ha.anchors'));
+    typed(K, 'heber', ''); tap(K, { town: 'heber' }); tap(K, { town: 'heber' });
+    ok('words kept: words the hunter emptied before taking the town off do not come back', same(kept(K), [{ id: 'slc', words: [] }, { id: 'heber', words: [] }]), K.store.get('ha.anchors'));
+    tap(K, { town: 'moab' });
+    ok('words kept: a town never chosen before starts with none', same(kept(K).map(e => e.words), [[], [], []]), K.store.get('ha.anchors'));
+    typed(K, 'moab', 'canyon'); tap(K, { town: 'moab' });
+    const back = app(K.store);
+    tap(back, { town: 'moab' });
+    ok('words kept: a page opened afresh does not have them, and the saved choice never carried them', same(kept(back).filter(e => e.id === 'moab'), [{ id: 'moab', words: [] }]) && !/canyon/.test(K.store.get('ha.anchors')), K.store.get('ha.anchors'));
+  }
 }
 
 /* ---- A fishing question asked before the rules arrive is answered when they do,

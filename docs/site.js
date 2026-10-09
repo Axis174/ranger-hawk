@@ -125,6 +125,7 @@ function vPrivacy() {
    order tapped, and the first is home. The choice and the words typed for each town are saved by
    state.js on the phone. A tap that cannot be done leaves the choice alone and shows one line. */
 let townsMsg = '';
+let townsKept = {};   // the words of a town taken off, by id, until the page is closed: a slip of the thumb loses nothing
 function vTowns() {
   const msg = townsMsg;
   townsMsg = '';
@@ -145,17 +146,32 @@ function vTowns() {
   <p class="fine">A word you add works in the search boxes the way the word home does. The word home always means the first town. The towns you choose and your words for them stay on this phone. The app does not use your location for this.</p>`;
 }
 
+/* A sentence the finders already read keeps the town it was read for: "near home" is a town, and home
+   moves when the first town is taken off or a word changes. Read the held sentences again so the answer
+   is for the town the header shows. Only a sentence that named a town is touched: one waiting on the
+   phone's location must not ask for it twice, and a hunt answer the hunter tapped stays as he gave it. */
+function townsReread() {
+  const named = q => !!(q && q.place && q.place.kind === 'home');
+  if (typeof fish !== 'undefined' && fish.q && named(fish.parsed) && typeof fishRead === 'function') fishRead(fish.q);
+  if (typeof fq !== 'undefined' && fq.text && !fq.touched && fq.parsed && named(fq.parsed.fish || fq.parsed) && typeof fParse === 'function') fq.parsed = fParse(fq.text);
+}
+
 /* A chip on the page: choose the town, or take it off. The fourth town is refused, and so is
-   emptying the list, because the app always measures from some town. */
+   emptying the list, because the app always measures from some town. A town taken off and chosen
+   again on the same page gets its words back. */
 function townTap(id) {
   const chosen = anchorsChosen(), plain = a => ({ id: a.id, words: a.words });
   if (chosen.some(a => a.id === id)) {
     if (chosen.length === 1) townsMsg = 'Keep one town chosen. Pick another first, then take this one off.';
-    else anchorSetChosen(chosen.filter(a => a.id !== id).map(plain));
+    else {
+      townsKept[id] = chosen.find(a => a.id === id).words;
+      anchorSetChosen(chosen.filter(a => a.id !== id).map(plain));
+      townsReread();
+    }
   } else if (chosen.length >= ANCHOR_MAX) {
     townsMsg = 'Three towns is the most. Tap one of your towns to take it off first.';
   } else {
-    anchorSetChosen(chosen.map(plain).concat({ id, words: [] }));
+    anchorSetChosen(chosen.map(plain).concat({ id, words: townsKept[id] || [] }));
   }
   render();
 }
@@ -163,6 +179,7 @@ function townTap(id) {
 /* The words field: comma separated, trimmed, empties dropped, the hunter's own capitals kept. */
 function townWords(id, text) {
   anchorSetWords(id, String(text || '').split(',').map(w => w.trim()).filter(Boolean));
+  townsReread();
 }
 
 function vMoney() {
