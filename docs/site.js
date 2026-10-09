@@ -1,7 +1,8 @@
-/* Ranger Hawk - the privacy page, the "how it makes money" page, the paid-link
-   slot and the (switched-off) visitor count.
+/* Ranger Hawk - the privacy page, the "how it makes money" page, the Home towns
+   page, the paid-link slot and the (switched-off) visitor count.
 
-   Loaded last; shares the globals of the other scripts ($, esc, tab, render).
+   Loaded last; shares the globals of the other scripts ($, esc, tab, render, and the
+   anchor helpers of state.js).
    Nothing here earns money yet and no paid link is filled in. */
 'use strict';
 
@@ -84,7 +85,7 @@ function vPrivacy() {
   <div class="sec-title">Kept on your phone</div><div class="card"><div class="card-b priv">
     <p class="note">These are saved in this browser on this device so the app works without a signal. Ranger Hawk has no server that receives them and cannot see them.</p>
     <ul>
-      <li>Your home choice, vehicle, map settings, last map view and the Fish list you last used</li>
+      <li>The home towns you choose and the words you give them, your vehicle, map settings, last map view and the Fish list you last used</li>
       <li>Your draw points</li>
       <li>Your trip plan: your name, where you are going and when you are due back, who is with you, your vehicle, your notes, your contact's name and number, and your truck pin</li>
       <li>Your trail camera sites and the photos you add</li>
@@ -117,7 +118,51 @@ function vPrivacy() {
     <p class="note">A link that pays Ranger Hawk is marked Paid link beside it. If you tap one, that company learns you came from Ranger Hawk. See How Ranger Hawk makes money in the Menu.</p>
   </div></div>
 
-  <p class="fine">Last changed 2 October 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;
+  <p class="fine">Last changed 9 October 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;
+}
+
+/* The Home towns page. Twelve public towns come with the app; the hunter picks up to three, in the
+   order tapped, and the first is home. The choice and the words typed for each town are saved by
+   state.js on the phone. A tap that cannot be done leaves the choice alone and shows one line. */
+let townsMsg = '';
+function vTowns() {
+  const msg = townsMsg;
+  townsMsg = '';
+  const chosen = anchorsChosen();
+  const chip = a => `<button class="chip" data-town="${esc(a.id)}" aria-pressed="${chosen.some(c => c.id === a.id)}">${esc(a.label)}</button>`;
+  const words = (a, i) => `<div class="card"><div class="card-b">
+    <div style="font-weight:700">${esc(a.label)}${i === 0 ? ' <span class="note">&middot; home</span>' : ''}</div>
+    <div class="camform" style="padding:8px 0 0"><label>Your words for it (comma separated)<input data-town-words="${esc(a.id)}" value="${esc(a.words.join(', '))}" placeholder="Optional" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label></div>
+  </div></div>`;
+  return `<div class="card"><div class="card-b"><p class="note">Pick up to three towns to measure drive times from. The first one you pick is home. The bar at the top shows your towns: tap one there to measure from it.</p></div></div>
+
+  <div class="sec-title">Pick your towns</div>
+  <div class="chips" role="group" aria-label="Towns to choose from">${anchorList().map(chip).join('')}</div>
+  ${msg ? `<p class="note" role="status" style="padding:10px 2px 0"><b>${esc(msg)}</b></p>` : ''}
+
+  <div class="sec-title">Your towns, in order</div>
+  ${chosen.map(words).join('')}
+  <p class="fine">A word you add works in the search boxes the way the word home does. The word home always means the first town. The towns you choose and your words for them stay on this phone. The app does not use your location for this.</p>`;
+}
+
+/* A chip on the page: choose the town, or take it off. The fourth town is refused, and so is
+   emptying the list, because the app always measures from some town. */
+function townTap(id) {
+  const chosen = anchorsChosen(), plain = a => ({ id: a.id, words: a.words });
+  if (chosen.some(a => a.id === id)) {
+    if (chosen.length === 1) townsMsg = 'Keep one town chosen. Pick another first, then take this one off.';
+    else anchorSetChosen(chosen.filter(a => a.id !== id).map(plain));
+  } else if (chosen.length >= ANCHOR_MAX) {
+    townsMsg = 'Three towns is the most. Tap one of your towns to take it off first.';
+  } else {
+    anchorSetChosen(chosen.map(plain).concat({ id, words: [] }));
+  }
+  render();
+}
+
+/* The words field: comma separated, trimmed, empties dropped, the hunter's own capitals kept. */
+function townWords(id, text) {
+  anchorSetWords(id, String(text || '').split(',').map(w => w.trim()).filter(Boolean));
 }
 
 function vMoney() {

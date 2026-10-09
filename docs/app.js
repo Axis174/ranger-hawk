@@ -15,12 +15,10 @@ let DB = { birds: [], seasons: null, config: null, community: null, lake: null, 
 let LOT = null, lotState = 'UT';
 let SUN = null;          // SunCalc module, loaded after first paint
 let UNITS = null;        // hunt unit shapes, loaded the first time GPS is used
-let home = 'nsl';
 let tab = 'today';
 let query = '';
 let speciesFilter = new Set();
 
-try { home = localStorage.getItem('ha.home') || 'nsl'; } catch (e) { /* private mode */ }
 
 /* ---------------------------------------------------------------- data ---- */
 async function load() {
@@ -78,13 +76,13 @@ function alerts() {
   return upcoming().filter(x => x.st.k === 'crit' || x.st.k === 'soon').length;
 }
 function drive(p) {
-  const d = (p.drive || {})[home];
+  const d = (p.drive || {})[anchorId()];
   /* Points added straight from UDWR's property layer have no routed time - there
      is no routing engine here and inventing minutes would be a lie. Show the
      straight-line miles instead, labelled as miles so it cannot be mistaken for
      a drive, and sort them against the routed ones on a rough 43 mph. */
   if (!d) {
-    const h = (DB.config.homes || []).find(x => x.id === home);
+    const h = anchorMeasure();
     if (!h || p.lat == null) return { txt: '--', sub: '', mins: 1e9 };
     const mi = miles(h.lat, h.lon, p.lat, p.lon);
     return { txt: mi.toFixed(0), sub: 'mi', mins: mi * 1.4 };
@@ -506,7 +504,7 @@ async function initMap() {
   try { await loadMapLibs(); } catch (e) { $('mapstate').textContent = 'The map needs one visit with a signal before it works offline.'; return; }
   if (!$('map')) return;
   if (!initMap.proto) { const pr = new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles', pr.tile); initMap.proto = true; }
-  const h = (DB.config.homes || []).find(x => x.id === home) || { lat: 40.76, lon: -111.89 };
+  const h = anchorMeasure() || { lat: 40.76, lon: -111.89 };
   let view = null; try { view = JSON.parse(localStorage.getItem('ha.mapview')); } catch (e) { /* none */ }
   MAP = new maplibregl.Map({
     container: 'map', attributionControl: { compact: true },
@@ -622,7 +620,7 @@ function vToday() {
     : '<p class="empty">Nothing open today.</p>';
   h += `</div>`;
 
-  h += `<div class="sec-title">Closest access from ${esc(hlabel())}</div><div class="card">`;
+  h += `<div class="sec-title">Closest access from ${esc(anchorLabel())}</div><div class="card">`;
   const near = DB.birds.slice().sort((a, b) => drive(a).mins - drive(b).mins).slice(0, 5);
   h += near.map(p => rowPoint(p)).join('') || '<p class="empty">No access data.</p>';
   h += `</div>`;
@@ -663,7 +661,7 @@ function vAccess() {
     return (p.name + ' ' + p.county + ' ' + p.species + ' ' + p.access_type).toLowerCase().includes(q);
   }).sort((a, b) => drive(a).mins - drive(b).mins);
   h += `<div class="card"><div class="card-h"><h2>${list.length} places</h2>
-    <span class="r">by drive from ${esc(hlabel())}</span></div>`;
+    <span class="r">by drive from ${esc(anchorLabel())}</span></div>`;
   h += list.length ? list.map(rowPoint).join('') : '<p class="empty">Nothing matches.</p>';
   h += `</div><p class="note" style="padding:12px 2px">* A range means the point is a property centroid out in the
     marsh, so routing runs the last miles down dike roads and overstates the drive. Use the low number.</p>`;
@@ -890,9 +888,7 @@ function sheetPoint(p) {
   return `<h3>${esc(p.name)}</h3>
     <p class="where">${esc(p.county)} County &middot; ${esc(p.access_type.replace(/_/g, ' '))}</p>
     <div class="stats">
-      <div class="stat"><div class="k">N Salt Lake</div><div class="v">${st('nsl')}m</div></div>
-      <div class="stat"><div class="k">Heber</div><div class="v">${st('heber')}m</div></div>
-      <div class="stat"><div class="k">Torrey</div><div class="v">${st('torrey')}m</div></div>
+      ${anchorsChosen().map(a => `<div class="stat"><div class="k">${esc(a.label)}</div><div class="v">${st(a.id)}m</div></div>`).join('')}
       <div class="stat"><div class="k">Confidence</div><div class="v" style="font-size:12px">${esc(p.confidence)}</div></div>
     </div>
     <div class="acts">
@@ -941,13 +937,10 @@ const TABS = [
   ['remind', 'Remind', '<path d="M18 8a6 6 0 1 0-12 0c0 7-2 8-2 8h16s-2-1-2-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/>'],
   ['contacts', 'Contacts', '<path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><circle cx="11" cy="11" r="2.5"/><path d="M7.5 17c.8-1.7 2-2.5 3.5-2.5s2.7.8 3.5 2.5"/>']
 ];
-function hlabel() {
-  const h = (DB.config.homes || []).find(x => x.id === home);
-  return h ? h.label : home;
-}
 function renderChrome() {
-  $('homesel').innerHTML = (DB.config.homes || []).map(h =>
-    `<button data-home="${esc(h.id)}" aria-pressed="${h.id === home}">${esc(h.label.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase())}</button>`
+  const on = anchorId();
+  $('homesel').innerHTML = anchorsChosen().map(a =>
+    `<button data-anchor="${esc(a.id)}" aria-pressed="${a.id === on}">${esc(a.code)}</button>`
   ).join('');
   const n = alerts();
   /* Four screens on the bar and a Menu, rather than eight tabs at 47px with 9px
@@ -964,7 +957,7 @@ function renderChrome() {
     + (hidden ? `<button data-go="1"${onBar.every(([k]) => k !== tab) ? ' aria-current="page"' : ''}>
       <span style="position:relative"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>${n && GO_BAR.indexOf('remind') < 0 ? `<span class="badge">${n}</span>` : ''}</span>
       <span>Menu</span></button>` : '');
-  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts', privacy: 'Privacy', money: 'How Ranger Hawk makes money' }[tab];
+  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts', towns: 'Home towns', privacy: 'Privacy', money: 'How Ranger Hawk makes money' }[tab];
   if (tab === 'today') $('title').innerHTML = '<img src="icons/rangerhawk-wordmark.svg" alt="Ranger Hawk">'; else $('title').textContent = ttl;
 }
 function render() {
@@ -972,7 +965,7 @@ function render() {
   renderChrome();
   if (MAP && tab !== 'map') { try { MAP.remove(); } catch (e) { /* already gone */ } MAP = null; }
   if (tab === 'map' && MAP) { renderChrome(); return; }
-  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts, privacy: (typeof vPrivacy === 'function' ? vPrivacy : () => '<p class="empty">This page did not load.</p>'), money: (typeof vMoney === 'function' ? vMoney : () => '<p class="empty">This page did not load.</p>') }[tab];
+  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts, privacy: (typeof vPrivacy === 'function' ? vPrivacy : () => '<p class="empty">This page did not load.</p>'), money: (typeof vMoney === 'function' ? vMoney : () => '<p class="empty">This page did not load.</p>'), towns: (typeof vTowns === 'function' ? vTowns : () => '<p class="empty">This page did not load.</p>') }[tab];
   $('view').innerHTML = v();
   document.body.classList.toggle('on-map', tab === 'map');
   if (tab === 'map') initMap();
@@ -984,10 +977,11 @@ function render() {
 
 /* --------------------------------------------------------------- events --- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-tab],[data-home],[data-pt],[data-season],[data-dl],[data-sp],[data-permit],[data-contact],[data-wia],[data-copy],[data-where],[data-mapsave],[data-landtoggle],[data-roadstoggle],[data-veh],[data-keytoggle],[data-terraintoggle],[data-lot],[data-gofind],[data-smode],[data-dgrp],[data-dsp],[data-dres],[data-dpts],[data-draw]');
+  const t = e.target.closest('[data-tab],[data-anchor],[data-town],[data-pt],[data-season],[data-dl],[data-sp],[data-permit],[data-contact],[data-wia],[data-copy],[data-where],[data-mapsave],[data-landtoggle],[data-roadstoggle],[data-veh],[data-keytoggle],[data-terraintoggle],[data-lot],[data-gofind],[data-smode],[data-dgrp],[data-dsp],[data-dres],[data-dpts],[data-draw]');
   if (!t) { if (e.target.id === 'sheet') closeSheet(); return; }
   if (t.dataset.tab) { tab = t.dataset.tab; query = ''; render(); window.scrollTo(0, 0); return; }
-  if (t.dataset.home) { home = t.dataset.home; try { localStorage.setItem('ha.home', home); } catch (x) {} render(); return; }
+  if (t.dataset.anchor) { anchorSetMeasure(t.dataset.anchor); render(); return; }
+  if (t.dataset.town) { if (typeof townTap === 'function') townTap(t.dataset.town); return; }
   if (t.dataset.sp) { const s = t.dataset.sp; speciesFilter.has(s) ? speciesFilter.delete(s) : speciesFilter.add(s); render(); return; }
   if (t.dataset.lot) { lotState = t.dataset.lot; render(); return; }
   if (t.dataset.gofind) { tab = 'seasons'; seasonsMode = 'find'; render(); window.scrollTo(0, 0); setTimeout(() => { const i = $('findq'); if (i) i.focus(); }, 50); return; }
@@ -1039,6 +1033,12 @@ document.addEventListener('click', e => {
   }
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+/* The words field on the Home towns page saves when it loses focus. It does not redraw the page,
+   which would swallow the tap that took the focus away. */
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.townWords !== undefined && typeof townWords === 'function') townWords(t.dataset.townWords, t.value);
+});
 
 function net() { $('offline').hidden = navigator.onLine; }
 window.addEventListener('online', net);

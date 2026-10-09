@@ -7,7 +7,7 @@
    quick tagging, and patterns by hour, date and moon against legal shooting light.
 
    Loaded as a second classic script after app.js and shares its globals
-   ($, esc, openSheet, closeSheet, render, tab, SUN, DB, MAP, home). */
+   ($, esc, openSheet, closeSheet, render, tab, SUN, DB, MAP). */
 'use strict';
 
 const CAM_TAGS = [

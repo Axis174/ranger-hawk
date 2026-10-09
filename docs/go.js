@@ -9,10 +9,10 @@
    The box is never focused when the panel opens. Cold hands at 5am do not want
    a keyboard covering half the screen; they want something to press. Tap the
    box and the keyboard comes, and then the sentences the finders already
-   understand work: "elk by the cabin", "trout near home".
+   understand work: "elk near home", "trout near home".
 
    Loaded after the other screens; shares their globals ($, esc, openSheet,
-   closeSheet, render, tab, DB, home, TABS, upcoming, openNow, drive, fRun,
+   closeSheet, render, tab, DB, TABS, upcoming, openNow, drive, fRun,
    fishRun, acList, TRIP, tripOverdue). */
 'use strict';
 
@@ -47,6 +47,8 @@ const GO_DEST = [
     keys: ['trip plan', 'exit plan', 'tell someone', 'back by'], weak: ['trip', 'safety'] },
   { id: 'truck', title: 'Back to the truck', sub: 'Bearing and distance, works with no signal', tab: 'today', act: 'truck',
     keys: ['back to truck', 'back to the truck', 'where am i', 'my location', 'coordinates'], weak: ['truck', 'lost', 'sar', 'rescue'] },
+  { id: 'towns', title: 'Home towns', sub: 'The towns drive times are measured from, and your words for them', tab: 'towns',
+    keys: ['home towns', 'change home'], weak: [] },
   { id: 'privacy', title: 'Privacy', sub: 'What stays on your phone and what leaves it', tab: 'privacy',
     keys: ['privacy', 'privacy policy'], weak: ['cookies', 'tracking'] },
   { id: 'money', title: 'How Ranger Hawk makes money', sub: 'Free today; how it may earn later', tab: 'money',
@@ -272,7 +274,7 @@ const goRow = (title, sub, attrs, urgent) =>
 function goPanelHtml() {
   const sugg = goSuggest();
   let h = `<h3>What do you want to do?</h3>
-    <div style="padding:0 16px"><input class="search" id="goq" placeholder="Type or say it - elk by the cabin, trout near home" autocomplete="off"></div>`;
+    <div style="padding:0 16px"><input class="search" id="goq" placeholder="Type or say it - elk near home, trout near home" autocomplete="off"></div>`;
 
   h += `<div style="padding:0 16px">`;   /* the sheet sits outside .wrap, so the lists get the same inset as the title and input */
   if (sugg.length) {

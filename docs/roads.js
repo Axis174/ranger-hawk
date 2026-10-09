@@ -16,7 +16,7 @@
    IMAGES are live and need a signal, which is exactly the thing you are about
    to lose, so check them before you leave the valley.
 
-   Loaded after app.js; shares its globals ($, esc, miles, DB, home). */
+   Loaded after app.js; shares its globals ($, esc, miles, DB, anchorMeasure). */
 'use strict';
 
 let ROADS = null, roadsLoading = false;
@@ -99,7 +99,7 @@ function roadSlot(p) {
 function roadFill(p) {
   const el = $('roadbox');
   if (!el) return;
-  const h = (DB.config.homes || []).find(x => x.id === home);
+  const h = anchorMeasure();
   if (!h) { el.innerHTML = ''; return; }
   if (!ROADS || !ROADS.key) {
     el.innerHTML = `<p class="fine" style="padding-left:2px"><b>Road cameras are not set up yet.</b>

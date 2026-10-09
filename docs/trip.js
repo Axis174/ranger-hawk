@@ -61,7 +61,7 @@ function tripForm() {
   openSheet(`<h3>Trip plan</h3><p class="where">Fill this in where you still have signal, then send it.</p>
     <div class="camform">
       <label>Your name<input id="tp-name" value="${esc(t.name || '')}" placeholder="Pete"></label>
-      <label>Where you are going<input id="tp-where" value="${esc(t.where || '')}" placeholder="Soapstone Basin, north of SR-35, RZR from the cabin"></label>
+      <label>Where you are going<input id="tp-where" value="${esc(t.where || '')}" placeholder="Soapstone Basin, north of SR-35, RZR from ${esc(anchorLabel())}"></label>
       <label>Back by<input id="tp-back" type="datetime-local" value="${back}"></label>
       <label>Contact name<input id="tp-contact" value="${esc(t.contact || '')}" placeholder="Who gets the plan"></label>
       <label>Contact phone<input id="tp-phone" type="tel" value="${esc(t.phone || '')}" placeholder="801 555 0100"></label>
