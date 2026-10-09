@@ -10,7 +10,7 @@ Subscribed once in iOS Settings > Calendar > Accounts > Add Subscribed Calendar,
 it refreshes itself. No push server, no app permissions, and it keeps working
 whether or not the app is ever opened.
 """
-import json, os
+import json, os, sys
 from datetime import date, datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -143,10 +143,20 @@ for i, c in enumerate([c for c in C["contacts"] if c.get("priority") == "high"])
 #   * the last day of each emergency change (grouped by day)
 #   * the statewide kokanee closure
 #   * the day the guidebook year ends
-#   * waters within reach of a home that open or close on a date
+#   * waters within reach of the calendar's anchor towns that open or close on a date
 FISH = os.path.join(DATA, "fishing_rules.json")
 PLACES = os.path.join(DATA, "fishing_places.json")
 REACH_MI = 75
+# The anchor towns the dates above are measured from: ids from the "anchors" list in
+# docs/data/ut/config.json. The feed is one file for everybody, so it is measured from
+# these three public towns, not from whatever towns a hunter picks on the phone.
+CALENDAR_ANCHORS = ['slc', 'heber', 'torrey']
+_ANCHOR_BY_ID = {a["id"]: a for a in C.get("anchors", [])}
+if any(i not in _ANCHOR_BY_ID for i in CALENDAR_ANCHORS):
+    sys.exit("CALENDAR_ANCHORS names %s, which is not in the anchors list in config.json"
+             % [i for i in CALENDAR_ANCHORS if i not in _ANCHOR_BY_ID])
+TOWNS = [_ANCHOR_BY_ID[i] for i in CALENDAR_ANCHORS]
+TOWN_NAMES = ", ".join(t["label"] for t in TOWNS[:-1]) + " or " + TOWNS[-1]["label"]
 
 
 def f_point(pt, year, end=False):
@@ -201,7 +211,8 @@ if os.path.exists(FISH):
            cat="FISHING")
 
     # A change that SHUTS a water is a closure like any other, whether or not the
-    # water is near a home: it is rare, and it is the kind of thing a calendar is for.
+    # water is near one of the anchor towns: it is rare, and it is the kind of thing a
+    # calendar is for.
     for a in F.get("amendments", []):
         shut = [fx for r in a["rules"] for fx in r["fx"] if fx.get("t") == "closed" and fx.get("scope") == "all"]
         if shut:
@@ -226,7 +237,7 @@ if os.path.exists(FISH):
        alarms=[(30, "The %d fishing rules end in 30 days" % yr), (7, "The %d fishing rules end in a week" % yr)],
        cat="FISHING")
 
-    # Waters near a home that open or close on a date. A place stands for the
+    # Waters near an anchor town that open or close on a date. A place stands for the
     # stretches it is known to be on: all of them when nobody has said which, none
     # of them when it lies outside every stretch the guidebook lists.
     near = {}
@@ -238,7 +249,7 @@ if os.path.exists(FISH):
         for p in PJ["places"]:
             if p.get("r") == "none":
                 continue
-            for h in C["homes"]:
+            for h in TOWNS:
                 if f_miles(h["lat"], h["lon"], p["lat"], p["lon"]) <= REACH_MI:
                     for wid in p.get("w", []):
                         for k in (p.get("r") or ["*"]):
@@ -287,8 +298,8 @@ if os.path.exists(FISH):
         if wtr["id"] not in near:
             continue
         for r in wtr.get("reaches", []):
-            homes_ = near[wtr["id"]].get("*", set()) | near[wtr["id"]].get(r.get("key"), set())
-            if not homes_:
+            towns_ = near[wtr["id"]].get("*", set()) | near[wtr["id"]].get(r.get("key"), set())
+            if not towns_:
                 continue
             label = wtr["name"] + (" (%s)" % r["key"] if r.get("key") else "")
             edges = set()
@@ -308,13 +319,13 @@ if os.path.exists(FISH):
                 if before == after:
                     continue                  # another rule keeps it shut, or open, across this date
                 why = "; ".join(ru["text"] for ru in r.get("rules", []) if any(fx.get("open") or (fx.get("t") == "closed" and fx.get("w")) for fx in ru["fx"]))
-                turns.setdefault(("opens" if before else "closes", t), []).append((label, why, sorted(homes_)))
+                turns.setdefault(("opens" if before else "closes", t), []).append((label, why, sorted(towns_)))
     # A community water the guidebook closes by name, in a note under the list.
     members = {m["id"]: m for m in F["community"]["members"]}
     for nt in F["community"].get("notes", []):
         for mid in nt.get("members", []):
-            homes_ = set().union(*near.get("community:" + mid, {}).values()) if near.get("community:" + mid) else set()
-            if not homes_ or mid not in members:
+            towns_ = set().union(*near.get("community:" + mid, {}).values()) if near.get("community:" + mid) else set()
+            if not towns_ or mid not in members:
                 continue
             edges = set()
             for fx in nt["fx"]:
@@ -329,10 +340,10 @@ if os.path.exists(FISH):
                     continue
                 before, after = f_closed([nt], t - timedelta(minutes=2)), f_closed([nt], t + timedelta(minutes=2))
                 if before != after:
-                    turns.setdefault(("opens" if before else "closes", t), []).append((members[mid]["name"], nt["text"], sorted(homes_)))
+                    turns.setdefault(("opens" if before else "closes", t), []).append((members[mid]["name"], nt["text"], sorted(towns_)))
     for (what, when), items in sorted(turns.items(), key=lambda kv: kv[0][1]):
         names = sorted(set(i[0] for i in items))
-        body = ["Within %d miles of a home, in a straight line:" % REACH_MI]
+        body = ["Within %d miles of %s, in a straight line:" % (REACH_MI, TOWN_NAMES)]
         body += ["%s - %s (near %s)" % (i[0], i[1], ", ".join(i[2])) for i in sorted(set((i[0], i[1], tuple(i[2])) for i in items))]
         body.append(src)
         timed = when.hour == 6
