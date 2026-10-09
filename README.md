@@ -194,6 +194,10 @@ words for it, comma separated, and the finders then treat those words, and the w
 town means that one. The header shows the code of each chosen town, one chip for one
 town; the pressed chip is the town drive times are measured from, and tapping another
 chip changes the minutes on every screen without changing the order of your towns.
+A sentence the Fish screen or the hunt finder already read ("trout near home") is read
+again when you take a town off or change a word, so "home" is the first town you have
+now; a town taken off and chosen again on the same page gets its words back, and
+closing the page forgets them.
 The towns you choose and your words for them stay on the phone, in its own storage
 (`ha.anchors` and `ha.anchor`); they are not in any data file and nothing is sent. A
 hunter who never opens the page gets Salt Lake City and the app works. The names of the
@@ -230,7 +234,10 @@ header `code`, the `county` and a town-centre point (`lat`, `lon`). They are pub
 places on purpose, with no one's home among them; the towns a hunter picks, and the
 hunter's own words for them, are kept on the phone only (see "Home towns" above). The
 points are town centres, not street addresses, and the ids `heber` and `torrey` keep
-the points the app used before v36, so those minutes carried over.
+the points the app used before v36, so their minutes match v35 except where OSRM's road
+data has changed since: four fishing places moved by 3 to 36 minutes (Annabella Lake,
+Deep Lake, McGath Lake and Lower San Rafael River WMA), and every other fishing place
+and bird point is within 2 minutes.
 
 A drive time is baked from every anchor to every place, by road, from OSRM's public
 router. Fishing places carry `d: {<anchor id>: {min, mi}}`; bird access points carry
