@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /* Checks the part of the fishing screen that works things out for itself: dates,
    which layer wins, and whether a sentence is about fishing at all. It loads the
-   real docs/fishing.js and the real data files, with the browser stubbed out.
+   real docs/state.js, finder.js and fishing.js and the real data files, with the
+   browser stubbed out.
 
    Every expected value here was worked out by hand from the guidebook or a
    calendar, not by running the code and copying what it said.
@@ -70,7 +71,7 @@ vm.runInContext(fs.readFileSync(D('state.js'), 'utf8'), box);   // the chosen to
 { const src = fs.readFileSync(D('app.js'), 'utf8'); vm.runInContext(src.slice(src.indexOf('function inRing'), src.indexOf('async function whereAmI')), box); }
 vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.fParse = fParse; this.vFind = vFind; this.fq = fq;', box);
 vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
-  '\n;this.T = { set(r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); }, fUtah, fNow, fDayAfter, fFlip, fStale, fOpens, fPlaceChips, fPlaceRes, fGroupsFor, fSpearFor, fKokaneeNow, fStatewideHtml, fishRun, fTokens, FTWIN: () => FTWIN, linked: () => FLINKED, fPoint, fSpan, fResolve, fSummary, fAmendState, fNotices, fishParse, fishWaterIn, fishMatches, fRuleNow, fHeld, fUnreadFor, fChips, fEdition, fStanding, fish, FW: () => FW, FAM: () => FAM, FPL: () => FPL, vFish, sheetFishWater, sheetFishPlace, cardFish, fishAnswer, fHuntOffer, F_FISH, fWaterNames: () => { fWaterNames(); return [fNames, fShort]; } };', box);
+  '\n;this.T = { set(r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); }, fUtah, fNow, fDayAfter, fFlip, fStale, fOpens, fPlaceChips, fPlaceRes, fGroupsFor, fSpearFor, fKokaneeNow, fStatewideHtml, fishRun, fDrive, fTokens, FTWIN: () => FTWIN, linked: () => FLINKED, fPoint, fSpan, fResolve, fSummary, fAmendState, fNotices, fishParse, fishWaterIn, fishMatches, fRuleNow, fHeld, fUnreadFor, fChips, fEdition, fStanding, fish, FW: () => FW, FAM: () => FAM, FPL: () => FPL, vFish, sheetFishWater, sheetFishPlace, cardFish, fishAnswer, fHuntOffer, F_FISH, fWaterNames: () => { fWaterNames(); return [fNames, fShort]; } };', box);
 const T = box.T;
 const R = load('fishing_rules.json'), P = load('fishing_places.json'), N = load('fishing_notices.json');
 T.set(R, P, N);
@@ -791,6 +792,102 @@ ok('Fish box: fishing sentences do not offer the hunt', ['trout near home', 'bas
   T.fishRun('trout near home'); html = T.vFish();
   ok('Fish box: "trout near home" draws no hunt chip', /data-fhunt=/.test(html), false);
   box.T.fish.now = null; box.T.fish.q = ''; box.T.fish.parsed = null;
+}
+
+/* ---- the home towns, as the Fish screen and the two finders read them. docs/state.js keeps the choice on the phone:
+        up to three of the twelve anchor towns, the words the hunter gave each, and the town the header measures from.
+        These checks change the choice with the page's own setters and put the hunter's own choice back at the end. */
+{
+  const vmx = require('vm');
+  const ANCH = box.DB.config.anchors, label = id => ANCH.find(a => a.id === id).label;
+  const OWN = JSON.parse(STORE.get('ha.anchors')), OWN_MEASURE = STORE.get('ha.anchor');
+  const choose = (list, measure) => { box.anchorSetChosen(list.map(x => typeof x === 'string' ? { id: x, words: [] } : x)); if (measure) box.anchorSetMeasure(measure); };
+  const idOf = () => vmx.runInContext('anchorId()', box);
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const byId = Object.fromEntries(P.places.map(p => [p.id, p]));
+  const inOrder = (list, id) => list.length > 3 && list.every((p, i) => i === 0 || list[i - 1].d[id].min <= p.d[id].min);
+
+  /* The data: every place carries minutes from every anchor town. */
+  ok('every one of the places carries minutes from each of the twelve anchor towns', [ANCH.length, P.places.every(p => ANCH.every(a => p.d && p.d[a.id] && p.d[a.id].min >= 1))], [12, true]);
+
+  /* A town's name is not a word for it: Provo, Price, Logan and Ogden sit inside the names of rivers. */
+  choose(['slc', 'heber', 'torrey']);
+  const onFish = s => { const q = T.fishParse(s, true); return [q.sp ? q.sp[0] : null, q.place ? (q.place.id || q.place.kind) : null, q.water ? q.water.needle : null, q.county]; };   // as typed on the Fish tab
+  for (const w of ['provo river', 'logan river', 'price river', 'ogden river']) ok(`typed on the Fish tab, "${w}" is the water, never a home town`, onFish(w), [null, null, w, null]);
+  for (const w of ['trout near salt lake city', 'trout near heber city', 'trout near torrey', 'trout near provo', 'trout near ogden']) ok(`"${w}": with no word of the hunter's own, no town is named`, fp(w)[1], null);
+  for (const w of ['elk near salt lake city', 'pheasant near heber city', 'deer near torrey']) ok(`hunt finder: "${w}" names no town either`, box.fParse(w).place, null);
+
+  /* "home" is the first town chosen, whichever town the header measures from. */
+  for (const [list, head] of [[['slc', 'heber', 'torrey'], 'torrey'], [['torrey', 'slc'], 'slc'], [['moab', 'prv', 'slc'], 'prv']]) {
+    choose(list, head);
+    const first = list[0];
+    ok(`"white bass near home" with ${list.join(', ')} chosen and the header on ${head}: home is ${first}`, fp('white bass near home'), ['whitebass', first, null, null]);
+    const q = T.fishParse('trout near home');
+    ok(`...the place carries ${first}'s own name and point`, [q.place.kind, q.place.label, q.place.lat, q.place.lon], ['home', label(first), ANCH.find(a => a.id === first).lat, ANCH.find(a => a.id === first).lon]);
+    ok(`...and the places are sorted by the minutes from ${first}, not from the header town ${head}`, inOrder(T.fishMatches(q), first), true);
+    const n = T.fishMatches(T.fishParse('bass'));
+    ok(`"bass" names no place: the places are sorted by the minutes from the header town ${head}`, [idOf(), inOrder(n, head), T.fishParse('bass').place], [head, true, null]);
+    ok(`...and the answer says it is from ${label(head)}`, T.fishAnswer(T.fishParse('bass')).indexOf('from ' + label(head)) >= 0, true);
+  }
+
+  /* A place's minutes come from the measuring town: fDrive, the Near list, the species chip and the place sheet. */
+  const THREE = ['slc', 'heber', 'torrey'];
+  const distinct = p => new Set(THREE.map(k => p.d[k].min)).size === 3;
+  const plain = P.places.find(p => distinct(p) && !(p.snap > 0.5)), star = P.places.find(p => distinct(p) && p.snap > 0.5);
+  ok('data: there are places with three different times, one with the star (the road stops short of the water) and one without', [!!plain, !!star], [true, true]);
+  choose(THREE, 'slc');
+  for (const id of THREE) {
+    box.anchorSetMeasure(id);
+    const a = T.fDrive(plain), b = T.fDrive(star);
+    ok(`fDrive with the header on ${id}: the place's d.${id}, and the star only where the road stops short`, [a.txt, a.sub, a.mins, b.txt, b.sub], [String(plain.d[id].min), 'min', plain.d[id].min, String(star.d[id].min), 'min *']);
+    ok(`...a town named outright beats the header: fDrive(place, 'slc') is d.slc`, T.fDrive(plain, 'slc').mins, plain.d.slc.min);
+    box.T.fish.mode = 'near'; box.T.fish.q = ''; box.T.fish.parsed = null; box.T.fish.show = 12;
+    const html = T.vFish(), first = /<span class="v">(\d+)<small>/.exec(html);
+    ok(`Near list with the header on ${id}: "Closest water from ${label(id)}", the nearest water first`, [html.indexOf('Closest water from ' + label(id) + ' ') >= 0, first && +first[1]], [true, Math.min(...P.places.map(p => p.d[id].min))]);
+  }
+  {
+    /* No minutes under a town (a place added since the last bake): the straight line from that town, as miles. */
+    const bare = { id: 'x', n: 'x', lat: 38.0, lon: -112.0, d: { slc: { min: 5, mi: 3 } } };
+    box.anchorSetMeasure('torrey');
+    const d = T.fDrive(bare), t = ANCH.find(a => a.id === 'torrey'), mi = box.miles(t.lat, t.lon, bare.lat, bare.lon);
+    ok('a place with no minutes under the header town falls back to miles in a straight line from that town', [d.txt, d.sub, Math.abs(d.mins - mi * 1.4) < 1e-9], [mi.toFixed(0), 'mi', true]);
+  }
+  {
+    const tiles = html => [...html.matchAll(/<div class="stat"><div class="k">([^<]*)<\/div><div class="v">([^<]*)<\/div><\/div>/g)].map(m => [m[1], m[2]]);
+    ok('the place sheet has one tile for each chosen town, with that town\'s minutes', tiles(T.sheetFishPlace(plain)), THREE.map(id => [label(id), plain.d[id].min + 'm']));
+    choose(['moab', 'prv']);
+    ok('...and follows the choice: two towns, two tiles, in the order chosen', tiles(T.sheetFishPlace(plain)), [['Moab', plain.d.moab.min + 'm'], ['Provo', plain.d.prv.min + 'm']]);
+    choose(THREE, 'slc');
+  }
+  {
+    /* The species chips name no place, so their lists are measured from the header town, as the Near list is. */
+    const tap = key => { const el = { dataset: { fsp: key } }; (box.LIS.click || []).forEach(fn => fn({ target: { closest: sel => (sel.indexOf('[data-fsp]') >= 0 ? el : null) } })); };
+    box.tab = 'fish'; box.T.fish.mode = 'near'; box.T.fish.now = '2026-09-27T12:00';
+    for (const id of ['heber', 'torrey']) {
+      box.anchorSetMeasure(id); tap('trout');
+      const q = box.T.fish.parsed, rows = [...T.vFish().matchAll(/data-fp="([^"]*)"[\s\S]*?<span class="v">(\d+)<small>/g)].map(m => [m[1], +m[2]]);
+      ok(`species chip "trout" with the header on ${id}: the sentence is just "trout", no place, and the list is measured from ${label(id)}`,
+        [box.T.fish.q, q.place, T.vFish().indexOf('from ' + label(id)) >= 0, rows.length > 3 && rows.every((r, i) => r[1] === byId[r[0]].d[id].min && (i === 0 || rows[i - 1][1] <= r[1]))], ['trout', null, true, true]);
+    }
+    box.T.fish.now = null; box.T.fish.q = ''; box.T.fish.parsed = null;
+  }
+
+  /* The hunter's own words: found whatever the capitals, never a sentence made of punctuation, and a word that is also
+     the name of a hunt unit is the hunter's town, with the unit offered beside it. */
+  choose([{ id: 'slc', words: ['The Lodge'] }, { id: 'ogd', words: ['ogden', 'the shop'] }, { id: 'moab', words: ['moab', '!!!'] }], 'slc');
+  ok('a word the hunter gave a town is found in any capitals, in both finders', [fp('trout near THE LODGE')[1], fp('trout near the shop')[1], fp('trout near moab')[1], hp('elk near the lodge'), box.fParse('elk near the shop').place.id], ['slc', 'ogd', 'moab', 'hunt:elk', 'ogd']);
+  ok('..."home" still means the first town, and the word is taken out of the sentence so it names no water', [fp('trout near home')[1], T.fishParse('trout near the shop').water], ['slc', null]);
+  ok('a word with no letters or digits ("!!!") matches nothing, not even a sentence of punctuation', [box.fParse('?!.,;:').place, T.fishParse('?!.,;:', true) && T.fishParse('?!.,;:', true).place], [null, null]);
+  {
+    const bases = [...new Set(box.UNITS.map(u => u.n.split(',')[0]))].filter(b => b.toLowerCase() === 'ogden' || b.toLowerCase().startsWith('ogden '));
+    const q = box.fParse('deer near ogden');
+    ok('hunt finder: "deer near ogden", ogden being the hunter\'s word: the town, with the units named Ogden offered beside it', [q.place.kind, q.place.id, bases.length >= 2, (q.alsoUnit || []).map(u => u.label)], ['home', 'ogd', true, bases]);
+    ok('...and a word that is no unit\'s name ("moab") offers none', box.fParse('deer near moab').alsoUnit, null);
+  }
+
+  /* The hunter's own choice goes back, and the sentences of the rest of the file read as they did. */
+  choose(OWN, OWN_MEASURE);
+  ok('the hunter\'s own towns are back after these checks', [fp('white bass near home')[1], fp('trout near heber')[1], idOf(), same(JSON.parse(STORE.get('ha.anchors')), OWN)], ['slc', 'heber', 'heber', true]);
 }
 
 console.log(`${pass} passed, ${fail} failed`);

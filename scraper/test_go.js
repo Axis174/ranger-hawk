@@ -663,6 +663,281 @@ for (const [name, text] of [['empty', ''], ['spaces', '   '], ['punctuation', '?
   delete P.box.els.lotags;
 }
 
+/* ---- The home towns. docs/state.js keeps the choice on the phone, site.js draws the Home towns page, and
+        app.js draws the header and the drive times. These pages load the real files with the page behind them
+        stubbed, and start from the storage a test hands them: no words of the hunter's own, and Salt Lake City
+        alone when nothing was ever chosen. A tap is the app's own click handler; the words field losing focus
+        is its change handler. */
+{
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const ANCH = DATA.config.anchors, label = id => ANCH.find(a => a.id === id).label;
+  const towns = (list, extra) => Object.assign({ 'ha.anchors': JSON.stringify(list.map(x => typeof x === 'string' ? { id: x } : x)) }, extra || {});
+  const app = ls => page(true, null, { app: true, ls: ls || {} });
+  const tap = (S, attrs) => {
+    const el = { dataset: attrs };
+    const ev = { target: { closest: sel => (Object.keys(attrs).some(k => sel.indexOf('[data-' + k + ']') >= 0) ? el : null) } };
+    (S.box.LISTENERS.click || []).forEach(fn => fn(ev));
+  };
+  const typed = (S, id, text) => (S.box.LISTENERS.change || []).forEach(fn => fn({ target: { dataset: { townWords: id }, value: text } }));
+  const kept = S => JSON.parse(S.store.get('ha.anchors'));
+  const chosen = S => S.box.anchorsChosen().map(a => a.id);
+  /* anchorId and anchorLabel are const arrows in state.js: reached by running them in the page. */
+  const idOf = S => vm.runInContext('anchorId()', S.box), labelOf = S => vm.runInContext('anchorLabel()', S.box);
+  const view = S => S.box.els.view.innerHTML;
+  const openTowns = S => { S.box.tab = 'towns'; S.box.render(); return view(S); };
+  const header = S => { S.box.render(); return [...S.box.els.homesel.innerHTML.matchAll(/<button data-anchor="([^"]*)" aria-pressed="(true|false)">([^<]*)<\/button>/g)].map(m => ({ id: m[1], code: m[3], on: m[2] === 'true' })); };
+  const tiles = html => [...html.matchAll(/<div class="stat"><div class="k">([^<]*)<\/div><div class="v"[^>]*>([^<]*)<\/div><\/div>/g)].map(m => [m[1], m[2]]);
+  const THREE = ['slc', 'heber', 'torrey'];
+
+  /* 1. Carry-over from the one home choice that v35 kept in ha.home. */
+  for (const [old, want] of [['nsl', 'slc'], ['heber', 'heber'], ['torrey', 'torrey'], ['a value nobody wrote', 'slc'], ['', 'slc']]) {
+    const S = app({ 'ha.home': old });
+    ok(`carry-over: ha.home "${old}" gives Salt Lake City, Heber City and Torrey in that order, measuring from ${want}`,
+      same(kept(S), THREE.map(id => ({ id }))) && S.store.get('ha.anchor') === want && same(chosen(S), THREE) && idOf(S) === want,
+      JSON.stringify([S.store.get('ha.anchors'), S.store.get('ha.anchor'), idOf(S)]));
+    ok(`carry-over: ha.home "${old}" brings no words, and the old key is left where it was`,
+      S.box.anchorsChosen().every(a => a.words.length === 0) && S.store.get('ha.home') === old, JSON.stringify(S.box.anchorsChosen().map(a => a.words)));
+  }
+  {
+    const S = app({ 'ha.home': 'torrey' }), h = header(S);
+    ok('carry-over from torrey: the header shows SLC, HC and TOR, and TOR is the one pressed', same(h.map(x => [x.code, x.on]), [['SLC', false], ['HC', false], ['TOR', true]]), JSON.stringify(h));
+    const again = app(new Map(S.store).set('ha.home', 'nsl'));
+    ok('carry-over runs once: with the choice written, a changed ha.home moves nothing', idOf(again) === 'torrey' && same(chosen(again), THREE) && again.store.get('ha.anchor') === 'torrey', JSON.stringify([idOf(again), chosen(again)]));
+    const readers = fs.readdirSync(path.join(ROOT, 'docs')).filter(f => /\.js$/.test(f) && f !== 'state.js' && /ha\.home/.test(fs.readFileSync(D(f), 'utf8')));
+    ok('no script except state.js reads the old ha.home key', readers.length === 0, readers.join(', '));
+  }
+  {
+    const S = app({}), h = header(S);
+    ok('carry-over: with no old key and no choice nothing is written, and Salt Lake City is the only town',
+      !S.store.has('ha.home') && !S.store.has('ha.anchors') && !S.store.has('ha.anchor') && same(chosen(S), ['slc']) && idOf(S) === 'slc' && same(h.map(x => [x.code, x.on]), [['SLC', true]]), JSON.stringify([[...S.store.keys()], chosen(S), h]));
+    const own = app({ 'ha.home': 'torrey', 'ha.anchors': JSON.stringify([{ id: 'prv', words: ['the farm'] }]) });
+    ok('carry-over: a phone that already chose its towns keeps them, and the old key changes nothing',
+      same(kept(own), [{ id: 'prv', words: ['the farm'] }]) && !own.store.has('ha.anchor') && same(chosen(own), ['prv']) && own.box.anchorsChosen()[0].words[0] === 'the farm', JSON.stringify([own.store.get('ha.anchors'), chosen(own)]));
+  }
+
+  /* 2. The Home towns page: twelve towns, up to three, in the order tapped, with the hunter's words. */
+  {
+    const S = app({}), html = openTowns(S);
+    const chips = [...html.matchAll(/<button class="chip" data-town="([^"]*)" aria-pressed="(true|false)">([^<]*)<\/button>/g)];
+    ok('Home towns: twelve chips, one for each anchor in the data, each named by its label', chips.length === 12 && ANCH.length === 12 && same(chips.map(m => m[1]), ANCH.map(a => a.id)) && same(chips.map(m => m[3]), ANCH.map(a => a.label)), chips.map(m => m[1]).join(','));
+    ok('Home towns: with nothing chosen yet Salt Lake City is the one chip pressed', same(chips.filter(m => m[2] === 'true').map(m => m[1]), ['slc']), JSON.stringify(chips.map(m => m[2])));
+    ok('Home towns: one words field, for Salt Lake City, asking for "Your words for it (comma separated)"', same([...html.matchAll(/data-town-words="([^"]*)"/g)].map(m => m[1]), ['slc']) && html.indexOf('Your words for it (comma separated)') >= 0, '');
+    ok('Home towns: the page says the towns and the words stay on this phone', /towns you choose and your words for them stay on this phone/.test(html), '');
+  }
+  {
+    const S = app({});
+    openTowns(S);
+    tap(S, { town: 'moab' }); tap(S, { town: 'slc' }); tap(S, { town: 'ogd' }); tap(S, { town: 'prv' });
+    ok('Home towns: towns are chosen in the order tapped, and tapping a chosen town takes it off (moab, slc off, ogd, prv)', same(kept(S).map(e => e.id), ['moab', 'ogd', 'prv']) && same(chosen(S), ['moab', 'ogd', 'prv']), S.store.get('ha.anchors'));
+    ok('Home towns: the first town chosen is the one the word "home" means', S.box.anchorsChosen()[0].aliases[0] === 'home' && S.box.anchorsChosen().slice(1).every(a => a.aliases.indexOf('home') < 0), JSON.stringify(S.box.anchorsChosen().map(a => a.aliases)));
+    ok('Home towns: the page shows a words field for each chosen town, in the order chosen, and marks the first as home', same([...view(S).matchAll(/data-town-words="([^"]*)"/g)].map(m => m[1]), ['moab', 'ogd', 'prv']) && /Moab <span class="note">&middot; home<\/span>/.test(view(S)), '');
+    ok('Home towns: the header follows the page and shows the three codes in the order chosen', same(header(S).map(x => x.code), ['MOB', 'OGD', 'PRV']), JSON.stringify(header(S)));
+    const before = S.store.get('ha.anchors');
+    tap(S, { town: 'stg' });
+    ok('Home towns: a fourth town is refused, the saved choice is untouched, and the page says why', S.store.get('ha.anchors') === before && same(chosen(S), ['moab', 'ogd', 'prv']) && /Three towns is the most/.test(view(S)) && !/data-town="stg" aria-pressed="true"/.test(view(S)), view(S).slice(0, 300));
+    ok('Home towns: ...and the line is gone on the next redraw', !/Three towns is the most/.test(openTowns(S)), '');
+
+    typed(S, 'ogd', ' The Shop ,  elk camp,, ');
+    typed(S, 'moab', 'moab');
+    ok('Home towns: words are saved on their own town, split at commas, trimmed, empties dropped, capitals kept', same(kept(S), [{ id: 'moab', words: ['moab'] }, { id: 'ogd', words: ['The Shop', 'elk camp'] }, { id: 'prv', words: [] }]), S.store.get('ha.anchors'));
+    ok('Home towns: ...and the page shows them back, and the words are the aliases the finders hear (home only on the first)',
+      /data-town-words="ogd" value="The Shop, elk camp"/.test(openTowns(S)) && same(S.box.anchorsChosen().map(a => a.aliases), [['home', 'moab'], ['The Shop', 'elk camp'], []]), JSON.stringify(S.box.anchorsChosen().map(a => a.aliases)));
+    typed(S, 'stg', 'nowhere');
+    ok('Home towns: words typed for a town that is not chosen are not kept', !/stg/.test(S.store.get('ha.anchors')), S.store.get('ha.anchors'));
+    const back = app(S.store);
+    ok('Home towns: a page opened later on the same phone reads the same towns, order and words', same(chosen(back), ['moab', 'ogd', 'prv']) && same(back.box.anchorsChosen().map(a => a.words), [['moab'], ['The Shop', 'elk camp'], []]), JSON.stringify(back.box.anchorsChosen().map(a => a.words)));
+    ok('Home towns: the words typed reach the finders at once ("elk near the shop" is Ogden, home)', (() => { S.type('elk near the shop'); const q = S.box.T_fq().parsed; return q.place && q.place.kind === 'home' && q.place.id === 'ogd'; })(), JSON.stringify(S.box.T_fq().parsed && S.box.T_fq().parsed.place));
+
+    S.box.tab = 'towns';
+    tap(S, { anchor: 'ogd' });
+    tap(S, { town: 'ogd' });
+    ok('Home towns: taking off the town being measured from leaves the rest in order and measures from the first one chosen', same(chosen(S), ['moab', 'prv']) && idOf(S) === 'moab' && !S.store.has('ha.anchor'), JSON.stringify([chosen(S), idOf(S), S.store.get('ha.anchor')]));
+    tap(S, { town: 'moab' });
+    ok('Home towns: taking a second town off leaves the last one, with its words kept', same(kept(S), [{ id: 'prv', words: [] }]), S.store.get('ha.anchors'));
+    tap(S, { town: 'prv' });
+    ok('Home towns: the last town cannot be taken off, and the page says one must stay chosen', same(chosen(S), ['prv']) && /Keep one town chosen/.test(view(S)), view(S).slice(0, 300));
+  }
+
+  /* 3. The header: the codes from the data, the pressed chip follows ha.anchor, and a tap never reorders the choice. */
+  {
+    const S = app(towns(THREE, { 'ha.anchor': 'heber' }));
+    let h = header(S);
+    ok('header: one chip for each chosen town, by its code from the data, in the order chosen', same(h.map(x => x.id), THREE) && same(h.map(x => x.code), THREE.map(id => ANCH.find(a => a.id === id).code)) && same(h.map(x => x.code), ['SLC', 'HC', 'TOR']), JSON.stringify(h));
+    ok('header: the pressed chip is the one ha.anchor names', same(h.map(x => x.on), [false, true, false]), JSON.stringify(h));
+    const order = S.store.get('ha.anchors');
+    tap(S, { anchor: 'torrey' }); h = header(S);
+    ok('header: tapping TOR presses TOR and measures from Torrey', same(h.map(x => x.on), [false, false, true]) && S.store.get('ha.anchor') === 'torrey' && idOf(S) === 'torrey' && labelOf(S) === 'Torrey', JSON.stringify(h));
+    tap(S, { anchor: 'slc' }); h = header(S);
+    ok('header: tapping a chip never reorders ha.anchors, and the chips keep their order', S.store.get('ha.anchors') === order && same(h.map(x => x.id), THREE) && same(h.map(x => x.on), [true, false, false]), S.store.get('ha.anchors'));
+    tap(S, { anchor: 'moab' }); h = header(S);
+    ok('header: a chip for a town that is not chosen is ignored', S.store.get('ha.anchor') === 'slc' && idOf(S) === 'slc' && S.store.get('ha.anchors') === order, S.store.get('ha.anchor'));
+    ok('header: a bad ha.anchor falls back to the first chosen town', (() => { const x = app(towns(['prv', 'moab'], { 'ha.anchor': 'nsl' })); return idOf(x) === 'prv' && header(x)[0].on; })(), '');
+    const pc = header(app(towns(['prv', 'prc'])));
+    ok('header: Provo and Price get their own codes, not a shared initial', same(pc.map(x => x.code), ['PRV', 'PRC']), JSON.stringify(pc));
+  }
+
+  /* 4. A place's minutes come from the measuring town: a fishing place, and a bird point. */
+  {
+    const S = app(towns(THREE, { 'ha.anchor': 'slc' })), places = DATA.places.places;
+    const distinct = p => p.d && new Set(THREE.map(k => p.d[k] && p.d[k].min)).size === 3;
+    const plain = places.find(p => distinct(p) && !(p.snap > 0.5)), starred = places.find(p => distinct(p) && p.snap > 0.5);
+    ok('data: there are fishing places with three different drive times, with the star and without, to test with', !!plain && !!starred && places.every(p => ANCH.every(a => p.d[a.id] && p.d[a.id].min >= 1)), '');
+    for (const id of THREE) {
+      tap(S, { anchor: id });
+      const a = S.box.fDrive(plain), b = S.box.fDrive(starred);
+      ok(`fishing place, header on ${id}: the minutes are that place's d.${id}, starred only where the road stops short`, a.txt === String(plain.d[id].min) && a.sub === 'min' && a.mins === plain.d[id].min && b.txt === String(starred.d[id].min) && b.sub === 'min *', JSON.stringify([a, b]));
+      const f = S.box.T_fish(); f.q = ''; f.parsed = null; f.mode = 'near'; S.box.tab = 'fish';
+      const html = S.box.T_vFish(), first = /<span class="v">(\d+)<small>/.exec(html);
+      ok(`Fish > Near, header on ${id}: "Closest water from ${label(id)}", and the first water is the nearest by d.${id}`, html.indexOf('Closest water from ' + label(id) + ' ') >= 0 && first && +first[1] === Math.min(...places.map(p => p.d[id].min)), (first || [])[1]);
+    }
+    ok('fishing place sheet: one tile for each chosen town, with that town\'s minutes', same(tiles(S.box.sheetFishPlace(plain)), THREE.map(id => [label(id), plain.d[id].min + 'm'])), JSON.stringify(tiles(S.box.sheetFishPlace(plain))));
+    const one = app(towns(['prv']));
+    ok('fishing place sheet: a phone with one town chosen gets one tile', same(tiles(one.box.sheetFishPlace(plain)), [['Provo', plain.d.prv.min + 'm']]), JSON.stringify(tiles(one.box.sheetFishPlace(plain))));
+
+    const birds = DATA.birds, withDrive = birds.filter(p => Object.keys(p.drive || {}).length);
+    const pick = want => { for (const p of birds.filter(x => x.centroid)) for (const k of THREE) { const d = (p.drive || {})[k]; if (d && !!d.range === want) return [p, k]; } return null; };
+    const range = pick(true), exact = pick(false);
+    ok('data: a centroid point has a range under one of the three towns and an exact time under another, to test with', !!range && !!exact, '');
+    for (const [name, [p, k]] of [['range', range], ['exact', exact]]) {
+      tap(S, { anchor: k });
+      const d = S.box.drive(p), x = p.drive[k];
+      ok(`bird point (${name}), header on ${k}: ${p.name} shows ${x.range ? x.range.join('-') + ' min *' : x.min + ' min'}`,
+        x.range ? d.txt === x.range[0] + '-' + x.range[1] && d.sub === 'min *' && d.mins === x.range[0] : d.txt === String(x.min) && d.sub === 'min' && d.mins === x.min, JSON.stringify(d));
+    }
+    const bad = [];
+    for (const id of THREE) {
+      tap(S, { anchor: id });
+      for (const p of withDrive) {
+        const d = S.box.drive(p), x = p.drive[id];
+        if (!(x.range ? d.txt === x.range[0] + '-' + x.range[1] && d.sub === 'min *' : d.txt === String(x.min) && d.sub === 'min')) bad.push(p.id + '/' + id);
+      }
+    }
+    ok(`bird points: all ${withDrive.length} that carry drive times show the measuring town's minutes, or its range with the star, for each of the three headers`, withDrive.length > 80 && bad.length === 0, bad.slice(0, 5).join(', '));
+    const far = birds.find(p => !Object.keys(p.drive || {}).length && p.lat != null && Math.abs(S.box.miles(ANCH[0].lat, ANCH[0].lon, p.lat, p.lon) - S.box.miles(ANCH.find(a => a.id === 'torrey').lat, ANCH.find(a => a.id === 'torrey').lon, p.lat, p.lon)) > 20);
+    ok('data: a bird point with no drive time exists to test the straight-line fallback with', !!far, '');
+    for (const id of THREE) {
+      tap(S, { anchor: id });
+      const a = ANCH.find(x => x.id === id), mi = S.box.miles(a.lat, a.lon, far.lat, far.lon), d = S.box.drive(far);
+      ok(`bird point with no drive time, header on ${id}: straight-line miles from ${label(id)}, labelled as miles`, d.txt === mi.toFixed(0) && d.sub === 'mi' && Math.abs(d.mins - mi * 1.4) < 1e-9, JSON.stringify(d));
+    }
+    const sheet = S.box.sheetPoint(range[0]), t = tiles(sheet);
+    ok('bird point sheet: one tile for each chosen town, a range written low-high, then Confidence',
+      same(t.slice(0, 3), THREE.map(id => { const x = range[0].drive[id]; return [label(id), (x.range ? x.range[0] + '-' + x.range[1] : x.min) + 'm']; })) && t[3][0] === 'Confidence' && t.length === 4, JSON.stringify(t));
+  }
+
+  /* 5. The bird range rule, checked against the baked data. low = round(miles * 60 / 45); a centroid point whose time is at
+        least 1.5 times that has an unreliable time, shown as a range low-min; every other pair is a plain, reliable time. */
+  {
+    const birds = DATA.birds, cents = birds.filter(p => p.centroid), ids12 = ANCH.map(a => a.id);
+    ok('centroid: the eight points whose road meets the water at a centre point are flagged in the data',
+      same(cents.map(p => p.name).sort(), ['Farmington Bay', 'Farmington Bay WMA', 'Howard Slough WMA', 'Ogden Bay WMA', 'Wallsburg WMA', 'Wallsburg WMA', 'Willard Bay Upland Game Area', 'Willard Spur WMA']) && birds.every(p => p.centroid === undefined || p.centroid === true), cents.map(p => p.name).join(', '));
+    const empty = birds.filter(p => !Object.keys(p.drive || {}).length), full = birds.filter(p => Object.keys(p.drive || {}).length);
+    ok('birds: the 19 points with no drive time stay without one, and every other point has all twelve towns', empty.length === 19 && full.every(p => same(Object.keys(p.drive), ids12) && Object.values(p.drive).every(d => Number.isInteger(d.min) && d.min >= 1)), `${empty.length} empty`);
+    const bad = []; let ranges = 0, exact = 0;
+    for (const p of full) for (const [id, d] of Object.entries(p.drive)) {
+      const low = Math.round(d.mi * 60 / 45), tag = p.id + '/' + id;
+      if (!p.centroid) { if (!(d.reliable === true && d.range === null)) bad.push(tag + ' plain'); continue; }
+      if (d.range) { ranges++; if (!(d.reliable === false && d.range[1] === d.min && Math.abs(d.range[0] - low) <= 1 && d.min >= 1.5 * d.range[0])) bad.push(tag + ' range'); }
+      else { exact++; if (!(d.reliable === true && d.min < 1.5 * (low + 1))) bad.push(tag + ' exact'); }
+    }
+    ok('range rule: every point that is not a centroid is reliable with no range', bad.filter(b => / plain$/.test(b)).length === 0, bad.slice(0, 5).join(', '));
+    ok('range rule: on a centroid point a time of at least 1.5 times the low end is a range [low, min] with reliable false', ranges > 0 && bad.filter(b => / range$/.test(b)).length === 0, bad.slice(0, 5).join(', '));
+    ok('range rule: on a centroid point any other time is reliable, with no range', exact > 0 && bad.filter(b => / exact$/.test(b)).length === 0, bad.slice(0, 5).join(', '));
+    const w = birds.find(p => p.id === 'bird-008');
+    ok('range rule, one point: Wallsburg WMA (centroid) has a range from Heber City and a plain time from Salt Lake City',
+      w.centroid && w.drive.heber.reliable === false && w.drive.heber.range[1] === w.drive.heber.min && w.drive.slc.reliable === true && w.drive.slc.range === null, JSON.stringify([w.drive.heber, w.drive.slc]));
+  }
+
+  /* 6. What the finders hear: "home" is the first chosen town, a town's name is not a word for it, and the
+        hunter's own words are. Sentences go in through the Menu, as in the sections above. */
+  {
+    const N = page(true, null, { ls: towns(THREE) });            // three towns, no words
+    N.box.T_hu(load('hunt_units_2026.json')); N.box.ODDS = load('draw_odds.json');
+    for (const w of ['provo river', 'logan river', 'price river', 'ogden river']) {
+      const r = N.type(w);
+      ok(`"${w}" is a water and never a home town: the fishing finder reads that water, with no place`, r.run === 'fish' && r.water === w && N.box.T_fish().parsed.place === null, show(r));
+    }
+    for (const w of ['trout near salt lake city', 'trout near heber city', 'trout near torrey', 'trout near provo']) {
+      const r = N.type(w);
+      ok(`"${w}": a town's name is not a word for it, so the fishing finder has no place`, r.run === 'fish' && N.box.T_fish().parsed.place === null, show(r));
+    }
+    for (const w of ['elk near salt lake city', 'deer near torrey']) {
+      const r = N.type(w), q = N.box.T_fq().parsed;
+      ok(`"${w}": ...nor for the hunt finder, which asks Where?`, r.run === 'hunt' && q.place === null && /<div class="sec-title">Where\?</.test(N.box.vFind()), show(r));
+    }
+    for (const w of ['pheasant near heber city', 'chukar near provo']) {
+      const r = N.type(w), q = N.box.T_fq().parsed;
+      ok(`"${w}": ...nor for the bird list, which has no place to measure from`, r.run === 'hunt' && q.place === null, show(r));
+    }
+  }
+  const byId = Object.fromEntries(DATA.places.places.map(p => [p.id, p]));
+  const placeRows = html => [...html.matchAll(/data-fp="([^"]*)"[\s\S]*?<span class="v">(\d+)<small>/g)].map(m => [m[1], +m[2]]);
+  for (const [list, head, first] of [[['slc', 'heber', 'torrey'], 'heber', 'slc'], [['torrey', 'slc'], 'slc', 'torrey'], [['moab', 'prv', 'slc'], 'prv', 'moab']]) {
+    const H = page(true, null, { ls: towns(list, { 'ha.anchor': head }) });
+    const r = H.type('trout near home'), q = H.box.T_fish().parsed, rows = placeRows(r.html);
+    ok(`"trout near home" with ${list.join(', ')} chosen and the header on ${head}: home is ${first}, and the list is measured from ${label(first)}`,
+      q.place && q.place.kind === 'home' && q.place.id === first && q.place.label === label(first) && r.html.indexOf('from ' + label(first)) >= 0 &&
+      rows.length > 3 && rows.every((x, i) => x[1] === byId[x[0]].d[first].min && (i === 0 || rows[i - 1][1] <= x[1])), JSON.stringify(rows.slice(0, 4)));
+    const n = H.type('bass'), nq = H.box.T_fish().parsed, nrows = placeRows(n.html);
+    ok(`"bass" alone, header on ${head}: no place is named, so the list is measured from the header town ${label(head)}, not from home`,
+      nq.place === null && n.html.indexOf('from ' + label(head)) >= 0 && nrows.length > 3 && nrows.every((x, i) => x[1] === byId[x[0]].d[head].min && (i === 0 || nrows[i - 1][1] <= x[1])), JSON.stringify(nrows.slice(0, 4)));
+    H.type('elk near home');
+    const hq = H.box.T_fq().parsed;
+    ok(`"elk near home" is ${label(first)} for the hunt finder too`, hq.place && hq.place.kind === 'home' && hq.place.id === first && hq.place.label === label(first), JSON.stringify(hq.place));
+  }
+  {
+    const C = page(true, null, { ls: towns(['prv', 'moab']) });
+    C.box.T_hu(load('hunt_units_2026.json')); C.box.ODDS = load('draw_odds.json');
+    C.type('elk');
+    const chips = [...C.box.vFind().matchAll(/data-fask="place" data-fval="([^"]*)"/g)].map(m => m[1]);
+    ok('Where? lists the chosen towns in order, then "Where I am now"', same(chips, ['prv', 'moab', 'gps']), chips.join(','));
+    tap(C, { fask: 'place', fval: 'moab' });
+    const pl = C.box.T_fq().parsed.place;
+    ok('...and tapping a town makes it the place, under that town\'s own name', pl.kind === 'home' && pl.id === 'moab' && pl.label === 'Moab' && /Moab/.test(C.box.vFind()), JSON.stringify(pl));
+    C.type('elk');
+    tap(C, { fask: 'place', fval: 'slc' });
+    ok('...but a town that is not one of the chosen is not a place: the tap goes to the phone\'s location instead', C.box.T_fq().parsed.place.kind === 'gps', JSON.stringify(C.box.T_fq().parsed.place));
+  }
+  for (const [list, head, first] of [[['slc', 'heber', 'torrey'], 'torrey', 'slc'], [['torrey', 'slc'], 'slc', 'torrey']]) {
+    const B = page(true, null, { ls: towns(list, { 'ha.anchor': head }) });
+    const pt = Object.fromEntries(DATA.birds.map(p => [p.id, p])), rowsOf = html => [...html.matchAll(/data-pt="([^"]*)"[\s\S]*?<span class="v">([^<]*)<small>/g)].map(m => [m[1], m[2]]);
+    const shown = (p, id) => (d => d.range ? d.range[0] + '-' + d.range[1] : String(d.min))(p.drive[id]);
+    for (const [sentence, from] of [['pheasant', head], ['pheasant near home', first]]) {
+      B.type(sentence);
+      const html = B.box.vFind(), rows = rowsOf(html).filter(r => Object.keys(pt[r[0]].drive || {}).length);
+      ok(`bird list, "${sentence}" with ${list.join(', ')} chosen and the header on ${head}: "by drive from ${label(from)}", each place showing that town's time`,
+        html.indexOf('by drive from ' + label(from)) >= 0 && rows.length > 3 && rows.every(r => r[1] === shown(pt[r[0]], from)), JSON.stringify(rows.slice(0, 3)));
+    }
+  }
+  {
+    const W = page(true, null, { ls: towns([{ id: 'slc', words: ['The Lodge'] }, { id: 'ogd', words: ['ogden', 'the shop'] }, { id: 'moab', words: ['moab', '!!!'] }]) });
+    W.box.T_hu(load('hunt_units_2026.json')); W.box.ODDS = load('draw_odds.json');
+    for (const [s, id] of [['trout near the lodge', 'slc'], ['trout near THE SHOP', 'ogd'], ['trout near moab', 'moab'], ['trout near home', 'slc']]) {
+      W.type(s);
+      const pl = W.box.T_fish().parsed.place;
+      ok(`the hunter's own words reach the Fish finder: "${s}" is ${id}, in any capitals`, pl && pl.kind === 'home' && pl.id === id, JSON.stringify(pl));
+    }
+    for (const [s, id] of [['elk near the lodge', 'slc'], ['elk near the shop', 'ogd'], ['elk near home', 'slc']]) {
+      W.type(s);
+      const pl = W.box.T_fq().parsed.place;
+      ok(`...and the hunt finder: "${s}" is ${id}`, pl && pl.kind === 'home' && pl.id === id, JSON.stringify(pl));
+    }
+    ok('a word with no letters or digits ("!!!") matches nothing, not even a sentence of punctuation', W.box.fParse('?!.,;:').place === null && (W.box.fishParse('?!.,;:', true) || {}).place == null, JSON.stringify(W.box.fParse('?!.,;:').place));
+    /* A word that is also the name of a hunt unit: the town wins, and the unit is offered in one tap. */
+    const bases = [...new Set(DATA.units.map(u => u.n.split(',')[0]))].filter(b => b.toLowerCase() === 'ogden' || b.toLowerCase().startsWith('ogden '));
+    W.type('deer near ogden');
+    const q = W.box.T_fq().parsed, html = W.box.vFind();
+    ok('"deer near ogden", ogden being the hunter\'s word: the town wins, and the units named Ogden are offered with it',
+      q.place.kind === 'home' && q.place.id === 'ogd' && bases.length >= 2 && same(q.alsoUnit.map(u => u.label), bases) && /That is also the name of a hunt unit/.test(html) && html.indexOf('data-fask="useunit" data-fval="Ogden"') >= 0, JSON.stringify(q.alsoUnit && q.alsoUnit.map(u => u.label)));
+    tap(W, { fask: 'useunit', fval: 'Ogden' });
+    const u = W.box.T_fq().parsed;
+    ok('...and one tap switches to the unit Ogden, with the offer gone', u.place.kind === 'unit' && u.place.label === 'Ogden' && u.alsoUnit === null && !/That is also the name of a hunt unit/.test(W.box.vFind()), JSON.stringify(u.place));
+    W.type('deer near moab');
+    const m = W.box.T_fq().parsed;
+    ok('a word that is no unit\'s name ("moab") brings no unit offer', m.place.id === 'moab' && !m.alsoUnit && !/That is also the name of a hunt unit/.test(W.box.vFind()), JSON.stringify(m.alsoUnit));
+  }
+}
+
 /* ---- A fishing question asked before the rules arrive is answered when they do,
         with no second keystroke: while they load, and after a failed load and Try again. */
 const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(r => setImmediate(r)); };
