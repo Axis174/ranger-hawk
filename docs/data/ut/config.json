@@ -1,61 +1,100 @@
 {
- "homes": [
+ "anchors": [
   {
-   "id": "nsl",
-      "county": "Davis",
-   "label": "North Salt Lake",
-   "lat": 40.8477,
-   "lon": -111.9069,
-   "note": "Town-level anchor. Drive times were computed from a street-level point and are baked in as minutes.",
-   "units": [
-    "Box Elder (general deer)",
-    "Wasatch Front Extended Archery Area"
-   ],
-   "aliases": [
-    "home",
-    "north salt lake",
-    "nsl",
-    "salt lake"
-   ]
+   "id": "slc",
+   "label": "Salt Lake City",
+   "code": "SLC",
+   "county": "Salt Lake",
+   "lat": 40.7608,
+   "lon": -111.8911
+  },
+  {
+   "id": "ogd",
+   "label": "Ogden",
+   "code": "OGD",
+   "county": "Weber",
+   "lat": 41.223,
+   "lon": -111.9738
+  },
+  {
+   "id": "prv",
+   "label": "Provo",
+   "code": "PRV",
+   "county": "Utah",
+   "lat": 40.2338,
+   "lon": -111.6585
+  },
+  {
+   "id": "log",
+   "label": "Logan",
+   "code": "LGN",
+   "county": "Cache",
+   "lat": 41.7313,
+   "lon": -111.8349
   },
   {
    "id": "heber",
-      "county": "Wasatch",
    "label": "Heber City",
+   "code": "HC",
+   "county": "Wasatch",
    "lat": 40.50646,
-   "lon": -111.4133,
-   "note": "Town centroid anchor.",
-   "units": [
-    "Wasatch Mtns",
-    "Wasatch Mtns, East",
-    "Wasatch Mtns/Central Mtns"
-   ],
-   "aliases": [
-    "cabin",
-    "treetop",
-    "tree top",
-    "timber lakes",
-    "heber"
-   ]
+   "lon": -111.4133
+  },
+  {
+   "id": "vrn",
+   "label": "Vernal",
+   "code": "VRN",
+   "county": "Uintah",
+   "lat": 40.4555,
+   "lon": -109.5287
+  },
+  {
+   "id": "prc",
+   "label": "Price",
+   "code": "PRC",
+   "county": "Carbon",
+   "lat": 39.5994,
+   "lon": -110.8107
+  },
+  {
+   "id": "rch",
+   "label": "Richfield",
+   "code": "RCH",
+   "county": "Sevier",
+   "lat": 38.7725,
+   "lon": -112.0841
   },
   {
    "id": "torrey",
-      "county": "Wayne",
    "label": "Torrey",
+   "code": "TOR",
+   "county": "Wayne",
    "lat": 38.2999,
-   "lon": -111.4194,
-   "note": "Wayne County town centroid. Boulder Mountain and the Aquarius Plateau lie in the Plateau unit.",
-   "units": [
-    "Thousand Lakes",
-    "Fishlake/Thousand Lakes",
-    "Plateau"
-   ],
-   "aliases": [
-    "torrey",
-    "boulder",
-    "the boulders",
-    "fishlake"
-   ]
+   "lon": -111.4194
+  },
+  {
+   "id": "cdc",
+   "label": "Cedar City",
+   "code": "CDC",
+   "county": "Iron",
+   "lat": 37.6775,
+   "lon": -113.0619
+  },
+  {
+   "id": "stg",
+   "label": "St. George",
+   "code": "STG",
+   "county": "Washington",
+   "lat": 37.1041,
+   "lon": -113.5841
+  },
+  {
+   "id": "moab",
+   "label": "Moab",
+   "code": "MOB",
+   "county": "Grand",
+   "lat": 38.5733,
+   "lon": -109.5498
   }
  ],
  "contacts": [

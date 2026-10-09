@@ -487,12 +487,12 @@ def main():
     for p in places:
         p.pop("_regs", None)
 
-    # ---- drive times from the three homes (town-level anchors; nothing personal)
-    homes = [(h["id"], h["lat"], h["lon"]) for h in config["homes"]]
+    # ---- drive times from the anchor towns (public places; nothing personal)
+    homes = [(a["id"], a["lat"], a["lon"]) for a in config["anchors"]]
     if "--drive" in args:
         prev = {}
-        for i in range(0, len(places), 90):
-            chunk = places[i:i + 90]
+        for i in range(0, len(places), 100 - len(homes)):      # 100 coordinates a request, the anchors included
+            chunk = places[i:i + 100 - len(homes)]
             pts = [(h[2], h[1]) for h in homes] + [((p.get("nav") or [p["lat"], p["lon"]])[1], (p.get("nav") or [p["lat"], p["lon"]])[0]) for p in chunk]
             url = OSRM + ";".join("%.5f,%.5f" % xy for xy in pts) + "?sources=" + ";".join(str(k) for k in range(len(homes))) + "&annotations=duration,distance"
             try:
