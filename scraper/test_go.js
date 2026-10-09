@@ -2,8 +2,10 @@
 /* Checks where the Menu sends a typed sentence (docs/go.js): which screen opens,
    which finder runs, whether a search was run at all, and for the fishing finder
    whether it came back with waters or with its "does not know that water" box.
-   It loads the real docs/finder.js, docs/fishing.js and docs/go.js with the data
-   in docs/data and the browser stubbed. Run with:
+   It loads the real docs/state.js, docs/finder.js, docs/fishing.js and docs/go.js with
+   the data in docs/data and the browser stubbed. The home towns section at the end
+   also loads docs/site.js and cuts the header, the drive time and the click handlers
+   out of docs/app.js. Run with:
 
        node scraper/test_go.js
 
@@ -17,6 +19,18 @@ const GO = process.env.GO_JS || D('go.js');
 /* The app's own point-in-unit code (app.js), so a water's point is turned into hunt units the way the app does it. */
 const APP_SRC = fs.readFileSync(D('app.js'), 'utf8');
 const APP_GEO = APP_SRC.slice(APP_SRC.indexOf('function inRing'), APP_SRC.indexOf('async function whereAmI'));
+/* The pieces of app.js the home towns work through: the header (renderChrome), the drive time of an access
+   point, the point sheet, and the click and change handlers. A piece that has moved stops the run here,
+   not in the middle of a test. */
+function appPart(from, to) {
+  const a = APP_SRC.indexOf(from), b = APP_SRC.indexOf(to, a + 1);
+  if (a < 0 || b < 0) throw new Error('app.js no longer holds "' + (a < 0 ? from : to) + '"');
+  return APP_SRC.slice(a, b);
+}
+const APP_CHROME = appPart('const TABS = [', 'function render() {');
+const APP_DRIVE = appPart('function drive(p) {', '/* ---------------------------------------------------------- legal light');
+const APP_SHEET = appPart('function sheetPoint(p) {', 'function sheetSeason(s) {');
+const APP_EVENTS = appPart("document.addEventListener('click', e => {", "document.addEventListener('keydown'") + appPart("document.addEventListener('change', e => {", 'function net() {');
 
 /* The clock is stopped, as in the fishing tests, so the answer is the same any day. */
 const FIXED = Date.UTC(2026, 8, 27, 18, 0, 0);
@@ -29,20 +43,35 @@ const DATA = {
   config: load('config.json'), seasons: load('seasons.json'), birds: load('bird_access.json'), units: load('units_geo.json').units,
   rules: load('fishing_rules.json'), places: load('fishing_places.json'), notices: load('fishing_notices.json')
 };
+/* What one hunter's phone holds (docs/state.js keeps it in localStorage): three chosen towns, each with
+   the words the finders used to listen for before the towns became public, and the header on the middle
+   one. Every page starts from this unless a test hands it other storage, so the sentences below are
+   read the way they always were. */
+const HUNTER = {
+  'ha.anchors': JSON.stringify([
+    { id: 'slc', words: ['north salt lake', 'nsl', 'salt lake'] },
+    { id: 'heber', words: ['cabin', 'treetop', 'tree top', 'timber lakes', 'heber'] },
+    { id: 'torrey', words: ['torrey', 'boulder', 'the boulders', 'fishlake'] }]),
+  'ha.anchor': 'heber'
+};
 
 /* One page. withFishing false is the first run: the fishing rules have not arrived,
-   so no water's name is known. net.on says whether a fetch of docs/data succeeds. */
+   so no water's name is known. net.on says whether a fetch of docs/data succeeds.
+   opts.ls is the phone's storage to start from (an object or a Map; HUNTER when left out), and
+   opts.app also loads site.js and the parts of app.js the home towns work through. */
 const FILES = { 'fishing_rules.json': DATA.rules, 'fishing_places.json': DATA.places, 'fishing_notices.json': DATA.notices };
-function page(withFishing, net) {
+function page(withFishing, net, opts) {
   net = net || { on: false };
+  opts = opts || {};
+  const store = new Map(opts.ls instanceof Map ? opts.ls : Object.entries(opts.ls || HUNTER));
   const runs = [], timers = [], landed = [], renders = [], gps = [];
   let nextTimer = 1;
   const box = {
-    console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl, STATE: 'ut',
+    console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
     document: { addEventListener(type, fn) { (box.LISTENERS[type] = box.LISTENERS[type] || []).push(fn); } },
     LISTENERS: {},
     window: { scrollTo() {}, addEventListener() {} },
-    navigator: { geolocation: { getCurrentPosition() { gps.push(box.tab); } } }, localStorage: { getItem: () => null, setItem() {} },
+    navigator: { geolocation: { getCurrentPosition() { gps.push(box.tab); } } }, localStorage: { getItem: k => (store.has(k) ? store.get(k) : null), setItem(k, v) { store.set(k, String(v)); }, removeItem(k) { store.delete(k); } },
     fetch(url) {
       const j = FILES[String(url).split('/').pop()];
       return net.on && j ? Promise.resolve({ ok: true, json: () => Promise.resolve(j) }) : Promise.reject(new Error('no network in tests'));
@@ -55,17 +84,18 @@ function page(withFishing, net) {
     /* As the app does: note which screen was drawn, and draw the Fish screen with vFish. */
     render() { renders.push(box.tab); if (box.tab === 'fish' && box.T_vFish) box.T_vFish(); },
     openSheet() {}, closeSheet() {}, loadWx() {},
-    tab: 'today', home: 'heber', seasonsMode: 'dates', esc,
+    tab: 'today', seasonsMode: 'dates', esc,
     miles(aLat, aLon, bLat, bLon) {
       const r = Math.PI / 180, dLat = (bLat - aLat) * r, dLon = (bLon - aLon) * r;
       const h = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * r) * Math.cos(bLat * r) * Math.sin(dLon / 2) ** 2;
       return 3958.8 * 2 * Math.asin(Math.sqrt(h));
     },
     DB: { config: DATA.config, seasons: DATA.seasons, birds: DATA.birds },
-    hlabel: () => 'Home', UNITS: DATA.units, ODDS: null, draw: { pts: {} }, loadOdds() {},
+    UNITS: DATA.units, ODDS: null, draw: { pts: {} }, loadOdds() {},
     fmt: d => String(d), d0: s => new Date(s), unitsAt: () => []
   };
   vm.createContext(box);
+  vm.runInContext(fs.readFileSync(D('state.js'), 'utf8'), box);   // the chosen towns, read from the stubbed storage
   vm.runInContext(APP_GEO, box);
   vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.T_fq = () => fq; this.T_hu = j => { HU = j; };', box);
   vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
@@ -76,6 +106,13 @@ function page(withFishing, net) {
   const realHunt = box.fRun, realFish = box.fishRun;
   box.fRun = q => { runs.push('hunt'); realHunt(q); };
   box.fishRun = q => { runs.push('fish'); realFish(q); };
+  if (opts.app) {
+    for (const id of ['homesel', 'tabs', 'title', 'view']) box.els[id] = {};
+    box.alerts = () => 0;
+    for (const src of [fs.readFileSync(D('site.js'), 'utf8'), APP_CHROME, APP_DRIVE, APP_SHEET, APP_EVENTS]) vm.runInContext(src, box);
+    /* As render() does in the app: the header, then the Home towns page when that is the screen. */
+    box.render = function () { renders.push(box.tab); box.renderChrome(); if (box.tab === 'towns') box.els.view.innerHTML = box.vTowns(); };
+  }
 
   /* Type a sentence into the Menu and press Enter. */
   function type(text) {
@@ -98,7 +135,7 @@ function page(withFishing, net) {
     }
     return r;
   }
-  return { box, type, timers, landed, renders, gps };
+  return { box, type, timers, landed, renders, gps, store };
 }
 
 const rowsIn = html => (html.match(/data-f[wp]="/g) || []).length;

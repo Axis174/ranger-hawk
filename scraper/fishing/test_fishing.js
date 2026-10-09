@@ -37,12 +37,23 @@ class TestDate extends Date {
   constructor(...a) { if (a.length) super(...a); else if (CLOCK != null) super(CLOCK); else super(); }
   static now() { return CLOCK != null ? CLOCK : Date.now(); }
 }
+/* What one hunter's phone holds (docs/state.js keeps it in localStorage): three chosen towns, each with
+   the words the finders used to listen for before the towns became public, and the header on the middle
+   one. The sentences below are read the way they always were; the tests at the end of the file change the
+   choice with anchorSetChosen and anchorSetMeasure and put this back. */
+const STORE = new Map(Object.entries({
+  'ha.anchors': JSON.stringify([
+    { id: 'slc', words: ['north salt lake', 'nsl', 'salt lake'] },
+    { id: 'heber', words: ['cabin', 'treetop', 'tree top', 'timber lakes', 'heber'] },
+    { id: 'torrey', words: ['torrey', 'boulder', 'the boulders', 'fishlake'] }]),
+  'ha.anchor': 'heber'
+}));
 const box = {
-  console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl, STATE: 'ut',
+  console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
   document: { addEventListener(type, fn) { (box.LIS[type] = box.LIS[type] || []).push(fn); } }, LIS: {}, window: { scrollTo() {}, addEventListener() {} },
-  navigator: {}, localStorage: { getItem: () => null, setItem() {} },
+  navigator: {}, localStorage: { getItem: k => (STORE.has(k) ? STORE.get(k) : null), setItem(k, v) { STORE.set(k, String(v)); }, removeItem(k) { STORE.delete(k); } },
   fetch: () => Promise.reject(new Error('no network in tests')),
-  $: () => null, render() {}, openSheet() {}, loadWx() {}, tab: 'fish', home: 'heber',
+  $: () => null, render() {}, openSheet() {}, loadWx() {}, tab: 'fish',
   esc: s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])),
   miles(aLat, aLon, bLat, bLon) {
     const r = Math.PI / 180, dLat = (bLat - aLat) * r, dLon = (bLon - aLon) * r;
@@ -50,11 +61,11 @@ const box = {
     return 3958.8 * 2 * Math.asin(Math.sqrt(h));
   },
   DB: { config: load('config.json'), seasons: load('seasons.json'), birds: [] },
-  hlabel: () => 'Heber City',
   UNITS: load('units_geo.json').units, ODDS: null, draw: { pts: {} }, loadOdds() {}, seasonsMode: 'find',
   fmt: d => String(d), d0: s => new Date(s), unitsAt: () => []
 };
 vm.createContext(box);
+vm.runInContext(fs.readFileSync(D('state.js'), 'utf8'), box);   // the chosen towns, read from the stubbed storage
 /* The app's own point-in-unit code, so the hunt finder can tell whether a water's point is under a unit. */
 { const src = fs.readFileSync(D('app.js'), 'utf8'); vm.runInContext(src.slice(src.indexOf('function inRing'), src.indexOf('async function whereAmI')), box); }
 vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.fParse = fParse; this.vFind = vFind; this.fq = fq;', box);
@@ -247,7 +258,7 @@ const fp = s => { const q = T.fishParse(s); return q ? [q.sp ? q.sp[0] : null, q
 ok('"where can I fish for trout near the cabin"', fp('where can I fish for trout near the cabin'), ['trout', 'heber', null, null]);
 ok('"tiger trout near torrey"', fp('tiger trout near torrey'), ['tigertrout', 'torrey', null, null]);
 ok('"striped bass"', fp('striped bass'), ['striper', null, null, null]);
-ok('"white bass near home"', fp('white bass near home'), ['whitebass', 'nsl', null, null]);
+ok('"white bass near home"', fp('white bass near home'), ['whitebass', 'slc', null, null]);
 ok('"smallmouth where I am"', fp('smallmouth where I am'), ['smallmouth', 'gps', null, null]);
 ok('"fishing in wasatch county"', fp('fishing in wasatch county'), [null, null, null, 'Wasatch']);
 ok('"walleye in utah county"', fp('walleye in utah county'), ['walleye', null, null, 'Utah']);
