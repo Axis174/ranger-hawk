@@ -551,6 +551,19 @@ the app says.
   time, so no number is typed by hand. The privacy and money pages carry the in-app
   screens' own HTML from `site.js`, so they cannot say something the app does not.
   It runs in `refresh.yml` every day, before the tests.
+- **A page for every fishing water** (since v39): `docs/fishing/waters/<id>/` for each
+  guidebook water, `docs/fishing/community/<id>/` for each community water, and the A-to-Z
+  index at `docs/fishing/waters/`. `scraper/build_pages.js` runs the app's own renderer
+  (`docs/fishing.js`) in a static mode at noon on the Utah date of the build, so a page says
+  what the app says, in UDWR's words, with absolute dates and nothing that means now or
+  today. In its normal mode the app is unchanged: `scraper/fishing/app_sheet_hashes.json`
+  holds the hashes of every sheet as main drew them, regenerated only by hand, and
+  `test_fishing.js` checks the renderer against them under six clocks. A notice-only water
+  (no guidebook entry) has a page only while a UDWR emergency change is in force or coming;
+  the nightly build adds and removes those pages and the sitemap follows. Each page ends
+  with a button that opens the water in the app (`/?water=<id>`). The wording sweep exempts
+  UDWR's words wherever a page quotes them (rule text, rule bullets, community notes, the
+  limits table) and still sweeps every sentence Ranger Hawk writes.
 - **`docs/robots.txt`** is written by hand. Every crawler is allowed, AI search and
   answer engines and model-training crawlers included; only `/maps/` (the offline map
   files) is closed. Decision 2026-10-09: allow training too, because the rules are free
@@ -565,10 +578,11 @@ the app says.
 - **Not counted**: the website pages send no GoatCounter pixel and load no script, so
   the Privacy screen stays true as written. Search traffic is read in Google Search
   Console and Bing Webmaster Tools (Pete's accounts).
-- **Offline**: the website pages and `page.css` are in the service worker's SHELL, so
-  once the app has been opened online they open with no signal too. (Without that, a
+- **Offline**: the hub and policy pages and `page.css` are in the service worker's SHELL,
+  so once the app has been opened online they open with no signal too. (Without that, a
   page never opened would get `index.html` at its own address, and the app's relative
-  script paths would not load.)
+  script paths would not load.) The per-water pages are not in SHELL (205 pages, 2.5 MB);
+  with no signal, open the water inside the app instead.
 - **Wording**: Ranger Hawk is not the state. Never "official", "verified", "licensed",
   "certified" or "endorsed" except in the disclaimer's own negation, and never a claim
   that a hunt or a catch is legal. Every page carries the money screen's disclaimer
