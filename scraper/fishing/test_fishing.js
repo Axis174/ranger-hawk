@@ -88,6 +88,13 @@ const N = (() => {
   if (n.notices.some(x => !built.has(x.slug))) {
     n.notices = n.notices.filter(x => built.has(x.slug));
     n.sha = n.sha_built;                              // missing or null: the line below fails
+    /* The closing line UDWR puts after a new batch ("All other rules ... remain in effect") is in
+       "other" but belongs to no notice. read() leaves it out of sha_built when it stands right after
+       an unread notice, so sha_built (checked below) is what proves the line came with that notice;
+       here it is only set aside so that it is not counted as a new line of its own. A line of that
+       shape which the rules were built with is kept, and so is every other new line. */
+    const SEEN = new Set(R._notices_other || []);
+    n.other = n.other.filter(x => SEEN.has(x[1]) || !/^all other rules\b[^.]{0,120}\bremain in effect\b\.?\s*(\([^)]{0,30}\))?\s*$/i.test(x[1]));
     const chk = require('crypto').createHash('sha256').update(n.sha_built + '|' + NRAW.sha).digest('hex').slice(0, 16);
     if (NRAW.sha_chk !== chk) n.sha = 'sha_built-and-sha-do-not-agree';
   }
@@ -260,6 +267,28 @@ ok('Jan. 1, 2027 is late', T.fEdition(at('2027-01-01T00:05')).late, true);
     JSON.stringify([{ slug: 'a', title: 'A (X County)', url: 'https://wildlife.utah.gov/a.pdf', first_seen: '2026-10-11' }, { slug: 'b', title: 'B', url: 'https://wildlife.utah.gov/b.pdf' }]), JSON.stringify(['b'])], { encoding: 'utf8' });
   ok('refresh.py builds the unread list from the notices and the built slugs', py.status === 0 && JSON.parse(py.stdout), [{ slug: 'a', title: 'A (X County)', url: 'https://wildlife.utah.gov/a.pdf', first_seen: '2026-10-11' }]);
   ok('refresh.py prints one NOTICE UNREAD line per unread notice', /for u in report\["unread_notices"\]:\s+print\(f"NOTICE UNREAD: \{u\['title'\]\} \{u\['first_seen'\]\} \{u\['url'\]\}"\)/.test(fs.readFileSync(path.join(ROOT, 'scraper', 'refresh.py'), 'utf8')), true);
+  /* sha_built, run for real on made-up pages: the line UDWR closes a batch with ("All other rules ...
+     remain in effect") goes with an unread notice that stands before it, and only then. */
+  const rd = (html, builtSlugs) => {
+    const r = spawnSync('python3', ['-I', '-c', 'import sys, json; sys.path.insert(0, sys.argv[1]); import fishing_notices as F; g = F.read(sys.argv[2], "rev", "/pdf/em/", built=set(json.loads(sys.argv[3]))); print(json.dumps([g["sha"], g["sha_built"]]))', path.join(ROOT, 'scraper'),
+      '<div id="rev">' + html + '</div>', JSON.stringify(builtSlugs)], { encoding: 'utf8' });
+    return r.status === 0 ? JSON.parse(r.stdout) : r.stderr;
+  };
+  const nt = (slug, name) => '<p><a href="/pdf/em/' + slug + '.pdf">' + name + ' (Wayne County):</a> Because of low water, we are changing the limit.</p><ul><li>No limit, all species</li></ul><p>This change went into effect Oct. 10, 2026 and will remain in effect until Dec. 31, 2026.</p>';
+  const TR = '<p>All other rules established in the 2026 Utah Fishing Guidebook remain in effect. (Oct. 10, 2026)</p>';
+  const OLD = '<h4>Emergency changes</h4>' + nt('old-one', 'Old One') + '<p>All other rules established in the 2026 Utah Fishing Guidebook remain in effect. (July 2, 2026)</p>';
+  const base = rd(OLD, ['old-one']);
+  ok('sha_built: nothing unread, nothing left out', base[0], base[1]);
+  ok('sha_built: a new batch with its closing line is left out whole', rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + TR + OLD.replace('<h4>Emergency changes</h4>', ''), ['old-one'])[1], base[1]);
+  ok('...and without a closing line too', rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + OLD.replace('<h4>Emergency changes</h4>', ''), ['old-one'])[1], base[1]);
+  ok('...and the whole-page hash still sees the closing line', rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + TR + OLD.replace('<h4>Emergency changes</h4>', ''), ['old-one'])[0] !== rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + OLD.replace('<h4>Emergency changes</h4>', ''), ['old-one'])[0], true);
+  ok('sha_built: a closing line with no unread notice before it is NOT left out', rd(OLD + TR, ['old-one'])[1] !== base[1], true);
+  ok('sha_built: ...nor one that follows a notice already built in', rd(OLD.replace('<h4>Emergency changes</h4>', '<h4>Emergency changes</h4>' + TR), ['old-one'])[1] !== base[1], true);
+  const REST = OLD.replace('<h4>Emergency changes</h4>', '');
+  ok('sha_built: a new line after the closing line is NOT left out', rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + TR + '<p>Correction: the limit above is 5.</p>' + REST, ['old-one'])[1] !== base[1], true);
+  ok('sha_built: a reworded closing line is NOT left out', rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + '<p>All other rules established in the 2026 Utah Fishing Guidebook remain in effect, except Fab Lake. (Oct. 10, 2026)</p>' + REST, ['old-one'])[1] !== base[1], true);
+  ok('sha_built: a lookalike that is not the closing line is NOT left out', rd('<h4>Emergency changes</h4>' + nt('new-one', 'New One') + '<p>All other rules established in the 2026 Utah Fishing Guidebook remain in effect.</p><p>Everything else is the same.</p>' + REST, ['old-one'])[1] !== base[1], true);
+  ok('sha_built: an unread notice sharing a line with a built one is None', rd('<h4>Emergency changes</h4><p><a href="/pdf/em/old-one.pdf">Old One (Wayne County):</a> kept <a href="/pdf/em/new-one.pdf">New One (Wayne County):</a> shared</p>', ['old-one'])[1], null);
 }
 const N2 = JSON.parse(JSON.stringify(N));
 N2.notices.push({ slug: 'emergency-change-2026-10-02-test-lake', title: 'Test Lake (Wayne County)', name: 'Test Lake', county: 'Wayne', text: [['p', 'x']], sha: 'x', url: 'https://wildlife.utah.gov/x.pdf' });

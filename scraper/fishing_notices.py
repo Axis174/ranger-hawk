@@ -155,6 +155,11 @@ def split_line(ln):
     return [o for o in out if o["txt"]]
 
 
+# The closing line of a UDWR batch of notices, e.g. "All other rules established in the 2026 Utah
+# Fishing Guidebook remain in effect. (July 2, 2026)". One short line, nothing else on it.
+TRAILER = re.compile(r"all other rules\b[^.]{0,120}\bremain in effect\b\.?\s*(\([^)]{0,30}\))?\s*$", re.I)
+
+
 def read(page, block_id, notice_path, base="https://wildlife.utah.gov", built=None):
     """-> {"ok", "error", "sha", "sha_built", "notices": [...], "other": [...]}
 
@@ -249,6 +254,15 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov", built=No
     skip = {n["slug"] for n in notices if built is not None and n["slug"] not in built}
     drop = {i_ for i_, o_ in owners.items() if o_ & skip}
     mixed = any(o_ - skip for i_, o_ in owners.items() if i_ in drop)
+    # UDWR closes a batch with "All other rules ... remain in effect." That sentence belongs to no
+    # notice, but when it stands directly after an unread notice's lines it arrived with them, so it
+    # is left out of sha_built too. Anywhere else (after a built notice, a heading, or alone) it stays.
+    for i_ in sorted(owners):
+        ln_ = px.lines[i_]
+        prev = [j_ for j_ in owners if j_ < i_]
+        if (owners[i_] == {None} and TRAILER.match(ln_["txt"]) and not ln_["links"] and prev
+                and owners[max(prev)] and owners[max(prev)] <= skip):
+            drop.add(i_)
     return {"ok": True, "error": None, "sha": digest(whole), "sha_built": None if mixed else digest(page_text(drop)),
             "notices": notices, "other": other}
 
