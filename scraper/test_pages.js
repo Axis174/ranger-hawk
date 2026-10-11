@@ -15,7 +15,7 @@ const SITE = C.SITE;
 const read = rel => fs.readFileSync(path.join(DOCS, rel), 'utf8');
 const exists = rel => fs.existsSync(path.join(DOCS, rel));
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const unesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+const unesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&mdash;/g, '—').replace(/&amp;/g, '&');
 /* Stop the build on one Utah date even if the tests cross midnight. The builder
    receives the date explicitly, so the determinism check is about that date's
    pages rather than two separate readings of the clock. */
@@ -120,21 +120,101 @@ const COMMUNITY_PAGES = R.community.members.filter(m => !TWIN_IDS.has(m.id))
 const FISH_PAGES = WATER_PAGES.concat(COMMUNITY_PAGES);
 const FISH_FILES = ['fishing/waters/index.html'].concat(FISH_PAGES.map(p => fileOf(p.path)));
 const plain = html => unesc(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
-/* Only values literally stored in a rules[] object's text field are excluded
-   from the wording sweep. Notes, introductions, labels, headings and prose do
-   not receive that exception. Longest first avoids a short quote masking only
-   part of a longer one. */
-const RULE_TEXTS = (() => {
-  const out = new Set();
-  const walk = v => {
-    if (!v || typeof v !== 'object') return;
-    if (Array.isArray(v.rules)) v.rules.forEach(r => { if (typeof r.text === 'string') out.add(r.text); });
-    if (Array.isArray(v)) v.forEach(walk); else Object.values(v).forEach(walk);
+/* The lead's second exception covers these UDWR fields, wherever nested. Keep
+   their paths and rule ids for the hand-back; heads and all other prose stay
+   swept. Longest first avoids removing only part of a longer quoted string. */
+function quotedRuleFields(rules) {
+  const out = [];
+  const add = (text, field, id) => { if (typeof text === 'string' && text) out.push({ text, field, id: id || null }); };
+  const rule = (r, field) => {
+    add(r.text, field + '.text', r.id);
+    (r.items || []).forEach((text, i) => add(text, field + '.items[' + i + ']', r.id));
   };
-  walk(R);
-  return [...out].sort((a, b) => b.length - a.length);
-})();
-const withoutQuotedRules = html => RULE_TEXTS.reduce((text, quote) => text.split(esc(quote)).join(' '), html);
+  const walk = (v, field) => {
+    if (!v || typeof v !== 'object') return;
+    if (Array.isArray(v.rules)) v.rules.forEach((r, i) => rule(r, field + '.rules[' + i + ']'));
+    if (Array.isArray(v)) v.forEach((x, i) => walk(x, field + '[' + i + ']'));
+    else Object.entries(v).forEach(([key, x]) => walk(x, field ? field + '.' + key : key));
+  };
+  walk(rules, '');
+  ((rules.spear || {}).general || []).forEach((r, i) => rule(r, 'spear.general[' + i + ']'));
+  ((rules.community || {}).notes || []).forEach((r, i) => add(r.text, 'community.notes[' + i + '].text', r.id));
+  add((rules.community || {}).intro, 'community.intro');
+  const strings = (v, field) => {
+    if (typeof v === 'string') add(v, field);
+    else if (Array.isArray(v)) v.forEach((x, i) => strings(x, field + '[' + i + ']'));
+    else if (v && typeof v === 'object') Object.entries(v).forEach(([key, x]) => strings(x, field + '.' + key));
+  };
+  strings(rules.rows || [], 'rows');
+  strings((rules.statewide || {}).limits || [], 'statewide.limits');
+  return out.sort((a, b) => b.text.length - a.text.length);
+}
+const RULE_FIELDS = quotedRuleFields(R);
+const ruleTexts = fields => [...new Set(fields.map(f => f.text))].sort((a, b) => b.length - a.length);
+const RULE_TEXTS = ruleTexts(RULE_FIELDS);
+function withoutQuotedRules(html, quotes = RULE_TEXTS, intro = R.community.intro) {
+  const remove = text => quotes.reduce((s, quote) => s.split(esc(quote)).join(' '), text);
+  /* Remove exact escaped quotes only where the renderer prints rules or table
+     values. A matching string in a lead, title, head, index, banner or footer
+     must still fail. Nested date spans contain Ranger Hawk's own wording. */
+  return html.replace(/(<span class="ftext">)([\s\S]*?)(<\/span>)/g, (_, start, body, end) => {
+    const at = body.indexOf('<span');
+    return start + (at < 0 ? remove(body) : remove(body.slice(0, at)) + body.slice(at)) + end;
+  }).replace(/(<table class="flim(?: chg)?">)([\s\S]*?)(<\/table>)/g, (_, start, body, end) =>
+    start + body.replace(/(<td>)([^<]*)([\s\S]*?<\/td>)/g, (__, td, value, rest) => td + remove(value) + rest) + end
+  ).replace(/(<div class="fwhere">)([\s\S]*?)(<\/div>)/g, (_, start, body, end) =>
+    start + (quotes.includes(intro) && body === esc(intro) ? ' ' : body) + end
+  );
+}
+const WORDS = /\b(official(?:ly)?|verified|licensed|endorsed|certified|guarantee[ds]?)\b/gi;
+const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLowerCase() === 'endorsed' &&
+  /not part of,? or endorsed by$/.test(text.slice(Math.max(0, m.index - 20), m.index + m[1].length + 3))));
+
+/* ------------------------------------- UDWR quotes versus Ranger Hawk claims */
+{
+  const synthetic = B.loadFishing(BUILD_DATE), id = 'flaming-gorge-reservoir-daggett';
+  const rule = { id: 'synthetic-quote', head: 'A synthetic heading', page: 9, waters: [id], fx: [{ t: 'info' }],
+    text: 'A synthetic official and licensed rule, now and today, with <fish> & water.',
+    items: ['A synthetic official and licensed bullet, now and today, with <fish> & water.'] };
+  synthetic.rules.statewide.rules.push(rule);
+  const unused = 'An unprinted official and licensed UDWR string.';
+  synthetic.rules.statewide.rules.push({ id: 'synthetic-unused', text: unused, items: [], waters: [], fx: [{ t: 'info' }] });
+  const fields = quotedRuleFields(synthetic.rules), quotes = ruleTexts(fields);
+  const sheet = synthetic.render(id);
+  const page = '<title>A synthetic title</title><p class="lead">A synthetic lead</p>' + sheet;
+  const stripped = withoutQuotedRules(page, quotes, synthetic.rules.community.intro);
+  ok('UDWR sweep exception: synthetic rule text and bullet are escaped and verbatim on the page',
+    page.includes(esc(rule.text)) && page.includes(esc(rule.items[0])));
+  ok('UDWR sweep exception: quoted official/licensed text and bullet pass the wording sweep', wordingHits(stripped).length === 0);
+  ok('UDWR sweep exception: quoted now/today text and bullet pass the temporal sweep', !/\b(now|today|days left|tomorrow)\b/i.test(plain(stripped)));
+  for (const [where, html] of [
+    ['lead', '<p class="lead">official licensed</p>'],
+    ['title', '<title>official licensed</title>'],
+    ['index', '<li><a href="/fishing/waters/">official licensed</a></li>'],
+  ]) {
+    ok('UDWR sweep exception: official/licensed in a ' + where + ' still fail',
+      wordingHits(withoutQuotedRules(html + sheet, quotes)).length === 2);
+  }
+  rule.head = 'official licensed';
+  ok('UDWR sweep exception: official/licensed in rules[].head still fail',
+    wordingHits(withoutQuotedRules(synthetic.render(id), quotes)).length === 2);
+  ok('UDWR sweep exception: unprinted UDWR text exempts nothing, even an identical lead',
+    !sheet.includes(esc(unused)) && wordingHits(withoutQuotedRules('<p class="lead">' + esc(unused) + '</p>' + sheet, quotes)).length === 2);
+  for (const [where, html] of [
+    ['title', '<title>' + esc(rule.text) + '</title>'],
+    ['head', '<span class="ftopic">' + esc(rule.text) + '</span>'],
+    ['index', '<li>' + esc(rule.items[0]) + '</li>'],
+  ]) {
+    ok('UDWR sweep exception: an identical quote in a Ranger Hawk ' + where + ' still fails',
+      wordingHits(withoutQuotedRules(html + sheet, quotes)).length === 2);
+  }
+  const collected = new Set(RULE_FIELDS.map(f => f.field));
+  ok('UDWR sweep exception: items, notes, intro and both table arrays are collected',
+    ['statewide.rules[7].items[1]', 'community.notes[0].text', 'community.intro', 'rows[0].name', 'statewide.limits[0].limit'].every(f => collected.has(f)));
+  ok('UDWR sweep exception: emergency and spearfishing rule text stays covered',
+    ['amendments[0].rules[0].text', 'spear.general[0].text', 'spear.sections[2].entries[2].rules[0].text'].every(f => collected.has(f)));
+  ok('UDWR sweep exception: no rules[].head receives an exemption', RULE_FIELDS.every(f => !f.field.endsWith('.head')));
+}
 
 /* ---------------------------------------- pages drawn by the fishing renderer */
 {
@@ -490,25 +570,24 @@ for (const p of ALL_PAGES) {
 
 /* ------------------------------------------------------------- wording sweep */
 {
-  const WORDS = /\b(official(?:ly)?|verified|licensed|endorsed|certified|guarantee[ds]?)\b/gi;
   const NEGATION = 'not part of, or endorsed by';   // the disclaimer; the FAQ answers say it without the comma and are allowed the same way
   const sources = [];
   const walk = (v, p) => { if (typeof v === 'string') sources.push(['content.js ' + p, v]); else if (Array.isArray(v)) v.forEach((x, i) => walk(x, p + '[' + i + ']')); else if (v && typeof v === 'object') Object.keys(v).forEach(k => walk(v[k], p + '.' + k)); };
   walk(C, '');
   ['index.html', '404.html', 'sitemap.xml', 'llms.txt', 'manifest.webmanifest'].concat(STATIC.map(d => fileOf(d.c.path))).forEach(f => sources.push([f, read(f)]));
   FISH_FILES.forEach(f => sources.push([f, withoutQuotedRules(read(f))]));
-  for (const text of RULE_TEXTS) {
+  for (const { text, field, id } of RULE_FIELDS) {
     const words = [...text.matchAll(WORDS)].map(m => m[1]);
     if (!words.length) continue;
-    const quoted = FISH_FILES.filter(f => read(f).includes(esc(text)));
-    if (quoted.length) console.log('  UDWR verbatim wording exception: ' + words.join(', ') + ' | ' + text + '   [' + quoted.length + ' page' + (quoted.length === 1 ? '' : 's') + ': ' + quoted.slice(0, 3).join(', ') + (quoted.length > 3 ? ', ...' : '') + ']');
+    const quoted = FISH_FILES.filter(f => withoutQuotedRules(read(f), [text]) !== read(f));
+    if (quoted.length) console.log('  UDWR verbatim wording exception: ' + field + ' | rule id ' + (id || '(none)') + ' | ' + words.join(', ') + '   [' + quoted.length + ' page' + (quoted.length === 1 ? '' : 's') + ': ' + quoted.slice(0, 3).join(', ') + (quoted.length > 3 ? ', ...' : '') + ']');
   }
   const seen = new Map();
   const bad = [];
   for (const [name, text] of sources) {
+    const invalid = new Set(wordingHits(text).map(m => m.index));
     for (const m of text.matchAll(WORDS)) {
-      const at = m.index, word = m[1].toLowerCase();
-      const allowed = word === 'endorsed' && /not part of,? or endorsed by$/.test(text.slice(Math.max(0, at - 20), at + m[1].length + 3));
+      const at = m.index, allowed = !invalid.has(at);
       const ctx = text.slice(Math.max(0, at - 28), at + m[1].length + 18).replace(/\s+/g, ' ');
       const key = (allowed ? 'allowed' : 'FAIL') + ' | ' + ctx;
       if (!seen.has(key)) seen.set(key, []);
