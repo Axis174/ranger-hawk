@@ -73,7 +73,16 @@ vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.fParse = fPar
 vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
   '\n;this.T = { set(r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); }, fUtah, fNow, fDayAfter, fFlip, fStale, fOpens, fPlaceChips, fPlaceRes, fGroupsFor, fSpearFor, fKokaneeNow, fStatewideHtml, fishRun, fDrive, fTokens, FTWIN: () => FTWIN, linked: () => FLINKED, fPoint, fSpan, fResolve, fSummary, fAmendState, fNotices, fishParse, fishWaterIn, fishMatches, fRuleNow, fHeld, fUnreadFor, fChips, fEdition, fStanding, fish, FW: () => FW, FAM: () => FAM, FPL: () => FPL, vFish, sheetFishWater, sheetFishPlace, cardFish, fishAnswer, fHuntOffer, F_FISH, fWaterNames: () => { fWaterNames(); return [fNames, fShort]; } };', box);
 const T = box.T;
-const R = load('fishing_rules.json'), P = load('fishing_places.json'), N = load('fishing_notices.json');
+const R = load('fishing_rules.json'), P = load('fishing_places.json'), NRAW = load('fishing_notices.json');
+/* N is UDWR's list as the rules were built from it. A notice nobody has read in yet is
+   taken out, and the list's hash put back, so that every check below that starts from
+   "an ordinary day" does not depend on whether tonight's run found a new notice. The
+   unread notices themselves are checked on NRAW, in "an unread notice is surfaced" below. */
+const N = (() => {
+  const built = new Set(R.amendments.map(a => a.notice)), n = JSON.parse(JSON.stringify(NRAW));
+  if (n.notices.some(x => !built.has(x.slug))) { n.notices = n.notices.filter(x => built.has(x.slug)); n.sha = R._notices_sha; }
+  return n;
+})();
 T.set(R, P, N);
 
 let pass = 0, fail = 0;
@@ -220,7 +229,28 @@ box.T.fish.now = null;
 ok('Jan. 1, 2027 is late', T.fEdition(at('2027-01-01T00:05')).late, true);
 
 /* ---- what UDWR lists against what has been read in */
-ok('nothing unread today', T.fNotices().unread.length, 0);
+/* An unread notice is surfaced, not a failure. It does not hold the nightly refresh: the app
+   shows the old rule marked as not built in, and scraper/refresh.py lists the notice
+   in the changelog's run entry and prints a NOTICE UNREAD line. What does fail is a
+   notice that is unread and missing from that entry, so it cannot be dropped quietly. */
+{
+  const built = new Set(R.amendments.map(a => a.notice));
+  const unreadNow = NRAW.notices.filter(n => !built.has(n.slug)).map(n => n.slug).sort();
+  T.set(R, P, NRAW);
+  ok('the app and the refresh job agree on which notices are unread', T.fNotices().unread.map(n => n.slug).sort(), unreadNow);
+  T.set(R, P, N);
+  const run0 = (load('changelog.json').runs || [])[0] || {}, listed = run0.unread_notices;
+  ok('the latest changelog run lists unread notices in the right shape (or, in an entry written before the field existed, there are none to list)',
+    listed === undefined ? unreadNow.length === 0 : Array.isArray(listed) && listed.every(u => u && typeof u.slug === 'string' && typeof u.title === 'string' && /^https:\/\//.test(u.url) && typeof u.first_seen === 'string'), true);
+  ok('every unread notice is in the latest changelog run entry', unreadNow.filter(s => !(listed || []).some(u => u.slug === s)), []);
+  ok('...and the entry names no notice UDWR does not list', (listed || []).filter(u => !NRAW.notices.some(n => n.slug === u.slug)).map(u => u.slug), []);
+  /* The job-log line and the list builder, run for real on made-up input. */
+  const { spawnSync } = require('child_process');
+  const py = spawnSync('python3', ['-I', '-c', 'import sys, json; sys.path.insert(0, sys.argv[1]); import fishing_notices as F; print(json.dumps(F.unread(json.loads(sys.argv[2]), set(json.loads(sys.argv[3])))))', path.join(ROOT, 'scraper'),
+    JSON.stringify([{ slug: 'a', title: 'A (X County)', url: 'https://wildlife.utah.gov/a.pdf', first_seen: '2026-10-11' }, { slug: 'b', title: 'B', url: 'https://wildlife.utah.gov/b.pdf' }]), JSON.stringify(['b'])], { encoding: 'utf8' });
+  ok('refresh.py builds the unread list from the notices and the built slugs', py.status === 0 && JSON.parse(py.stdout), [{ slug: 'a', title: 'A (X County)', url: 'https://wildlife.utah.gov/a.pdf', first_seen: '2026-10-11' }]);
+  ok('refresh.py prints one NOTICE UNREAD line per unread notice', /for u in report\["unread_notices"\]:\s+print\(f"NOTICE UNREAD: \{u\['title'\]\} \{u\['first_seen'\]\} \{u\['url'\]\}"\)/.test(fs.readFileSync(path.join(ROOT, 'scraper', 'refresh.py'), 'utf8')), true);
+}
 const N2 = JSON.parse(JSON.stringify(N));
 N2.notices.push({ slug: 'emergency-change-2026-10-02-test-lake', title: 'Test Lake (Wayne County)', name: 'Test Lake', county: 'Wayne', text: [['p', 'x']], sha: 'x', url: 'https://wildlife.utah.gov/x.pdf' });
 N2.notices = N2.notices.filter(n => !/pineview/.test(n.slug));

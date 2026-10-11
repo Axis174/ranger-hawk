@@ -230,3 +230,17 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
         n["sha"] = digest(whole)
     whole = " ".join(t for ln in px.lines for t in [ln["txt"]] + [l[0] for l in ln["links"]])
     return {"ok": True, "error": None, "sha": digest(whole), "notices": notices, "other": other}
+
+
+def unread(notices, built):
+    """Notices UDWR lists that no amendment in the built rules answers to.
+
+    `built` is the set of notice slugs found in docs/data/ut/fishing_rules.json,
+    the same test the app makes (docs/fishing.js fNotices). An unread notice does
+    not stop the daily refresh: the app shows the old rule, marked as not yet built
+    in, until a person reads the notice into scraper/fishing/amendments.json. This
+    list is what the job log and the changelog's run entry carry so it is not missed.
+    """
+    return [{"slug": n["slug"], "title": n.get("title") or n["slug"],
+             "url": n.get("url", ""), "first_seen": n.get("first_seen", "")}
+            for n in notices if n["slug"] not in built]

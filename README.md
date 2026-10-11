@@ -397,8 +397,9 @@ rules."
 
 ### Keeping it current
 
-**When UDWR posts an emergency change** (the daily run reports it, and the app
-shows it as unread): read the signed notice, add an entry to
+**When UDWR posts an emergency change** (the daily run prints a `NOTICE UNREAD:`
+line in the job log and lists it under `unread_notices` in the changelog's run
+entry, and the app shows it as unread; the rest of the refresh is not held): read the signed notice, add an entry to
 `scraper/fishing/amendments.json`, then
 
     python3 scraper/build_fishing.py

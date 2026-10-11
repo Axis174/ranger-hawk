@@ -262,6 +262,14 @@ for (const p of ALL_PAGES) {
   ok('llms.txt: no raw data files linked, no {placeholder}', !/data\/ut|\.json|\.pmtiles/.test(t) && !/\{[A-Za-z_][A-Za-z0-9_]*\}/.test(t));
 }
 
+/* ------------------------------------- what the pages say an unread notice does */
+{
+  const fish = read('fishing/index.html').replace(/<[^>]+>/g, ' '), t = read('llms.txt');
+  ok('fishing page: a new emergency change is flagged and shown unread, and the rest keeps refreshing', /flagged in the job.s log and shown in the app as unread/.test(fish) && /rest of the data keeps refreshing every night/.test(fish));
+  ok('llms.txt says the same', /flagged in the job.s log and shown in the app as unread/.test(t) && /rest of the data keeps refreshing every night/.test(t));
+  ok('no page says a new emergency change holds the day\'s update', !/emergency change[^.;]*holds the day/.test(fish) && !/emergency change[^.;]*holds the day/.test(t) && !/Either one holds/.test(fish));
+}
+
 /* ----------------------------------------------------------------- robots.txt */
 {
   ok('robots.txt: exists', exists('robots.txt'));

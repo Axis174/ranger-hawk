@@ -19,7 +19,7 @@ UA = {"User-Agent": "ranger-hawk/1.0 (personal hunting reference; contact via re
 os.makedirs(DATA, exist_ok=True)
 
 report = {"run": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-          "changes": [], "errors": [], "ok": []}
+          "changes": [], "errors": [], "ok": [], "unread_notices": []}
 
 
 def get(url, tries=3, timeout=120, backoff=2):
@@ -243,7 +243,9 @@ if new_hashes:
 # Revisions list beside the Fishing Guidebook and keeps UDWR's words. It decides
 # nothing: a new notice reaches the phone the next morning word for word, marked
 # as not yet built into the rules, until a person has read it into
-# scraper/fishing/amendments.json and rebuilt. A page that cannot be read never
+# scraper/fishing/amendments.json and rebuilt. An unread notice does not hold the
+# rest of the refresh: it is listed in this run's changelog entry
+# ("unread_notices") and printed as NOTICE UNREAD lines at the end of the log. A page that cannot be read never
 # wipes the notices already held - it is recorded as a failed check instead, and
 # the app shows how long ago the list was last read successfully.
 try:
@@ -312,6 +314,11 @@ try:
         out.update({"ok": False, "error": got["error"], "last_ok": prev.get("last_ok"),
                     "sha": prev.get("sha"), "notices": prev.get("notices", []), "other": prev.get("other", [])})
     save("fishing_notices.json", out)
+    rules_now = load_prev("fishing_rules.json")
+    if rules_now and isinstance(rules_now.get("amendments"), list):
+        report["unread_notices"] = FN.unread(out["notices"], {a.get("notice") for a in rules_now["amendments"]})
+    else:
+        report["errors"].append({"source": "fishing_notices", "error": "fishing_rules.json unreadable, so unread notices could not be listed"})
 except Exception as e:                    # noqa: BLE001
     report["errors"].append({"source": "fishing_notices", "error": repr(e)[:200]})
 
@@ -609,3 +616,6 @@ for c in report["changes"]:
     print("  CHANGED:", c["source"], "-", c.get("desc", ""))
 for e in report["errors"]:
     print("  ERROR:  ", e["source"], "-", e["error"][:120])
+# One line per notice, easy to find in the job log. Not an error: the job goes on.
+for u in report["unread_notices"]:
+    print(f"NOTICE UNREAD: {u['title']} {u['first_seen']} {u['url']}")

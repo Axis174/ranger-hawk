@@ -89,7 +89,7 @@ const FISHING = {
     { h2: 'What opening a water shows',
       p: ['From the top down: anything wrong with the rules as a whole today, any closure or emergency change, the water’s own rules stretch by stretch, the statewide limits with the rows that apply marked, and the rules for groups of waters that may also cover it. Where the app cannot be sure which rule applies, it shows every candidate and says so.'] },
     { h2: 'Where the rules come from',
-      p: ['Rules come from Utah DWR’s fishing guidebook and the emergency changes Utah DWR posts beside it; places come from Utah DWR’s map layers. A job runs every day that watches for a new emergency change or a reissued guidebook. Either one holds the day’s update until a person has read it into the rules, and if the list of changes has not been checked for more than three days, the app says so. Signs at the water govern where a rule says “as posted”.'] },
+      p: ['Rules come from Utah DWR’s fishing guidebook and the emergency changes Utah DWR posts beside it; places come from Utah DWR’s map layers. A job runs every day that watches for a new emergency change or a reissued guidebook. A new emergency change is flagged in the job’s log and shown in the app as unread, word for word, until a person has read it into the rules; the rest of the data keeps refreshing every night. A reissued guidebook holds the day’s update until a person has checked it. If the list of changes has not been checked for more than three days, the app says so. Signs at the water govern where a rule says “as posted”.'] },
   ],
   faq: [
     { q: 'Where are the fishing rules for a particular Utah water?',
@@ -153,7 +153,7 @@ const ABOUT = {
 const LLMS = {
   details: [
     'Ranger Hawk is an installable web app (a PWA) for Utah only. It runs on the phone, keeps what the user enters on the phone, and has no account.',
-    'Fishing rule text is Utah DWR’s, word for word, shown with its source. Hunting season dates are copied by hand from Utah DWR’s guidebooks. A job runs every day that watches Utah DWR’s guidebooks, published results, emergency changes and map services; a new emergency change or a reissued guidebook holds the day’s update until a person has read it into the rules, and if the list of changes has not been checked for more than three days, the app says so. Where the app cannot be sure a rule applies, it says so rather than guessing.',
+    'Fishing rule text is Utah DWR’s, word for word, shown with its source. Hunting season dates are copied by hand from Utah DWR’s guidebooks. A job runs every day that watches Utah DWR’s guidebooks, published results, emergency changes and map services; a new emergency change is flagged in the job’s log and shown in the app as unread, word for word, until a person has read it into the rules, while the rest of the data keeps refreshing every night; a reissued guidebook holds the day’s update until a person has checked it; and if the list of changes has not been checked for more than three days, the app says so. Where the app cannot be sure a rule applies, it says so rather than guessing.',
     'It does not book trips, take payments or sell tags. The calendar feed of every deadline is at ' + SITE + '/hunt.ics.',
   ],
 };

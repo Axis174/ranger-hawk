@@ -72,6 +72,14 @@ jobs:
               out.append(f"\n**{len(run['errors'])} source(s) failed**\n")
               for e in run['errors']:
                   out.append(f"- `{e['source']}` — {e['error'][:160]}")
+          # An unread fishing notice does not stop the job: the app shows the old rule,
+          # marked as not built in. It is flagged here and in refresh.py's log lines.
+          unread = run.get('unread_notices') or []
+          if unread:
+              out.append(f"\n**{len(unread)} fishing notice(s) not yet read into the rules**\n")
+              for u in unread:
+                  out.append(f"- NOTICE UNREAD: {u['title']} {u['first_seen']} {u['url']}")
+                  print(f"::warning title=Fishing notice unread::{u['title']} {u['first_seen']} {u['url']}")
           txt = "\n".join(out)
           print(txt)
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
@@ -92,6 +100,9 @@ jobs:
       # Any red suite fails the step and the job stops here: nothing is committed
       # or deployed. (No continue-on-error, no if: always() on these or on the
       # commit step.)
+      # An unread fishing notice is not a red suite: it is listed in the run's
+      # changelog entry and printed as NOTICE UNREAD, and the rest of the data goes on
+      # refreshing. test_fishing.js fails only if such a notice is missing from that list.
       - name: Test the refreshed data
         run: |
           node scraper/test_go.js
