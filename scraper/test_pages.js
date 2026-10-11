@@ -16,6 +16,15 @@ const read = rel => fs.readFileSync(path.join(DOCS, rel), 'utf8');
 const exists = rel => fs.existsSync(path.join(DOCS, rel));
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const unesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+/* Stop the build on one Utah date even if the tests cross midnight. The builder
+   receives the date explicitly, so the determinism check is about that date's
+   pages rather than two separate readings of the clock. */
+const BUILD_DATE = (() => {
+  const p = {};
+  new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+  return p.year + '-' + p.month + '-' + p.day;
+})();
 
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {
@@ -25,18 +34,21 @@ function ok(name, cond, detail) {
 const short = s => { s = String(s); return s.length > 140 ? s.slice(0, 137) + '...' : s; };
 
 /* ---------------------------------------------------------------- build twice */
-let counts, site, built = {};
+let counts, site, fishing, generated, builtDate, built = {};
 try {
-  const first = B.build();
+  const first = B.build({ date: BUILD_DATE });
   counts = first.counts;
+  builtDate = first.date;
   const snap = {};
   first.files.forEach(f => { snap[f] = fs.readFileSync(path.join(ROOT, f)); });
-  const second = B.build();
+  const second = B.build({ date: BUILD_DATE });
   ok('the build writes the same files twice', JSON.stringify(first.files) === JSON.stringify(second.files));
   const differ = second.files.filter(f => !snap[f] || !snap[f].equals(fs.readFileSync(path.join(ROOT, f))));
   ok('the build is deterministic: a second run writes identical bytes', differ.length === 0, differ.join(', '));
   built = snap;
   site = B.loadSite();
+  fishing = B.loadFishing(BUILD_DATE);
+  generated = first.fishing;
 } catch (e) {
   console.log('  FAIL the build did not run: ' + e.message);
   console.log('0 passed, 1 failed');
@@ -88,6 +100,137 @@ const fileOf = p => p.replace(/^\/|\/$/g, '') + '/index.html';
 const DESC = d => fill(d.c.description || d.c.lead);
 const ALL_PAGES = [{ key: 'home', file: 'index.html', url: SITE + '/', title: C.HOME.title, desc: C.ONE_LINE }]
   .concat(STATIC.map(d => ({ key: d.key, file: fileOf(d.c.path), url: SITE + d.c.path, title: d.c.title, desc: DESC(d), d })));
+
+/* Expectations below come from the input fields. They deliberately do not use
+   fishingPages()'s lead, metadata or Source strings as their expected values. */
+const R = fishing.rules, P = fishing.places;
+const countyNames = e => (e.counties || [e.county]).concat((P.extra_counties || {})[e.id] || []);
+const keptChanges = (id, loader = fishing) => loader.rules.amendments.filter(a =>
+  (a.community ? 'community:' + a.community : a.water) === id && ['on', 'later'].includes(loader.amendState(a).k)
+).sort((a, b) => a.from.localeCompare(b.from));
+const longDate = iso => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d, 12).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+};
+const WATER_PAGES = R.waters.filter(w => w.kind === 'water' || (w.kind === 'notice' && keptChanges(w.id).length))
+  .map(w => ({ kind: w.kind, id: w.id, entry: w, path: '/fishing/waters/' + w.id + '/', page: w.page }));
+const TWIN_IDS = new Set(R.waters.filter(w => w.kind === 'water').map(w => w.id));
+const COMMUNITY_PAGES = R.community.members.filter(m => !TWIN_IDS.has(m.id))
+  .map(m => ({ kind: 'community', id: 'community:' + m.id, entry: m, path: '/fishing/community/' + m.id + '/', page: R.community.page }));
+const FISH_PAGES = WATER_PAGES.concat(COMMUNITY_PAGES);
+const FISH_FILES = ['fishing/waters/index.html'].concat(FISH_PAGES.map(p => fileOf(p.path)));
+const plain = html => unesc(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+/* Only values literally stored in a rules[] object's text field are excluded
+   from the wording sweep. Notes, introductions, labels, headings and prose do
+   not receive that exception. Longest first avoids a short quote masking only
+   part of a longer one. */
+const RULE_TEXTS = (() => {
+  const out = new Set();
+  const walk = v => {
+    if (!v || typeof v !== 'object') return;
+    if (Array.isArray(v.rules)) v.rules.forEach(r => { if (typeof r.text === 'string') out.add(r.text); });
+    if (Array.isArray(v)) v.forEach(walk); else Object.values(v).forEach(walk);
+  };
+  walk(R);
+  return [...out].sort((a, b) => b.length - a.length);
+})();
+const withoutQuotedRules = html => RULE_TEXTS.reduce((text, quote) => text.split(esc(quote)).join(' '), html);
+
+/* ---------------------------------------- pages drawn by the fishing renderer */
+{
+  const builtPaths = generated.pages.map(p => p.path).sort(), expectedPaths = FISH_PAGES.map(p => p.path).sort();
+  ok('water pages: exactly the data-selected water, notice and community paths', JSON.stringify(builtPaths) === JSON.stringify(expectedPaths));
+  ok('water pages: the build date is the explicit Utah date', BUILD_DATE === builtDate);
+  const byKind = kind => FISH_PAGES.filter(p => p.kind === kind).length;
+  console.log('  water pages: ' + byKind('water') + ' water, ' + byKind('notice') + ' notice, ' + byKind('community') + ' community; as of noon ' + BUILD_DATE);
+
+  for (const p of FISH_PAGES) {
+    const f = fileOf(p.path), n = p.id + ': ', e = p.entry, county = countyNames(e).join(', '), changes = keptChanges(p.id);
+    ok(n + 'the static page exists', exists(f));
+    if (!exists(f)) continue;
+    const html = read(f), text = plain(html), url = SITE + p.path;
+    const lead = p.kind === 'notice'
+      ? `${e.name}, ${county} County. The ${R._edition.year} Utah fishing guidebook has no entry of its own for this water; these are Utah DWR's emergency change for it and the statewide limits, as of noon, ${longDate(BUILD_DATE)}. Apart from the emergency change, the statewide rules apply.`
+      : `${e.name}, ${county} County. Utah DWR's rules for this ${p.kind === 'community' ? 'community fishing water' : 'water'} from the ${R._edition.year} Utah fishing guidebook, page ${p.page}, with the statewide limits and any emergency change in force, as of noon, ${longDate(BUILD_DATE)}.`;
+    let title = `${e.name} fishing rules, ${county} County, Utah | Ranger Hawk`;
+    if (title.length > 70) title = `${e.name} fishing rules, ${county} County | Ranger Hawk`;
+    let description = p.kind === 'notice'
+      ? `Utah DWR's emergency change for ${e.name} (${county} County), with the ${R._edition.year} statewide fishing limits.`
+      : `Utah DWR's ${R._edition.year} fishing rules for ${e.name} (${county} County): its own rules, the statewide limits and any emergency change in force.`;
+    if (description.length > 160) description = description.replace(` (${county} County)`, '');
+    ok(n + 'one guidebook-name h1 and the exact field-built lead', (html.match(/<h1>/g) || []).length === 1 && html.includes('<h1>' + esc(e.name) + '</h1>') && html.includes('<p class="lead">' + esc(lead) + '</p>'));
+    ok(n + 'the static sheet appears unchanged after the lead', html.includes(esc(lead) + '</p>\n' + fishing.render(p.id)));
+    ok(n + 'all own rules and stretch labels are escaped and verbatim', (e.reaches || []).every(reach => (reach.rules || []).every(rule => html.includes(esc(rule.text))) && (!reach.where || html.includes(esc(reach.where)))));
+    const member = R.community.members.find(m => m.id === e.id);
+    ok(n + 'community pages and the twin carry every shared rule and applicable note', !member || R.community.rules.concat((R.community.notes || []).filter(note => (note.members || []).includes(member.id))).every(rule => html.includes(esc(rule.text))));
+    const tables = [...html.matchAll(/<table class="flim(?: chg)?">([\s\S]*?)<\/table>/g)].map(m => m[1]).join('');
+    const rows = [...tables.matchAll(/<tr><td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)];
+    ok(n + 'all 22 statewide rows appear once with the statewide figure', rows.length === 22 && R.statewide.limits.every(l => rows.filter(row => row[1].startsWith(esc(l.name)) && plain(row[2]).replace(/^statewide: /, '') === l.limit).length === 1), rows.length + ' rows');
+    const temporal = plain(withoutQuotedRules(html)).match(/\b(now|today|days left|tomorrow|Last day today)\b/gi) || [];
+    ok(n + 'no relative clock wording outside verbatim rules', temporal.length === 0, temporal.join(', '));
+    ok(n + 'no buttons, app data attributes, external scripts or executable JavaScript', !/<button\b|\bdata-fw\b|\bdata-fp\b|<script[^>]*\bsrc\s*=/i.test(html) && (html.match(/<script\b[^>]*>/g) || []).every(t => t === '<script type="application/ld+json">'));
+    ok(n + 'no drive minutes, rule chips or reopening countdown lines', !/class="fchipline"|\b(?:min drive|minutes away|drive minutes|Last day open)\b|class="fdates">Opens\b/i.test(withoutQuotedRules(html)));
+    ok(n + 'title follows the field template and 70-character fallback', (html.match(/<title>/g) || []).length === 1 && html.includes('<title>' + esc(title) + '</title>'));
+    ok(n + 'description follows the field template and 160-character fallback', JSON.stringify(metaContent(html, 'name', 'description')) === JSON.stringify([description]));
+    ok(n + 'canonical and og:url are absolute and end in a slash', JSON.stringify(linkHrefs(html, 'canonical')) === JSON.stringify([url]) && JSON.stringify(metaContent(html, 'property', 'og:url')) === JSON.stringify([url]) && url.endsWith('/'));
+    ok(n + 'og:title, description and image match the hubs', metaContent(html, 'property', 'og:title')[0] === title && metaContent(html, 'property', 'og:description')[0] === description && metaContent(html, 'property', 'og:image')[0] === metaContent(read('fishing/index.html'), 'property', 'og:image')[0]);
+    let ld = [];
+    try { ld = ldBlocks(html).map(block => JSON.parse(block)); } catch (err) { ok(n + 'JSON-LD parses', false, err.message); }
+    const crumbs = ld[0] && ld[0].itemListElement;
+    ok(n + 'only BreadcrumbList structured data, Home > Fishing > Every water > water', ld.length === 1 && ld[0]['@context'] === 'https://schema.org' && ld[0]['@type'] === 'BreadcrumbList' && !!crumbs && JSON.stringify(crumbs.map(c => [c.position, c.name, c.item])) === JSON.stringify([[1, 'Home', SITE + '/'], [2, 'Fishing', SITE + '/fishing/'], [3, 'Every water', SITE + '/fishing/waters/'], [4, e.name, url]]));
+    ok(n + 'header, footer and disclaimer use the shared template', html.includes('<header class="bar">') && /<a class="brand" href="(?:\.\.\/){3}"><img/.test(html) && html.includes('<footer>') && html.includes(esc(C.DISCLAIMER)) && html.includes('<p>Sources last checked ' + refreshHuman + '.</p>'));
+    ok(n + 'every tag is closed and there are no placeholders', balanced(html) === '' && !/\{[A-Za-z_][A-Za-z0-9_]*\}/.test(html), balanced(html));
+    const sourceLines = [...html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/g)].filter(m => /^Source:/.test(plain(m[1])));
+    if (p.kind === 'notice') {
+      ok(n + 'notice lead has no page number and page has no guidebook-PDF link', !/\bpage \d+\b/i.test(lead) && !html.includes(esc(R._edition.pdf)));
+      ok(n + 'notice has one Source per kept change and no guidebook Source', sourceLines.length === changes.length);
+    } else {
+      ok(n + 'the guidebook Source links to the field page', sourceLines.some(m => m[1].includes('href="' + esc(R._edition.pdf + '#page=' + p.page) + '"')) && sourceLines.length === changes.length + 1);
+    }
+    ok(n + 'each kept change has its dated Source and escaped verbatim rules', changes.every(a => sourceLines.some(m => plain(m[1]) === `Source: Utah DWR emergency change, in force ${longDate(a.from)} through ${longDate(a.last_day)}` && m[1].includes('href="' + esc(a.url) + '"')) && a.rules.every(rule => html.includes(esc(rule.text)))));
+    ok(n + 'no ended change is cited', R.amendments.filter(a => fishing.amendState(a).k === 'ended').every(a => !sourceLines.some(m => m[1].includes('href="' + esc(a.url) + '"'))));
+    const deep = [...html.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>Open this water in Ranger Hawk<\/a>/g)].map(m => new URL(unesc(m[1]), url));
+    ok(n + 'Open this water links to its known app id after the Sources', deep.length === 1 && deep[0].origin === SITE && deep[0].pathname === '/' && deep[0].searchParams.get('water') === p.id && html.lastIndexOf('Source:') < html.lastIndexOf('Open this water in Ranger Hawk'));
+  }
+}
+
+/* ------------------------------------------------------ every-water A-Z index */
+{
+  const html = read('fishing/waters/index.html'), items = [...html.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map(m => m[1]);
+  const targetPath = w => '/fishing/waters/' + (w.kind === 'pointer' ? w.see.water : w.id) + '/';
+  const indexItems = R.waters.map(w => ({ entry: w, path: w.kind === 'notice' && !keptChanges(w.id).length ? null : targetPath(w) }))
+    .concat(R.community.members.map(m => ({ entry: m, path: TWIN_IDS.has(m.id) ? '/fishing/waters/' + m.id + '/' : '/fishing/community/' + m.id + '/' })));
+  ok('water index: every entry and community member is named with its county and expected link', indexItems.every(({ entry, path: href }) => items.some(item => item.includes(esc(entry.name)) && countyNames(entry).every(c => item.includes(esc(c))) && (href ? item.includes('href="' + href + '"') : !/<a\b/.test(item)))));
+  ok('water index: pointers have no page and link to their named target stretches', R.waters.filter(w => w.kind === 'pointer').every(w => !exists('fishing/waters/' + w.id + '/index.html') && items.some(item => item.includes(esc(w.name)) && item.includes('href="' + targetPath(w) + '"') && (w.see.reaches || []).every(key => {
+    const target = R.waters.find(x => x.id === w.see.water), reach = target.reaches.find(r => r.key === key);
+    return !reach.where || item.includes(esc(reach.where));
+  }))));
+  const burraston = 'burraston-ponds-juab';
+  ok('water index: Burraston Ponds has exactly one page, at its water path', exists('fishing/waters/' + burraston + '/index.html') && !exists('fishing/community/' + burraston + '/index.html') && FISH_PAGES.filter(p => p.entry.id === burraston).length === 1);
+  const letters = [...html.matchAll(/<h2[^>]*>([A-Z])<\/h2>/g)].map(m => m[1]);
+  const expectedLetters = [...new Set(indexItems.map(p => p.entry.name[0].toUpperCase()))].sort();
+  ok('water index: alphabetical letter headings', JSON.stringify(letters) === JSON.stringify(expectedLetters));
+  const listBody = (html.match(/<main>([\s\S]*?)<\/main>/) || [])[1] || '';
+  const names = [...listBody.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).split(' — ')[0]);
+  const expectedNames = indexItems.map(p => p.entry.name).sort((a, b) => a.localeCompare(b, 'en-US'));
+  ok('water index: every name occurs A to Z', JSON.stringify(names) === JSON.stringify(expectedNames));
+  ok('water index: hub links Every water, A to Z', read('fishing/index.html').includes('Every water, A to Z') && read('fishing/index.html').includes('href="/fishing/waters/"'));
+  ok('water index: one h1, shared disclaimer, no buttons or external scripts', (html.match(/<h1>/g) || []).length === 1 && html.includes(esc(C.DISCLAIMER)) && !/<button\b|<script[^>]*\bsrc=/i.test(html));
+}
+
+/* ----------------------------------- the packet's Oct. 9 notice-only example */
+{
+  try {
+    const onOct9 = B.loadFishing('2026-10-09'), output = B.build({ date: '2026-10-09' });
+    for (const [id, example] of [['red-creek-reservoir-duchesne', true], ['crouse-reservoir-uintah', true], ['vernon-reservoir-tooele', false]]) {
+      const selected = keptChanges(id, onOct9).length > 0;
+      if (selected !== example) console.log('  packet notice fact differs from data: ' + id + ' page=' + selected + ' on 2026-10-09 (packet ' + example + ')');
+      ok('Oct. 9 notice example: ' + id + ' follows actual fAmendState data', output.fishing.pages.some(p => p.id === id) === selected && exists('fishing/waters/' + id + '/index.html') === selected);
+    }
+  } catch (err) { ok('Oct. 9 notice example build succeeds', false, err.message); }
+  finally { B.build({ date: BUILD_DATE }); }
+  ok('notice example restores every current-date build byte', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
+}
 
 /* ------------------------------------------------- every page: head and body */
 for (const p of ALL_PAGES) {
@@ -214,7 +357,8 @@ for (const p of ALL_PAGES) {
 
 /* ---------------------------- every internal link and file reference resolves */
 {
-  const pages = ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)));
+  const pages = ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)), FISH_FILES);
+  const knownIds = new Set(R.waters.map(w => w.id).concat(R.community.members.map(m => 'community:' + m.id)));
   const bad = [];
   for (const f of pages) {
     const base = f === 'index.html' ? SITE + '/' : f === '404.html' ? SITE + '/404.html' : SITE + '/' + f.replace(/index\.html$/, '');
@@ -223,6 +367,7 @@ for (const p of ALL_PAGES) {
       if (/^(mailto:|tel:|data:|#|javascript:)/.test(u)) continue;
       const abs = new URL(u, base);
       if (abs.origin !== SITE) continue;
+      if (abs.searchParams.has('water') && (abs.pathname !== '/' || !knownIds.has(abs.searchParams.get('water')))) bad.push(f + ' -> unknown app water ' + u);
       if (!exists(fileForUrl(abs.href))) bad.push(f + ' -> ' + u);
     }
   }
@@ -234,7 +379,7 @@ for (const p of ALL_PAGES) {
 {
   const x = read('sitemap.xml');
   const rows = [...x.matchAll(/<url><loc>([^<]+)<\/loc>(<lastmod>([^<]+)<\/lastmod>)?<\/url>/g)].map(m => ({ loc: m[1], lastmod: m[3] || null }));
-  const want = ['/'].concat(STATIC.map(d => d.c.path)).map(p => SITE + p);
+  const want = ['/'].concat(STATIC.map(d => d.c.path), ['/fishing/waters/'], generated.pages.map(p => p.path)).map(p => SITE + p);
   ok('sitemap: lists exactly the built pages, home first', JSON.stringify(rows.map(r => r.loc)) === JSON.stringify(want), rows.map(r => r.loc).join(' '));
   ok('sitemap: a valid urlset', x.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') && x.trimEnd().endsWith('</urlset>') && (x.match(/<url>/g) || []).length === rows.length);
   ok('sitemap: no lastmod anywhere (the daily footer date is not a significant update)', !/lastmod/.test(x) && rows.every(r => r.lastmod === null));
@@ -251,10 +396,11 @@ for (const p of ALL_PAGES) {
   ok('llms.txt: sections are Pages, Sources, Optional', JSON.stringify(heads) === JSON.stringify(['Pages', 'Sources', 'Optional']), heads.join(','));
   const pagesSec = (t.match(/## Pages\n\n([\s\S]*?)\n\n## Sources/) || [])[1] || '';
   const pageLines = pagesSec.split('\n');
-  ok('llms.txt: each page is "- [label](absolute url): its description"', pageLines.length === STATIC.length && STATIC.every((d, i) => {
+  ok('llms.txt: each page is "- [label](absolute url): its description"', pageLines.length === STATIC.length + 1 && STATIC.every((d, i) => {
     const m = pageLines[i].match(/^- \[([^\]]+)\]\((https:\/\/[^)]+)\): (.+)$/);
     return !!m && m[2] === SITE + d.c.path && m[3] === DESC({ c: d.c });
   }), pagesSec);
+  ok('llms.txt: the index is the only additional fishing page under Pages', pageLines.filter(line => line.includes(SITE + '/fishing/waters/')).length === 1 && pageLines.some(line => line.includes('- [Every water, A to Z](' + SITE + '/fishing/waters/): ')) && !/\/fishing\/(?:waters|community)\/[a-z0-9-]+\//.test(pagesSec));
   ok('llms.txt: Sources lists every source', C.SOURCES.every(s => t.includes('- [' + s.label + '](' + s.url + ')')));
   ok('llms.txt: Optional has the calendar feed', t.includes('## Optional\n\n- [Calendar feed (hunt.ics)](' + SITE + '/hunt.ics): every Utah hunting deadline as a calendar feed\n'));
   const links = [...t.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map(m => m[1]).filter(u => u.startsWith(SITE));
@@ -339,7 +485,7 @@ for (const p of ALL_PAGES) {
   const siteSrc = fs.readFileSync(path.join(DOCS, 'site.js'), 'utf8');
   ok('DISCLAIMER occurs verbatim in docs/site.js', siteSrc.includes(C.DISCLAIMER));
   ok('DISCLAIMER occurs verbatim in vMoney() output', site.money.includes(C.DISCLAIMER));
-  ok('every built page carries the DISCLAIMER verbatim (as HTML text)', ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path))).every(f => read(f).includes(esc(C.DISCLAIMER))));
+  ok('every built page carries the DISCLAIMER verbatim (as HTML text)', ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)), FISH_FILES).every(f => read(f).includes(esc(C.DISCLAIMER))));
 }
 
 /* ------------------------------------------------------------- wording sweep */
@@ -350,6 +496,13 @@ for (const p of ALL_PAGES) {
   const walk = (v, p) => { if (typeof v === 'string') sources.push(['content.js ' + p, v]); else if (Array.isArray(v)) v.forEach((x, i) => walk(x, p + '[' + i + ']')); else if (v && typeof v === 'object') Object.keys(v).forEach(k => walk(v[k], p + '.' + k)); };
   walk(C, '');
   ['index.html', '404.html', 'sitemap.xml', 'llms.txt', 'manifest.webmanifest'].concat(STATIC.map(d => fileOf(d.c.path))).forEach(f => sources.push([f, read(f)]));
+  FISH_FILES.forEach(f => sources.push([f, withoutQuotedRules(read(f))]));
+  for (const text of RULE_TEXTS) {
+    const words = [...text.matchAll(WORDS)].map(m => m[1]);
+    if (!words.length) continue;
+    const quoted = FISH_FILES.filter(f => read(f).includes(esc(text)));
+    if (quoted.length) console.log('  UDWR verbatim wording exception: ' + words.join(', ') + ' | ' + text + '   [' + quoted.length + ' page' + (quoted.length === 1 ? '' : 's') + ': ' + quoted.slice(0, 3).join(', ') + (quoted.length > 3 ? ', ...' : '') + ']');
+  }
   const seen = new Map();
   const bad = [];
   for (const [name, text] of sources) {

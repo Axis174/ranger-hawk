@@ -8,7 +8,7 @@ const DAY = 86400000;
 const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
 const d0 = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const days = (a, b) => Math.round((b - a) / DAY);
-const fmt = d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const fmt = d => d.toLocaleDateString(typeof fish !== 'undefined' && fish.static ? 'en-US' : undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const GC = { bird: 'var(--bird)', deer: 'var(--deer)', elk: 'var(--elk)', turkey: 'var(--turkey)', smallgame: 'var(--small)' };
 
 let DB = { birds: [], seasons: null, config: null, community: null, lake: null, snow: null };
@@ -1054,6 +1054,7 @@ window.addEventListener('offline', net);
 load().then(ok => {
   if (!ok) return;
   render(); net();
+  if (typeof fWaterParam === 'function' && fWaterParam()) fishLoad();
   import('./vendor/suncalc.js').then(m => { SUN = m; if (tab === 'today') render(); }).catch(() => { /* no legal-light card */ });
 });
 /* Register the worker, and when a new one takes over, reload once so the

@@ -33,8 +33,29 @@
 'use strict';
 
 let FR = null, FP = null, FNT = null, fishState = 'idle';
-let fish = { mode: 'near', q: '', parsed: null, county: '', show: 12 };
+let fish = { mode: 'near', q: '', parsed: null, county: '', show: 12, static: false };
 try { fish.mode = localStorage.getItem('ha.fishmode') || 'near'; } catch (e) { /* private mode */ }
+
+/* A water link is read once, and opened only after the rules have arrived. */
+let fishWaterRead = false, fishWaterParam = null, fishWaterOpened = false;
+function fWaterParam() {
+  if (fish.static) return null;
+  if (!fishWaterRead) {
+    fishWaterRead = true;
+    try { fishWaterParam = new URLSearchParams(location.search).get('water'); }
+    catch (e) { /* no location in the page builder */ }
+  }
+  return fishWaterParam;
+}
+function fishOpenWaterLink() {
+  if (fish.static || !FR || fishWaterOpened) return false;
+  const id = fWaterParam();
+  if (!id || (!Object.prototype.hasOwnProperty.call(FW, id) && !Object.prototype.hasOwnProperty.call(FCOM, id))) return false;
+  fishWaterOpened = true;
+  tab = 'fish'; render();
+  openSheet(sheetFishWater(id));
+  return true;
+}
 
 let fishTried = 0;
 const F_NOPLACES = () => ({ places: [], extra_counties: {}, no_place: {}, missing: true });
@@ -43,7 +64,7 @@ function fishLoad(again) {
   if (fishState === 'failed' && !again && Date.now() - fishTried < 20000) return;   // a failed load is tried again, but not in a loop
   fishState = 'loading'; fishTried = Date.now();
   const grab = f => fetch('data/' + STATE + '/' + f, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => (j && !j.offline ? j : null)).catch(() => null);
-  Promise.all([grab('fishing_rules.json'), grab('fishing_places.json'), grab('fishing_notices.json')]).then(([r, p, n]) => {
+  return Promise.all([grab('fishing_rules.json'), grab('fishing_places.json'), grab('fishing_notices.json')]).then(([r, p, n]) => {
     FR = (r && r.waters && r.statewide && r.community && r._edition) ? r : null;
     FP = p && Array.isArray(p.places) ? p : F_NOPLACES();
     FNT = n;
@@ -56,6 +77,7 @@ function fishLoad(again) {
        home" from the Menu) is run by vFish, so only when the Fish screen is showing:
        never a location prompt or a redraw on another screen. */
     if (tab === 'fish' || tab === 'today' || (tab === 'seasons' && typeof seasonsMode !== 'undefined' && seasonsMode === 'find')) render();
+    fishOpenWaterLink();
   });
 }
 if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('online', () => { if (fishState === 'failed') fishLoad(true); });
@@ -139,7 +161,7 @@ function fSpan(span, now) {
   return { on: wraps ? (now >= a || now < b) : (now >= a && now < b), a, b, wraps };
 }
 const fAnyOn = (spans, now) => (spans || []).some(s => fSpan(s, now).on);
-const fWhen = d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) +
+const fWhen = d => d.toLocaleDateString(fish.static ? 'en-US' : undefined, { month: fish.static ? 'long' : 'short', day: 'numeric', year: 'numeric' }) +
   ((d.getHours() === 6 && d.getMinutes() === 0) ? ', 6 a.m.' : '');
 const fDay = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const fDayAfter = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d + 1); };   // not "+ 24 hours": some days are 23 or 25 hours long
@@ -320,6 +342,7 @@ function fStanding(rules, now, gone, over) {
 }
 const F_BOAT = { motor: 'No motors', none: 'No boats or float tubes', shore: 'Shore only', wakeless: 'Wakeless' };
 function fChips(s, am, res) {
+  if (fish.static) return [];
   if (FR && !fEdition(fNow()).current) return [['crit', 'Rules out of date']];
   const c = [];
   if (res && res.unread && res.unread.length) c.push(['crit', 'New notice - not built in']);
@@ -452,14 +475,16 @@ function fRuleHtml(ru, now, gone, byChange) {
   else if (st.unsorted) tag = '<span class="state crit">Not sorted - read it</span>';
   else if (!fEdition(now).current) tag = '';          // nothing is worked out from last year's dates
   else if (byChange && (ru.fx || []).some(fShuts)) tag = '<span class="state crit">Closed by the change above</span>';
-  else if (spans && (ru.fx || []).some(fx => fx.open)) tag = `<span class="state ${fAnyOn(spans, now) ? (st.day ? 'soon' : 'open') : 'crit'}">${fAnyOn(spans, now) ? (st.day ? 'Open today, daylight hours only' : 'Open now') : 'Closed now'}</span>`;
-  else if (st.dated) { if (st.on) tag = '<span class="state soon">In force today</span>'; else { cls += ' off'; tag = '<span class="state shut">Not today</span>'; } }
+  else if (!fish.static && spans && (ru.fx || []).some(fx => fx.open)) tag = `<span class="state ${fAnyOn(spans, now) ? (st.day ? 'soon' : 'open') : 'crit'}">${fAnyOn(spans, now) ? (st.day ? 'Open today, daylight hours only' : 'Open now') : 'Closed now'}</span>`;
+  else if (!fish.static && st.dated) { if (st.on) tag = '<span class="state soon">In force today</span>'; else { cls += ' off'; tag = '<span class="state shut">Not today</span>'; } }
   const dates = spans ? `<span class="fdates">${esc(fSpansText(spans))}</span>` : '';
   const items = (ru.items || []).length ? '<ul>' + ru.items.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>' : '';
   return `<div class="${cls}"><span class="ftopic">${esc(F_TOPIC[topic] || topic)}</span><span class="ftext">${esc(ru.text)}${items}${dates}</span>${tag ? `<span class="ftag">${tag}</span>` : ''}</div>`;
 }
 function fChangeHtml(c, now) {
+  if (fish.static && c.st.k !== 'on' && c.st.k !== 'later') return '';
   const a = c.a, on = c.st.k === 'on';
+  const status = fish.static ? (on ? 'In force through ' + fWhen(fDay(a.last_day)) : 'Starts ' + fWhen(fDay(a.from))) : c.st.txt;
   const end = new Date(fDay(a.last_day).getTime());
   let why = c.st.why === 'dates' ? `<div class="warnbox fbad" style="margin:0;border-radius:0"><b>The app could not read the dates of this change,</b> so it has not applied it. The guidebook rule is shown.</div>`
     : c.st.why ? `<div class="warnbox fbad" style="margin:0;border-radius:0"><b>${c.st.why === 'gone' ? 'UDWR no longer lists this notice.' : 'UDWR has reworded this notice since it was read in.'}</b>
@@ -468,7 +493,7 @@ function fChangeHtml(c, now) {
     ${c.st.k === 'lent' ? 'The change loosens a rule, so the app has <b>not applied it here</b>: the guidebook rule below is the safer reading.' : on ? 'The change tightens a rule, so the app shows it as in force here, which is the safer reading.' : ''} Read the notice to see what it covers.</div>`;
   const st = fStanding(a.rules, now, null), chips = on ? fChips(Object.assign({}, st, { keeps: false }), false) : [];
   return `<div class="fchange ${on ? 'on' : 'off'}">
-    <div class="fch"><b>Emergency change${on ? '' : c.st.k === 'ended' ? ' - ended' : c.st.k === 'held' ? ' - set aside' : c.st.k === 'lent' ? ' - not applied here' : ' - not yet in force'}</b><span class="state ${on ? 'crit' : 'shut'}">${esc(c.st.txt)}</span></div>${why}
+    <div class="fch"><b>Emergency change${on ? '' : c.st.k === 'ended' ? ' - ended' : c.st.k === 'held' ? ' - set aside' : c.st.k === 'lent' ? ' - not applied here' : ' - not yet in force'}</b><span class="state ${on ? 'crit' : 'shut'}">${esc(status)}</span></div>${why}
     ${chips.length ? `<div class="fchipline" style="padding:8px 12px 0">${fChipHtml(chips)}</div>` : ''}
     ${a.rules.map(r => `<div class="frule"><span class="ftopic">${esc(F_TOPIC[(r.fx[0] || {}).t] || '')}</span><span class="ftext">${esc(r.text)}</span>${(r.fx || []).some(fx => fx.t === 'unsorted') ? '<span class="ftag"><span class="state crit">Not sorted - read it</span></span>' : ''}</div>`).join('')}
     ${a.also ? `<div class="frule"><span class="ftopic">Stays</span><span class="ftext">${esc(a.also)}</span></div>` : ''}
@@ -484,7 +509,7 @@ function fChangeHtml(c, now) {
    statewide figure has to stay in view beside them. */
 const F_WHO = { change: 'emergency change', own: 'rule above', group: 'community rule' };
 function fStatewideHtml(res, maybe) {
-  const L = FR.statewide.limits.filter(l => l.row !== 'community' && l.row !== 'kokanee');
+  const L = fish.static ? FR.statewide.limits : FR.statewide.limits.filter(l => l.row !== 'community' && l.row !== 'kokanee');
   if (!fEdition(fNow()).current) return `<p class="fine" style="padding:10px 16px 0"><b>As printed for ${esc(FR._edition.year)}.</b> The app does not say which of these a rule above changes, because that depends on dates in a year that is over.</p>
       <table class="flim chg">${L.map(l => `<tr><td>${esc(l.name)}</td><td>${esc(l.limit)}</td></tr>`).join('')}</table>`;
   const taken = res ? res.rows : {}, all = !!(res && res.all), none = !res;
@@ -496,7 +521,7 @@ function fStatewideHtml(res, maybe) {
       <table class="flim chg">${set.map(l => { const nm = (res.named || {})[l.row] || [];
         return `<tr><td>${esc(l.name)}<span class="fdates">see the ${esc(F_WHO[taken[l.row] || (res.change.all ? 'change' : 'own')] || 'rule above')}${nm.length ? ', which names ' + esc(nm.join(', ')) : ''}</span></td><td>statewide: ${esc(l.limit)}</td></tr>`; }).join('')}</table>`;
   }
-  if (res && res.later) h += `<p class="fine" style="padding:6px 16px 0">A dated rule above is not in force today. When it starts, it takes precedence for the fish it names.</p>`;
+  if (res && res.later) h += `<p class="fine" style="padding:6px 16px 0">${fish.static ? 'A dated rule above is outside its stated dates. Read the dates beside the rule.' : 'A dated rule above is not in force today. When it starts, it takes precedence for the fish it names.'}</p>`;
   if (keep.length) h += `<p class="fine" style="padding:10px 16px 0"><b>${none ? 'Statewide limits.' : 'Unchanged here.'}</b> ${none ? '' : 'No rule above names these fish, so the statewide limit applies.'}</p>
       <table class="flim">${keep.map(l => `<tr><td>${esc(l.name)}${maybe && maybe[l.row] ? '<span class="fdates">a group rule below may change this</span>' : ''}</td><td>${esc(l.limit)}</td></tr>`).join('')}</table>`;
   return h;
@@ -600,6 +625,7 @@ function fSpearHtml(list, id, opened) {
 /* "Opens May 2", "Closes Nov 1", or nothing. A date in a later year than the
    guidebook's is never printed: next year's guidebook sets it, not this one. */
 function fOpens(st, now) {
+  if (fish.static) return '';
   if (!fEdition(now).current) return '';
   const y = FR._edition.year;
   if (st.closed) {
@@ -614,6 +640,8 @@ function fOpens(st, now) {
   return '';
 }
 function fLayerHtml(l, now, gone, res) {
+  if (fish.static && l.kind === 'see') return `<div class="fstretch"><div class="fwhere">${l.key ? '(' + esc(l.key) + ') ' : ''}${esc(l.where || '')}</div>
+    <a class="row" href="${esc(fWaterPath(l.see))}" style="--g:var(--accent)"><span class="pill"></span><span><span class="t">See ${esc((FW[l.see] || {}).name || '')}</span><span class="s">The guidebook points there for this stretch</span></span><span class="v">&rsaquo;</span></a></div>`;
   if (l.kind === 'see') return `<div class="fstretch"><div class="fwhere">${l.key ? '(' + esc(l.key) + ') ' : ''}${esc(l.where || '')}</div>
     <button class="row" data-fw="${esc(l.see)}" style="--g:var(--accent)"><span class="pill"></span><span><span class="t">See ${esc((FW[l.see] || {}).name || '')}</span><span class="s">The guidebook points there for this stretch</span></span><span class="v">&rsaquo;</span></button></div>`;
   const chips = fEdition(now).current ? fChips(l.stand, false) : [];
@@ -656,7 +684,7 @@ function fEntryHtml(res, now, opt) {
       ${x.text.map(t => t[0] === 'li' ? '<br>&bull; ' + esc(t[1]) : '<br>' + esc(t[1])).join('')}
       <br><a href="${esc(x.url)}" target="_blank" rel="noopener">The signed notice</a></div>`;
   });
-  res.changes.forEach(c => { h += fChangeHtml(c, now); });
+  (fish.static ? res.changes.slice().sort((a, b) => a.a.from.localeCompare(b.a.from)) : res.changes).forEach(c => { h += fChangeHtml(c, now); });
   if (res.via) h += `<p class="fine" style="padding:10px 16px 0">The guidebook lists <b>${esc(res.via.name)}</b> (${esc(res.via.counties.join(', '))} County) and says: "${esc(res.via.desc)}" ${res.only && res.only !== 'none' ? 'Shown below is the part of that entry that names it.' : 'That entry does not say which stretch, so all of it is shown.'}</p>`;
   if (res.only === 'none') h += `<div class="warnbox" style="margin:12px 16px 0"><b>This stretch is not one the guidebook lists.</b> ${esc(opt.why || '')} Statewide rules apply here${res.changes.some(c => c.st.k === 'on') ? ', and so does the emergency change above' : ''}. The listed stretches are below so you can check where you are standing.</div>`;
   const own = res.layers.filter(l => l.kind === 'own' || l.kind === 'see'), grp = res.layers.filter(l => l.kind === 'community');
@@ -688,8 +716,15 @@ function fEntryHtml(res, now, opt) {
   h += fSpearHtml(fSpearFor(sid, res.name, opt.counties || res.counties), sid, !spoken.length ? '' : spoken.every(r => /\bis open to underwater spearfishing\b/i.test(r.text)) ? 'opens' : 'speaks');
   return h;
 }
-const F_FOOT = () => `<p class="fine" style="padding:14px 16px 0">Rules are UDWR's own words from the ${esc(FR._edition.year)} Utah Fishing Guidebook and its posted emergency changes. They are in force Jan. 1 to Dec. 31, ${esc(FR._edition.year)}. Species and stocking are UDWR's and are not rules. <b>Not legal advice.</b> The guidebook, the signed notices and signs posted at the water are the authority.
-  <a href="${esc(FR._edition.pdf)}" target="_blank" rel="noopener">Guidebook</a> &middot; <a href="https://wildlife.utah.gov/guidebooks" target="_blank" rel="noopener">Posted changes</a></p>`;
+const F_FOOT = id => `<p class="fine" style="padding:14px 16px 0">Rules are UDWR's own words from the ${esc(FR._edition.year)} Utah Fishing Guidebook and its posted emergency changes. They are in force Jan. 1 to Dec. 31, ${esc(FR._edition.year)}. Species and stocking are UDWR's and are not rules. <b>Not legal advice.</b> The guidebook, the signed notices and signs posted at the water are the authority.
+  ${fish.static && FW[id] && FW[id].kind === 'notice' ? '' : `<a href="${esc(FR._edition.pdf)}" target="_blank" rel="noopener">Guidebook</a> &middot; `}<a href="https://wildlife.utah.gov/guidebooks" target="_blank" rel="noopener">Posted changes</a></p>`;
+
+/* Public paths follow guidebook ids; a pointer and a twin lead to one page. */
+function fWaterPath(id) {
+  if (FCOM[id]) return FTWIN[id] ? '/fishing/waters/' + FTWIN[id] + '/' : '/fishing/community/' + id.slice(10) + '/';
+  const w = FW[id];
+  return '/fishing/waters/' + (w && w.kind === 'pointer' ? w.see.water : id) + '/';
+}
 
 /* ------------------------------------------------------------ places ---- */
 function fDrive(p, hid) {
@@ -735,6 +770,7 @@ function fPlaceChips(p, now) {
   return chips;
 }
 function fPlaceRow(p, now, place) {
+  if (fish.static) return `<div class="row" style="--g:var(--fish)"><span class="pill"></span><span><span class="t">${esc(p.n)}</span><span class="s">${esc(p.c)} Co.</span></span></div>`;
   const hid = place && place.kind === 'home' ? place.id : (place ? null : anchorId());
   let v, sub;
   if (place && place.lat != null && place.kind !== 'home') { v = miles(place.lat, place.lon, p.lat, p.lon).toFixed(0); sub = 'mi'; }
@@ -811,7 +847,7 @@ function sheetFishWater(id) {
   h += fEntryHtml(res, now);
   if (pl.length) h += `<div class="sec-title" style="padding:0 16px">Places on this water</div><div class="card" style="margin:8px 16px 0">${pl.slice(0, 12).map(p => fPlaceRow(p, now)).join('')}</div>`;
   else if (((FP || {}).no_place || {})[id]) h += `<p class="fine" style="padding:10px 16px 0">No position for this water: ${esc(FP.no_place[id])}</p>`;
-  return h + F_FOOT();
+  return h + F_FOOT(id);
 }
 
 /* -------------------------------------------------------------- finder ---- */
@@ -1091,7 +1127,7 @@ function fishAnswer(q) {
 function fKokaneeNow(now) {
   const k = FR.statewide.rules.find(r => r.id === 'kokanee');
   if (!k || !k.fx || !k.fx[0] || !k.fx[0].w || !fEdition(now).current || !fAnyOn(k.fx[0].w, now)) return '';
-  return `<div class="warnbox" style="margin:12px 16px 0"><b>Statewide, in force today: kokanee salmon may not be kept.</b> ${esc(k.text)} <span class="fdates">${esc(fSpansText(k.fx[0].w))} &middot; guidebook p. ${esc(k.page)}</span></div>`;
+  return `<div class="warnbox" style="margin:12px 16px 0"><b>Statewide${fish.static ? '' : ', in force today'}: kokanee salmon may not be kept.</b> ${esc(k.text)} <span class="fdates">${esc(fSpansText(k.fx[0].w))} &middot; guidebook p. ${esc(k.page)}</span></div>`;
 }
 function fKokaneeBox(now) {
   const k = FR.statewide.rules.find(r => r.id === 'kokanee');

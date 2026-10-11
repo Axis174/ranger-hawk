@@ -12,7 +12,8 @@
    Edits  two marked regions of docs/index.html (seo, shell) and three keys of
           docs/manifest.webmanifest (description, lang, categories).
 
-   Same inputs, same bytes: nothing here reads the clock. A count that is not a whole
+   Same inputs and Utah build date, same bytes. Water pages use noon America/Denver;
+   --date=YYYY-MM-DD fixes that date for a repeatable build. A count that is not a whole
    number above zero stops the build (see checkCounts), and so does a {placeholder} left
    in any output. Run before the tests; refresh.yml does. */
 'use strict';
@@ -36,6 +37,116 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 const ldBlock = obj => '<script type="application/ld+json">\n' +
   JSON.stringify(obj, null, 2).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026') + '\n</script>';
 const readJson = f => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
+
+/* Water rules use Utah wall-clock fields, regardless of the build machine's zone.
+   This Date subclass keeps real timestamps but supplies Denver's local fields to
+   the app renderer. It avoids changing process.env.TZ, which would also change any
+   test or other builder sharing this process. */
+const DENVER = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+function denverFields(date) {
+  const p = {};
+  DENVER.formatToParts(date).forEach(x => { if (x.type !== 'literal') p[x.type] = Number(x.value); });
+  return p;
+}
+function denverTime(...args) {
+  const wall = Date.UTC(...args);
+  let at = wall;
+  for (let i = 0; i < 3; i++) {
+    const p = denverFields(new Date(at));
+    const delta = wall - Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second, new Date(at).getUTCMilliseconds());
+    at += delta;
+    if (!delta) break;
+  }
+  return at;
+}
+function utahDate(value = new Date()) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split('-').map(Number), check = new Date(Date.UTC(y, m - 1, d));
+    if (check.getUTCFullYear() === y && check.getUTCMonth() === m - 1 && check.getUTCDate() === d) return value;
+    throw new BuildError('invalid Utah build date: ' + value);
+  }
+  const instant = new Date(value);
+  if (isNaN(instant)) throw new BuildError('invalid Utah build date: ' + value);
+  const p = denverFields(instant);
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+function denverNoon(date) {
+  const [y, m, d] = utahDate(date).split('-').map(Number);
+  return denverTime(y, m - 1, d, 12, 0, 0);
+}
+
+/* The static sheets are the real fishing.js renderer. The only functions exposed
+   below are needed to render, to use its exact amendment state, and to join the
+   county list the same way as the app. No rule wording is copied here. */
+function loadFishing(date = new Date()) {
+  const iso = utahDate(date), noon = denverNoon(iso);
+  class UtahDate extends Date {
+    constructor(...args) { super(args.length > 1 ? denverTime(...args) : args.length ? args[0] : noon); }
+    static now() { return noon; }
+    getFullYear() { return denverFields(this).year; }
+    getMonth() { return denverFields(this).month - 1; }
+    getDate() { return denverFields(this).day; }
+    getHours() { return denverFields(this).hour % 24; }
+    getMinutes() { return denverFields(this).minute; }
+    getSeconds() { return denverFields(this).second; }
+    getDay() { const p = denverFields(this); return new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay(); }
+    toLocaleDateString(locale, options) { return super.toLocaleDateString(locale, Object.assign({}, options, { timeZone: 'America/Denver' })); }
+  }
+  const noop = () => {};
+  const box = {
+    console, Date: UtahDate, Intl, URLSearchParams,
+    document: { addEventListener: noop },
+    esc: s => esc(s == null ? '' : s),
+    fmt: d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    home: 'heber', tab: 'fish', render: noop,
+  };
+  vm.createContext(box);
+  try {
+    vm.runInContext(fs.readFileSync(path.join(DOCS, 'fishing.js'), 'utf8') + '\n;this.F = { set(r, p, n) { FR = r; FP = p; FNT = n; fish.static = true; fish.now = ' + noon + '; fishIndex(); }, sheetFishWater, fAmendState, fCounties, fNow };', box, { filename: 'docs/fishing.js' });
+    const rules = readJson('fishing_rules.json'), places = readJson('fishing_places.json'), notices = readJson('fishing_notices.json');
+    box.F.set(rules, places, notices);
+    return {
+      rules, places, notices, date: iso, now: box.F.fNow(),
+      render: id => box.F.sheetFishWater(id),
+      amendState: a => box.F.fAmendState(a, box.F.fNow()),
+      counties: entry => Array.from(box.F.fCounties(entry)),
+    };
+  } catch (e) {
+    throw new BuildError('loading the real docs/fishing.js static renderer failed: ' + e.message);
+  }
+}
+
+/* Pages use the rule id, never a place id. The Burraston twin's community entry
+   goes to its water page, and pointers go to their target without getting a page. */
+function fishingPages(fishing) {
+  const r = fishing.rules, waters = new Map(r.waters.map(w => [w.id, w]));
+  const kept = id => (r.amendments || []).filter(a => (a.community ? 'community:' + a.community : a.water) === id)
+    .filter(a => ['on', 'later'].includes(fishing.amendState(a).k)).sort((a, b) => a.from.localeCompare(b.from));
+  const waterPath = id => '/fishing/waters/' + id + '/';
+  const communityPath = id => waters.has(id) && waters.get(id).kind === 'water' ? waterPath(id) : '/fishing/community/' + id + '/';
+  const pages = [], index = [];
+  for (const w of r.waters) {
+    const changes = kept(w.id), pagePath = waterPath(w.id);
+    if (w.kind === 'water' || (w.kind === 'notice' && changes.length)) pages.push({ kind: w.kind, id: w.id, name: w.name, counties: fishing.counties(w), path: pagePath, page: w.page, changes, entry: w });
+    let target = w, targetReach = '';
+    if (w.kind === 'pointer') {
+      target = waters.get(w.see.water);
+      if (!target || target.kind === 'pointer') throw new BuildError('a fishing pointer has no page target: ' + w.id);
+      const keys = (w.see || {}).reaches || [];
+      const named = (target.reaches || []).filter(reach => keys.includes(reach.key) && reach.where).map(reach => reach.where);
+      targetReach = named.join('; ');
+    }
+    index.push({ kind: w.kind, id: w.id, name: w.name, counties: fishing.counties(w), path: target.kind === 'notice' && !kept(target.id).length ? null : waterPath(target.id), target: target.id, targetReach });
+  }
+  for (const m of r.community.members) {
+    const id = 'community:' + m.id, pagePath = communityPath(m.id);
+    if (pagePath.startsWith('/fishing/community/')) pages.push({ kind: 'community', id, name: m.name, counties: [m.county], path: pagePath, page: r.community.page, changes: kept(id), entry: m });
+    index.push({ kind: 'community', id, name: m.name, counties: [m.county], path: pagePath, target: waters.has(m.id) ? m.id : id, targetReach: '' });
+  }
+  const byName = (a, b) => a.name.localeCompare(b.name, 'en-US') || a.counties.join(', ').localeCompare(b.counties.join(', '), 'en-US') || a.id.localeCompare(b.id, 'en-US');
+  pages.sort(byName); index.sort(byName);
+  return { pages, index, counts: { water: pages.filter(p => p.kind === 'water').length, notice: pages.filter(p => p.kind === 'notice').length, community: pages.filter(p => p.kind === 'community').length } };
+}
 
 /* ------------------------------------------------------------------ counts --- */
 /* Each count is taken the way the app itself counts it, so a page can never say a
@@ -173,7 +284,7 @@ function staticHead(t, rel) {
   ].filter(Boolean).join('\n');
 }
 
-function build() {
+function build(options = {}) {
   const counts = computeCounts();
   checkCounts(counts);
   const fill = s => String(s).replace(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, k) => {
@@ -182,6 +293,8 @@ function build() {
   });
   const iso = refreshDate(), human = humanDate(iso);
   const site = loadSite();
+  const fishing = loadFishing(options.date === undefined ? new Date() : options.date);
+  const waterDefs = fishingPages(fishing);
   const defs = pageDefs();
   const out = {};   // absolute path -> text
 
@@ -231,7 +344,7 @@ ${footer(rel, here)}
       main = `<div class="wrap page">
 <h1>${esc(fill(c.h1))}</h1>
 <p class="lead">${esc(fill(c.lead))}</p>
-${(c.sections || []).map(s => `<section>
+${c.waterIndex ? `<p><a href="${esc(c.waterIndex.path)}">${esc(c.waterIndex.label)}</a></p>\n` : ''}${(c.sections || []).map(s => `<section>
 <h2>${esc(fill(s.h2))}</h2>
 ${s.p.map(p => `<p>${esc(fill(p))}</p>`).join('\n')}
 </section>`).join('\n')}
@@ -256,6 +369,63 @@ ${site[d.embed]}
     out[fileOf(d.c.path)] = doc(staticHead({ title: d.c.title || '', description: d.c.description || fill(d.c.lead || ''), canonical: url, ld }, rel), rel, main, d.key);
   }
 
+  /* ---- one page per water, from the app's static sheet without rewriting it */
+  const waterCrumbs = p => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
+    { '@type': 'ListItem', position: 2, name: 'Fishing', item: SITE + C.FISHING.path },
+    { '@type': 'ListItem', position: 3, name: 'Every water', item: SITE + C.FISHING.waterIndex.path },
+    ...(p ? [{ '@type': 'ListItem', position: 4, name: p.name, item: SITE + p.path }] : []),
+  ] });
+  const longDate = value => {
+    const [y, m, d] = value.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' });
+  };
+  const edition = fishing.rules._edition, asOf = longDate(fishing.date);
+  const sourceChange = a => `<p class="fine">Source: <a href="${esc(a.url)}" rel="noopener">Utah DWR emergency change, in force ${esc(longDate(a.from))} through ${esc(longDate(a.last_day))}</a></p>`;
+  for (const p of waterDefs.pages) {
+    const county = p.counties.join(', '), rel = '../../../';
+    let title = `${p.name} fishing rules, ${county} County, Utah | Ranger Hawk`;
+    if (title.length > 70) title = title.replace(', Utah |', ' |');
+    let description = p.kind === 'notice'
+      ? `Utah DWR's emergency change for ${p.name} (${county} County), with the ${edition.year} statewide fishing limits.`
+      : `Utah DWR's ${edition.year} fishing rules for ${p.name} (${county} County): its own rules, the statewide limits and any emergency change in force.`;
+    if (description.length > 160) description = description.replace(` (${county} County)`, '');
+    const lead = p.kind === 'notice'
+      ? `${p.name}, ${county} County. The ${edition.year} Utah fishing guidebook has no entry of its own for this water; these are Utah DWR's emergency change for it and the statewide limits, as of noon, ${asOf}. Apart from the emergency change, the statewide rules apply.`
+      : `${p.name}, ${county} County. Utah DWR's rules for this ${p.kind === 'community' ? 'community fishing water' : 'water'} from the ${edition.year} Utah fishing guidebook, page ${p.page}, with the statewide limits and any emergency change in force, as of noon, ${asOf}.`;
+    const guidebookSource = p.kind === 'notice' ? '' : `<p class="fine">Source: <a href="${esc(edition.pdf)}#page=${esc(p.page)}" rel="noopener">${esc(edition.title)}, page ${esc(p.page)}</a></p>`;
+    const sheet = fishing.render(p.id);
+    if (!sheet) throw new BuildError('the fishing renderer returned no sheet for ' + p.id);
+    const main = `<div class="wrap page embed">
+<h1>${esc(p.name)}</h1>
+<p class="lead">${esc(lead)}</p>
+${sheet}
+${guidebookSource}
+${p.changes.map(sourceChange).join('\n')}
+<p class="cta"><a class="btn" href="/?water=${esc(p.id)}">Open this water in Ranger Hawk</a></p>
+</div>`;
+    out[fileOf(p.path)] = doc(staticHead({ title, description, canonical: SITE + p.path, ld: [waterCrumbs(p)] }, rel), rel, main, 'fishing');
+  }
+
+  /* ---- every guidebook entry and community member, including pointers and
+     inactive notice-only waters. Letter headings keep the long list readable. */
+  {
+    const c = C.FISHING.waterIndex, rel = '../../';
+    let list = '', letter = '';
+    for (const item of waterDefs.index) {
+      const first = item.name.slice(0, 1).toLocaleUpperCase('en-US');
+      if (first !== letter) {
+        if (letter) list += '</ul>\n</section>\n';
+        letter = first;
+        list += `<section>\n<h2>${esc(letter)}</h2>\n<ul class="links">\n`;
+      }
+      list += `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)} &mdash; ${esc(item.counties.join(', '))} County${item.targetReach ? ` &mdash; ${esc(item.targetReach)}` : ''}</li>\n`;
+    }
+    if (letter) list += '</ul>\n</section>\n';
+    const main = `<div class="wrap page">\n<h1>${esc(c.label)}</h1>\n${list}</div>`;
+    out[fileOf(c.path)] = doc(staticHead({ title: c.title, description: c.description, canonical: SITE + c.path, ld: [waterCrumbs()] }, rel), rel, main, 'fishing');
+  }
+
   /* ---- 404: served at any path, so every URL is root-absolute */
   {
     const n = C.NOT_FOUND;
@@ -273,7 +443,7 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
   /* ---- sitemap.xml: no lastmod. The only thing that changes daily is the footer date, which is not a
      significant update to a page, so the sitemap does not claim one. */
   {
-    const entries = ['/'].concat(defs.map(d => d.c.path));
+    const entries = ['/'].concat(defs.map(d => d.c.path), [C.FISHING.waterIndex.path], waterDefs.pages.map(p => p.path));
     out[path.join(DOCS, 'sitemap.xml')] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.map(e => `  <url><loc>${SITE}${e}</loc></url>`).join('\n')}
@@ -295,6 +465,7 @@ ${C.DISCLAIMER}
 ## Pages
 
 ${defs.map(d => `- [${d.label}](${SITE}${d.c.path}): ${desc(d)}`).join('\n')}
+- [${C.FISHING.waterIndex.label}](${SITE}${C.FISHING.waterIndex.path}): ${C.FISHING.waterIndex.description}
 
 ## Sources
 
@@ -361,11 +532,22 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
     const m = out[f].match(/\{[A-Za-z_][A-Za-z0-9_]*\}/);
     if (m) throw new BuildError(`${path.relative(ROOT, f)} still has ${m[0]}`);
   }
+  /* An ended notice must no longer have a page after the next build. Only these
+     known rule-id index files belong to this generator; leave any other files. */
+  const possible = fishing.rules.waters.map(w => '/fishing/waters/' + w.id + '/')
+    .concat(fishing.rules.community.members.map(m => '/fishing/community/' + m.id + '/'));
+  for (const p of possible) {
+    const f = fileOf(p);
+    if (!Object.prototype.hasOwnProperty.call(out, f) && fs.existsSync(f)) {
+      fs.unlinkSync(f);
+      if (!fs.readdirSync(path.dirname(f)).length) fs.rmdirSync(path.dirname(f));
+    }
+  }
   for (const f of Object.keys(out)) {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, out[f].endsWith('\n') || f.endsWith('.webmanifest') ? out[f] : out[f] + '\n');
   }
-  return { counts, iso, files: Object.keys(out).map(f => path.relative(ROOT, f)).sort() };
+  return { counts, iso, date: fishing.date, fishing: waterDefs, files: Object.keys(out).map(f => path.relative(ROOT, f)).sort() };
 }
 
 function replaceRegion(html, start, end, inner) {
@@ -374,11 +556,13 @@ function replaceRegion(html, start, end, inner) {
   return html.slice(0, a + start.length) + '\n' + inner + '\n' + html.slice(b);
 }
 
-module.exports = { build, loadSite, computeCounts, checkCounts, refreshDate, humanDate, BuildError };
+module.exports = { build, loadSite, loadFishing, fishingPages, utahDate, denverNoon, computeCounts, checkCounts, refreshDate, humanDate, BuildError };
 
 if (require.main === module) {
   try {
-    const r = build();
+    const args = process.argv.slice(2);
+    if (args.some(a => !/^--date=\d{4}-\d{2}-\d{2}$/.test(a)) || args.length > 1) throw new BuildError('usage: node scraper/build_pages.js [--date=YYYY-MM-DD]');
+    const r = build(args.length ? { date: args[0].slice(7) } : {});
     console.log('build_pages: counts ' + JSON.stringify(r.counts) + '; sources last checked ' + r.iso);
     console.log('build_pages: wrote ' + r.files.length + ' files: ' + r.files.join(', '));
   } catch (e) {
