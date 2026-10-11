@@ -77,7 +77,7 @@ const FISHING = {
     path: '/fishing/waters/',
     label: 'Every water, A to Z',
     title: 'Utah fishing waters, A to Z | Ranger Hawk',
-    description: 'Every Utah fishing guidebook entry and community fishing water, A to Z, with its county and a link to its rules. A water the guidebook has no entry for is listed without a link until UDWR posts a change for it.',
+    description: 'Every Utah fishing guidebook entry and community fishing water, A to Z, with its county and a link to its rules. A water with no guidebook entry has no link.',
   },
   title: 'Utah fishing rules by water, limits, closures | Ranger Hawk',
   description: 'The rules for each Utah water, the statewide limits that apply, and every emergency change in force today, in Utah DWR’s words, readable with no signal.',

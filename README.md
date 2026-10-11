@@ -557,7 +557,7 @@ the app says.
   (`docs/fishing.js`) in a static mode at noon on the Utah date of the build, so a page says
   what the app says, in UDWR's words, with absolute dates and nothing that means now or
   today. In its normal mode the app is unchanged: `scraper/fishing/app_sheet_hashes.json`
-  holds the hashes of every sheet as main drew them, regenerated only by hand, and
+  holds the hashes of every sheet as main drew them, regenerated only by hand after a deliberate change to the rules, places, config or state.js (`node scraper/fishing/app_sheet_fixture.js --write <saved main fishing.js> <baseline commit>`), and
   `test_fishing.js` checks the renderer against them under six clocks. A notice-only water
   (no guidebook entry) has a page only while a UDWR emergency change is in force or coming;
   the nightly build adds and removes those pages and the sitemap follows. Each page ends

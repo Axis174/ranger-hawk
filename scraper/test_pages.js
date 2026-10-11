@@ -130,10 +130,12 @@ const plain = html => unesc(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').
 /* The lead's second exception covers these UDWR fields, wherever nested. Keep
    their paths and rule ids for the hand-back; heads and all other prose stay
    swept. Longest first avoids removing only part of a longer quoted string.
-   The third adds UDWR's own listed notices (fishing_notices.json): fStale prints a
-   notice's title, and a notice's text lines are printed by fEntryHtml and fStale,
-   word for word. A notice UDWR posts is UDWR's text exactly as a rule is, and it
-   arrives overnight, so it must never stop the night's refresh. */
+   The third adds everything UDWR's list contributes that a page can print
+   (fishing_notices.json): fStale prints a notice's title, a notice's text lines are
+   printed by fEntryHtml and fStale, and the list's other lines (headings and closing
+   lines, other[]) are what fStale prints as "New on it" when they are new. All of it is
+   UDWR's text exactly as a rule is, and it arrives overnight, so it must never stop the
+   night's refresh. */
 function quotedRuleFields(rules, notices) {
   const out = [];
   const add = (text, field, id) => { if (typeof text === 'string' && text) out.push({ text, field, id: id || null }); };
@@ -162,6 +164,7 @@ function quotedRuleFields(rules, notices) {
     add(n.title, 'notices[' + i + '].title', n.slug);
     (n.text || []).forEach((line, j) => add(line[1], 'notices[' + i + '].text[' + j + ']', n.slug));
   });
+  ((notices || {}).other || []).forEach((line, i) => add(line[1], 'notices.other[' + i + ']'));
   return out.sort((a, b) => b.text.length - a.text.length);
 }
 const RULE_FIELDS = quotedRuleFields(R, fishing.notices);
@@ -172,11 +175,12 @@ function withoutQuotedRules(html, quotes = RULE_TEXTS, intro = R.community.intro
   /* Remove exact escaped quotes only where the renderer prints rules or table
      values. A matching string in a lead, title, head, index, banner or footer
      must still fail. Nested date spans contain Ranger Hawk's own wording.
-     The one banner that may hold UDWR's words is a notice banner (last replace
-     below): the three that print a notice UDWR lists are a notice for this water
-     (its text lines), the list of changes not yet built in (their titles) and a
-     reworded notice (its title and lines). Only the exact UDWR strings go from
-     those; the banner's own sentences stay swept. */
+     The banners that may hold UDWR's words are the four that print what UDWR's list
+     contributes (last replace below): a notice for this water (its text lines), the
+     list of changes not yet built in (their titles), a reworded notice (its title and
+     lines) and the list that is not the list the rules were built from ("New on it":
+     lines of other[]). Only the exact UDWR strings go from those; the banner's own
+     sentences stay swept. */
   return html.replace(/(<span class="ftext">)([\s\S]*?)(<\/span>)/g, (_, start, body, end) => {
     const at = body.indexOf('<span');
     return start + (at < 0 ? remove(body) : remove(body.slice(0, at)) + body.slice(at)) + end;
@@ -184,7 +188,7 @@ function withoutQuotedRules(html, quotes = RULE_TEXTS, intro = R.community.intro
     start + body.replace(/(<td>)([^<]*)([\s\S]*?<\/td>)/g, (__, td, value, rest) => td + remove(value) + rest) + end
   ).replace(/(<div class="fwhere">)([\s\S]*?)(<\/div>)/g, (_, start, body, end) =>
     start + (quotes.includes(intro) && body === esc(intro) ? ' ' : body) + end
-  ).replace(/(<div class="warnbox fbad"[^>]*>)(<b>UDWR has (?:posted|reworded)[\s\S]*?)(<\/div>)/g, (_, start, body, end) =>
+  ).replace(/(<div class="warnbox fbad"[^>]*>)(<b>UDWR(?: has (?:posted|reworded)|'s list of fishing changes)[\s\S]*?)(<\/div>)/g, (_, start, body, end) =>
     start + remove(body) + end);
 }
 const WORDS = /\b(official(?:ly)?|verified|licensed|endorsed|certified|guarantee[ds]?)\b/gi;
@@ -248,7 +252,9 @@ const temporalHits = (html, quotes) => plain(withoutQuotedRules(html, quotes)).m
      "licensed". Three notices, each printed the way the renderer prints one: unread and named for this
      water (its text lines are printed on the sheet); unread and for another water (its title is
      printed in the list of changes not yet built in); read into the rules and since reworded (its
-     title and lines are printed in the reworded banner). */
+     title and lines are printed in the reworded banner). The list's own lines (other[]) are printed
+     as "New on it" when the rules have not seen them: one new heading, and one the rules have seen
+     (which is not printed and so exempts nothing). */
   const synthetic = B.loadFishing(BUILD_DATE), id = 'flaming-gorge-reservoir-daggett';
   const water = synthetic.rules.waters.find(w => w.id === id), county = water.counties[0];
   const said = 'official, licensed, now and today';
@@ -258,8 +264,13 @@ const temporalHits = (html, quotes) => plain(withoutQuotedRules(html, quotes)).m
   const elsewhere = notice('synthetic-elsewhere', 'Synthetic Other Water', 'Nowhere', [['p', 'A synthetic official and licensed notice for another water, now and today.']]);
   const reworded = notice('synthetic-reworded', 'Synthetic Third Water', 'Nowhere', [['p', 'A synthetic official and licensed reworded notice, now and today.'], ['li', 'A synthetic reworded bullet: official, licensed, now, today.']]);
   synthetic.notices.notices.push(here, elsewhere, reworded);
+  const fresh = 'Synthetic heading: official changes are in force now', seen = 'Seen heading: official, in force now';
+  synthetic.notices.other = (synthetic.notices.other || []).concat([['h', fresh], ['h', seen]]);
+  synthetic.rules._notices_other = (synthetic.rules._notices_other || []).concat([seen]);
   synthetic.rules.amendments.push({ notice: reworded.slug, url: reworded.url, name: reworded.name, county: reworded.county, water: 'synthetic-nowhere', from: '2020-01-01', until: '2020-01-02', last_day: '2020-01-02', direction: 'less', rules: [], sha: 'before', pdf_sha: 'before' });
   const quotes = ruleTexts(quotedRuleFields(synthetic.rules, synthetic.notices)), without = ruleTexts(quotedRuleFields(synthetic.rules));
+  /* Every notice and every line the real list has, but not the two synthetic list lines: what still fails is theirs alone. */
+  const noSynthetic = ruleTexts(quotedRuleFields(synthetic.rules, { notices: synthetic.notices.notices, other: fishing.notices.other }));
   const sheet = synthetic.render(id), page = '<title>A synthetic title</title><p class="lead">A synthetic lead</p>' + sheet;
   const printed = [...here.text.map(t => t[1]), elsewhere.title, reworded.title, ...reworded.text.map(t => t[1])];
   ok('UDWR notice exception: the three notices are printed escaped and verbatim, as UDWR wrote them', printed.every(t => sheet.includes(esc(t))) && sheet.includes('&lt;fish&gt; &amp; water.'));
@@ -267,20 +278,25 @@ const temporalHits = (html, quotes) => plain(withoutQuotedRules(html, quotes)).m
   ok('UDWR notice exception: without the exemption the same page fails both sweeps', wordingHits(withoutQuotedRules(page, without)).length > 0 && temporalHits(page, without).length > 0);
   ok('UDWR notice exception: with it, official/licensed pass the wording sweep', wordingHits(withoutQuotedRules(page, quotes)).length === 0);
   ok('UDWR notice exception: with it, now/today pass the clock sweep', temporalHits(page, quotes).length === 0, temporalHits(page, quotes).join(', '));
+  ok('UDWR notice exception: a new line on UDWR\'s list is printed as "New on it", escaped and verbatim; a line the rules have seen is not printed', sheet.includes('New on it:') && sheet.includes('"' + esc(fresh) + '"') && !sheet.includes(esc(seen)));
+  ok('UDWR notice exception: without the new synthetic list line exempted, that line alone still fails (one official, one now)', wordingHits(withoutQuotedRules(page, noSynthetic)).length === 1 && temporalHits(page, noSynthetic).length === 1);
   const claim = 'Ranger Hawk is official and licensed, now and today';
-  for (const [where, html] of [
+  for (const [where, html, words = 2, clock = 2] of [
     ['lead', '<p class="lead">' + claim + '</p>'],
     ['title', '<title>' + claim + '</title>'],
     ['index', '<li><a href="/fishing/waters/">' + claim + '</a></li>'],
     ['sentence in a notice banner', '<div class="warnbox fbad" style="margin:12px 16px 0"><b>UDWR has posted a change for this water that is not built into the rules below.</b> ' + claim + '.</div>'],
+    ['sentence in the banner for a changed list', '<div class="warnbox fbad" style="margin:12px 16px 0"><b>UDWR\'s list of fishing changes is not the list these rules were built from.</b> ' + claim + '.</div>'],
     ['lead that repeats a printed notice line', '<p class="lead">' + esc(here.text[0][1]) + '</p>'],
     ['lead that repeats a notice line that is not printed', '<p class="lead">' + esc(elsewhere.text[0][1]) + '</p>'],
+    ['lead that repeats a new line of UDWR\'s list', '<p class="lead">' + esc(fresh) + '</p>', 1, 1],
+    ['lead that repeats a line of UDWR\'s list that is not printed', '<p class="lead">' + esc(seen) + '</p>', 1, 1],
   ]) {
-    ok('UDWR notice exception: official/licensed in a Ranger Hawk ' + where + ' still fail the wording sweep', wordingHits(withoutQuotedRules(html + sheet, quotes)).length === 2);
-    ok('UDWR notice exception: now/today in a Ranger Hawk ' + where + ' still fail the clock sweep', temporalHits(html + sheet, quotes).length === 2);
+    ok('UDWR notice exception: official/licensed in a Ranger Hawk ' + where + ' still fail the wording sweep', wordingHits(withoutQuotedRules(html + sheet, quotes)).length === words);
+    ok('UDWR notice exception: now/today in a Ranger Hawk ' + where + ' still fail the clock sweep', temporalHits(html + sheet, quotes).length === clock);
   }
-  const fields = RULE_FIELDS.map(f => f.field), listed = (fishing.notices.notices || []);
-  ok('UDWR notice exception: every listed notice\'s title and text lines are collected', listed.every((n, i) => fields.includes('notices[' + i + '].title') && (n.text || []).every((_, j) => fields.includes('notices[' + i + '].text[' + j + ']'))));
+  const fields = RULE_FIELDS.map(f => f.field), listed = (fishing.notices.notices || []), others = (fishing.notices.other || []);
+  ok('UDWR notice exception: every listed notice\'s title and text lines, and every other line of UDWR\'s list, are collected', listed.every((n, i) => (!n.title || fields.includes('notices[' + i + '].title')) && (n.text || []).every((t, j) => !t[1] || fields.includes('notices[' + i + '].text[' + j + ']'))) && others.every((line, i) => !line[1] || fields.includes('notices.other[' + i + ']')));
 }
 
 /* ---------------------------------------- pages drawn by the fishing renderer */
@@ -370,6 +386,8 @@ const temporalHits = (html, quotes) => plain(withoutQuotedRules(html, quotes)).m
   ok('water index: Burraston Ponds has exactly one page, at its water path', exists('fishing/waters/' + burraston + '/index.html') && !exists('fishing/community/' + burraston + '/index.html') && FISH_PAGES.filter(p => p.entry.id === burraston).length === 1);
   ok('water index: Burraston Ponds is listed once, as the water entry, linking to that page', items.filter(item => lineOf(item).name === twin.name).length === 1 && items.some(item => lineOf(item).name === twin.name && item.includes('href="/fishing/waters/' + burraston + '/"')));
   ok('water index: its title and description are the content words', html.includes('<title>' + esc(C.FISHING.waterIndex.title) + '</title>') && JSON.stringify(metaContent(html, 'name', 'description')) === JSON.stringify([C.FISHING.waterIndex.description]));
+  const indexDesc = metaContent(html, 'name', 'description');
+  ok('water index: its meta description is 160 characters or fewer, so a search snippet shows it whole', indexDesc.length === 1 && indexDesc[0].length <= 160, indexDesc[0] && indexDesc[0].length);
   const letters = [...html.matchAll(/<h2[^>]*>([A-Z])<\/h2>/g)].map(m => m[1]);
   const expectedLetters = [...new Set(indexItems.map(p => p.entry.name[0].toUpperCase()))].sort();
   ok('water index: alphabetical letter headings', JSON.stringify(letters) === JSON.stringify(expectedLetters));
@@ -604,6 +622,8 @@ for (const p of ALL_PAGES) {
   }), pagesSec);
   ok('llms.txt: the index is the only additional fishing page under Pages', pageLines.filter(line => line.includes(SITE + '/fishing/waters/')).length === 1 && pageLines.some(line => line.includes('- [Every water, A to Z](' + SITE + '/fishing/waters/): ')) && !/\/fishing\/(?:waters|community)\/[a-z0-9-]+\//.test(pagesSec));
   ok('llms.txt: the index line carries the index description', pageLines.includes('- [' + C.FISHING.waterIndex.label + '](' + SITE + C.FISHING.waterIndex.path + '): ' + C.FISHING.waterIndex.description));
+  const indexLine = pageLines.find(line => line.startsWith('- [' + C.FISHING.waterIndex.label + '](')) || '', indexLineText = indexLine.slice(indexLine.indexOf('): ') + 3);
+  ok('llms.txt: the description on the index line is 160 characters or fewer', indexLine !== '' && indexLineText.length <= 160, indexLineText.length);
   ok('llms.txt: Sources lists every source', C.SOURCES.every(s => t.includes('- [' + s.label + '](' + s.url + ')')));
   ok('llms.txt: Optional has the calendar feed', t.includes('## Optional\n\n- [Calendar feed (hunt.ics)](' + SITE + '/hunt.ics): every Utah hunting deadline as a calendar feed\n'));
   const links = [...t.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map(m => m[1]).filter(u => u.startsWith(SITE));
