@@ -509,7 +509,7 @@ function fChangeHtml(c, now) {
    statewide figure has to stay in view beside them. */
 const F_WHO = { change: 'emergency change', own: 'rule above', group: 'community rule' };
 function fStatewideHtml(res, maybe) {
-  const L = fish.static ? FR.statewide.limits : FR.statewide.limits.filter(l => l.row !== 'community' && l.row !== 'kokanee');
+  const L = FR.statewide.limits.filter(l => l.row !== 'community' && l.row !== 'kokanee');
   if (!fEdition(fNow()).current) return `<p class="fine" style="padding:10px 16px 0"><b>As printed for ${esc(FR._edition.year)}.</b> The app does not say which of these a rule above changes, because that depends on dates in a year that is over.</p>
       <table class="flim chg">${L.map(l => `<tr><td>${esc(l.name)}</td><td>${esc(l.limit)}</td></tr>`).join('')}</table>`;
   const taken = res ? res.rows : {}, all = !!(res && res.all), none = !res;
@@ -662,12 +662,12 @@ function fStale(now, skip, pad) {
   const ed = fEdition(now), n = fNotices(), m = pad === false ? '' : ' style="margin:12px 16px 0"';
   const mine = (skip || []).map(x => x.slug), other = n.unread.filter(x => mine.indexOf(x.slug) < 0);
   let h = '';
-  if (ed.late) h += `<div class="warnbox fbad"${m}><b>These are the ${esc(ed.year)} rules and ${esc(ed.year)} is over.</b> The ${esc(ed.year + 1)} guidebook governs now. They are shown as printed. Do not rely on them, or on any date worked out from them.</div>`;
-  if (ed.early) h += `<div class="warnbox fbad"${m}><b>These are the ${esc(ed.year)} rules.</b> This phone's date is before ${esc(ed.year)}. Do not rely on them.</div>`;
+  if (ed.late) h += `<div class="warnbox fbad"${m}><b>These are the ${esc(ed.year)} rules and ${esc(ed.year)} is over.</b> The ${esc(ed.year + 1)} guidebook governs ${fish.static ? 'from January 1, ' + esc(ed.year + 1) : 'now'}. They are shown as printed. Do not rely on them, or on any date worked out from them.</div>`;
+  if (ed.early) h += `<div class="warnbox fbad"${m}><b>These are the ${esc(ed.year)} rules.</b> ${fish.static ? `They take effect January 1, ${esc(ed.year)}. This page was built before then; do not rely on them yet.` : `This phone's date is before ${esc(ed.year)}. Do not rely on them.`}</div>`;
   if (n.book) h += `<div class="warnbox fbad"${m}><b>UDWR has replaced the guidebook file since these rules were built.</b> It may be a correction or next year's edition. Check anything that matters against the guidebook itself.</div>`;
   if (other.length) h += `<div class="warnbox fbad"${m}><b>UDWR has posted ${other.length === 1 ? 'a change' : other.length + ' changes'} not yet built into these rules:</b> ${other.map(x => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join('; ')}. If ${other.length === 1 ? 'it is' : 'one is'} for the water you are on, the notice governs, not what is shown here.</div>`;
   const told = x => (x.text || []).map(t => t[0] === 'li' ? '<br>&bull; ' + esc(t[1]) : '<br>' + esc(t[1])).join('');
-  n.changed.forEach(x => { h += `<div class="warnbox fbad"${m}><b>UDWR has reworded its notice for ${esc(x.title)}, or replaced the signed notice, since it was read in.</b> What it says today may be about another water as well. It reads:${told(x)}<br><a href="${esc(x.url)}" target="_blank" rel="noopener">The signed notice</a></div>`; });
+  n.changed.forEach(x => { h += `<div class="warnbox fbad"${m}><b>UDWR has reworded its notice for ${esc(x.title)}, or replaced the signed notice, since it was read in.</b> What it says ${fish.static ? '' : 'today '}may be about another water as well. It reads:${told(x)}<br><a href="${esc(x.url)}" target="_blank" rel="noopener">The signed notice</a></div>`; });
   n.gone.forEach(a => { h += `<div class="warnbox fbad"${m}><b>UDWR no longer lists the emergency change for ${esc(a.name)}.</b> It may have been withdrawn. Treat the guidebook rule as the one in force until you have checked.</div>`; });
   if (n.list) h += `<div class="warnbox fbad"${m}><b>UDWR's list of fishing changes is not the list these rules were built from.</b>${n.fresh.length ? ' New on it: ' + n.fresh.map(x => '"' + esc(x) + '"').join(' ') : ''} Something on it may not be shown here. <a href="https://wildlife.utah.gov/guidebooks" target="_blank" rel="noopener">Check the list</a> for the water you are on.</div>`;
   if (!fUtahOk) h += `<div class="warnbox"${m}><b>This phone could not work out the time in Utah,</b> so dates and hours are read by the phone's own clock. If it is set to another state's time, an opening or a closing can be an hour out.</div>`;

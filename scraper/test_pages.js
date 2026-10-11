@@ -105,6 +105,9 @@ const ALL_PAGES = [{ key: 'home', file: 'index.html', url: SITE + '/', title: C.
    fishingPages()'s lead, metadata or Source strings as their expected values. */
 const R = fishing.rules, P = fishing.places;
 const countyNames = e => (e.counties || [e.county]).concat((P.extra_counties || {})[e.id] || []);
+/* How a page says its counties, from the fields: the sheet header's words (fishing.js, sheetFishWater).
+   One county reads "Summit County"; several read "Summit, Utah, Wasatch counties". */
+const countyLine = names => names.join(', ') + (names.length > 1 ? ' counties' : ' County');
 const keptChanges = (id, loader = fishing) => loader.rules.amendments.filter(a =>
   (a.community ? 'community:' + a.community : a.water) === id && ['on', 'later'].includes(loader.amendState(a).k)
 ).sort((a, b) => a.from.localeCompare(b.from));
@@ -119,11 +122,19 @@ const COMMUNITY_PAGES = R.community.members.filter(m => !TWIN_IDS.has(m.id))
   .map(m => ({ kind: 'community', id: 'community:' + m.id, entry: m, path: '/fishing/community/' + m.id + '/', page: R.community.page }));
 const FISH_PAGES = WATER_PAGES.concat(COMMUNITY_PAGES);
 const FISH_FILES = ['fishing/waters/index.html'].concat(FISH_PAGES.map(p => fileOf(p.path)));
+/* The statewide table a page shows is the app's: fishing.js drops the 'community' row (the community rules
+   speak for it) and the 'kokanee' row (folded into the trout row, "Trout, kokanee salmon and Arctic grayling"). */
+const DROPPED_ROWS = R.statewide.limits.filter(l => l.row === 'community' || l.row === 'kokanee');
+const APP_ROWS = R.statewide.limits.filter(l => l.row !== 'community' && l.row !== 'kokanee');
 const plain = html => unesc(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 /* The lead's second exception covers these UDWR fields, wherever nested. Keep
    their paths and rule ids for the hand-back; heads and all other prose stay
-   swept. Longest first avoids removing only part of a longer quoted string. */
-function quotedRuleFields(rules) {
+   swept. Longest first avoids removing only part of a longer quoted string.
+   The third adds UDWR's own listed notices (fishing_notices.json): fStale prints a
+   notice's title, and a notice's text lines are printed by fEntryHtml and fStale,
+   word for word. A notice UDWR posts is UDWR's text exactly as a rule is, and it
+   arrives overnight, so it must never stop the night's refresh. */
+function quotedRuleFields(rules, notices) {
   const out = [];
   const add = (text, field, id) => { if (typeof text === 'string' && text) out.push({ text, field, id: id || null }); };
   const rule = (r, field) => {
@@ -147,16 +158,25 @@ function quotedRuleFields(rules) {
   };
   strings(rules.rows || [], 'rows');
   strings((rules.statewide || {}).limits || [], 'statewide.limits');
+  ((notices || {}).notices || []).forEach((n, i) => {
+    add(n.title, 'notices[' + i + '].title', n.slug);
+    (n.text || []).forEach((line, j) => add(line[1], 'notices[' + i + '].text[' + j + ']', n.slug));
+  });
   return out.sort((a, b) => b.text.length - a.text.length);
 }
-const RULE_FIELDS = quotedRuleFields(R);
+const RULE_FIELDS = quotedRuleFields(R, fishing.notices);
 const ruleTexts = fields => [...new Set(fields.map(f => f.text))].sort((a, b) => b.length - a.length);
 const RULE_TEXTS = ruleTexts(RULE_FIELDS);
 function withoutQuotedRules(html, quotes = RULE_TEXTS, intro = R.community.intro) {
   const remove = text => quotes.reduce((s, quote) => s.split(esc(quote)).join(' '), text);
   /* Remove exact escaped quotes only where the renderer prints rules or table
      values. A matching string in a lead, title, head, index, banner or footer
-     must still fail. Nested date spans contain Ranger Hawk's own wording. */
+     must still fail. Nested date spans contain Ranger Hawk's own wording.
+     The one banner that may hold UDWR's words is a notice banner (last replace
+     below): the three that print a notice UDWR lists are a notice for this water
+     (its text lines), the list of changes not yet built in (their titles) and a
+     reworded notice (its title and lines). Only the exact UDWR strings go from
+     those; the banner's own sentences stay swept. */
   return html.replace(/(<span class="ftext">)([\s\S]*?)(<\/span>)/g, (_, start, body, end) => {
     const at = body.indexOf('<span');
     return start + (at < 0 ? remove(body) : remove(body.slice(0, at)) + body.slice(at)) + end;
@@ -164,11 +184,15 @@ function withoutQuotedRules(html, quotes = RULE_TEXTS, intro = R.community.intro
     start + body.replace(/(<td>)([^<]*)([\s\S]*?<\/td>)/g, (__, td, value, rest) => td + remove(value) + rest) + end
   ).replace(/(<div class="fwhere">)([\s\S]*?)(<\/div>)/g, (_, start, body, end) =>
     start + (quotes.includes(intro) && body === esc(intro) ? ' ' : body) + end
-  );
+  ).replace(/(<div class="warnbox fbad"[^>]*>)(<b>UDWR has (?:posted|reworded)[\s\S]*?)(<\/div>)/g, (_, start, body, end) =>
+    start + remove(body) + end);
 }
 const WORDS = /\b(official(?:ly)?|verified|licensed|endorsed|certified|guarantee[ds]?)\b/gi;
 const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLowerCase() === 'endorsed' &&
   /not part of,? or endorsed by$/.test(text.slice(Math.max(0, m.index - 20), m.index + m[1].length + 3))));
+/* What a page says about the clock outside UDWR's words: the visible text, with the quoted UDWR strings removed. */
+const TEMPORAL = /\b(now|today|days left|tomorrow|Last day today)\b/gi;
+const temporalHits = (html, quotes) => plain(withoutQuotedRules(html, quotes)).match(TEMPORAL) || [];
 
 /* ------------------------------------- UDWR quotes versus Ranger Hawk claims */
 {
@@ -179,7 +203,8 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
   synthetic.rules.statewide.rules.push(rule);
   const unused = 'An unprinted official and licensed UDWR string.';
   synthetic.rules.statewide.rules.push({ id: 'synthetic-unused', text: unused, items: [], waters: [], fx: [{ t: 'info' }] });
-  const fields = quotedRuleFields(synthetic.rules), quotes = ruleTexts(fields);
+  /* The notices UDWR lists are collected too: if one is unread tonight, this sheet prints it, and it is UDWR's text. */
+  const fields = quotedRuleFields(synthetic.rules, synthetic.notices), quotes = ruleTexts(fields);
   const sheet = synthetic.render(id);
   const page = '<title>A synthetic title</title><p class="lead">A synthetic lead</p>' + sheet;
   const stripped = withoutQuotedRules(page, quotes, synthetic.rules.community.intro);
@@ -216,6 +241,48 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
   ok('UDWR sweep exception: no rules[].head receives an exemption', RULE_FIELDS.every(f => !f.field.endsWith('.head')));
 }
 
+/* -------------------------- UDWR's listed notices versus Ranger Hawk claims */
+{
+  /* A notice UDWR lists but nobody has read into the rules yet is printed word for word, and one that
+     arrives overnight must not stop the night's refresh because it says "now", "today", "official" or
+     "licensed". Three notices, each printed the way the renderer prints one: unread and named for this
+     water (its text lines are printed on the sheet); unread and for another water (its title is
+     printed in the list of changes not yet built in); read into the rules and since reworded (its
+     title and lines are printed in the reworded banner). */
+  const synthetic = B.loadFishing(BUILD_DATE), id = 'flaming-gorge-reservoir-daggett';
+  const water = synthetic.rules.waters.find(w => w.id === id), county = water.counties[0];
+  const said = 'official, licensed, now and today';
+  const notice = (slug, name, c, lines) => ({ slug, url: 'https://wildlife.utah.gov/pdf/guidebooks/emergency-changes/' + slug + '.pdf', title: name + ' (' + c + ' County): ' + said,
+    name, county: c, text: lines, from: '2026-10-01', until: '2026-12-31', sha: 'after', pdf_sha: 'after', pdf_bytes: 1 });
+  const here = notice('synthetic-here', water.name, county, [['p', 'A synthetic official and licensed notice, in force now and today, with <fish> & water.'], ['li', 'A synthetic bullet: official, licensed, now, today.']]);
+  const elsewhere = notice('synthetic-elsewhere', 'Synthetic Other Water', 'Nowhere', [['p', 'A synthetic official and licensed notice for another water, now and today.']]);
+  const reworded = notice('synthetic-reworded', 'Synthetic Third Water', 'Nowhere', [['p', 'A synthetic official and licensed reworded notice, now and today.'], ['li', 'A synthetic reworded bullet: official, licensed, now, today.']]);
+  synthetic.notices.notices.push(here, elsewhere, reworded);
+  synthetic.rules.amendments.push({ notice: reworded.slug, url: reworded.url, name: reworded.name, county: reworded.county, water: 'synthetic-nowhere', from: '2020-01-01', until: '2020-01-02', last_day: '2020-01-02', direction: 'less', rules: [], sha: 'before', pdf_sha: 'before' });
+  const quotes = ruleTexts(quotedRuleFields(synthetic.rules, synthetic.notices)), without = ruleTexts(quotedRuleFields(synthetic.rules));
+  const sheet = synthetic.render(id), page = '<title>A synthetic title</title><p class="lead">A synthetic lead</p>' + sheet;
+  const printed = [...here.text.map(t => t[1]), elsewhere.title, reworded.title, ...reworded.text.map(t => t[1])];
+  ok('UDWR notice exception: the three notices are printed escaped and verbatim, as UDWR wrote them', printed.every(t => sheet.includes(esc(t))) && sheet.includes('&lt;fish&gt; &amp; water.'));
+  ok('UDWR notice exception: the other notice\'s text and this water\'s title are not printed, so they exempt nothing', !sheet.includes(esc(elsewhere.text[0][1])) && !sheet.includes(esc(here.title)));
+  ok('UDWR notice exception: without the exemption the same page fails both sweeps', wordingHits(withoutQuotedRules(page, without)).length > 0 && temporalHits(page, without).length > 0);
+  ok('UDWR notice exception: with it, official/licensed pass the wording sweep', wordingHits(withoutQuotedRules(page, quotes)).length === 0);
+  ok('UDWR notice exception: with it, now/today pass the clock sweep', temporalHits(page, quotes).length === 0, temporalHits(page, quotes).join(', '));
+  const claim = 'Ranger Hawk is official and licensed, now and today';
+  for (const [where, html] of [
+    ['lead', '<p class="lead">' + claim + '</p>'],
+    ['title', '<title>' + claim + '</title>'],
+    ['index', '<li><a href="/fishing/waters/">' + claim + '</a></li>'],
+    ['sentence in a notice banner', '<div class="warnbox fbad" style="margin:12px 16px 0"><b>UDWR has posted a change for this water that is not built into the rules below.</b> ' + claim + '.</div>'],
+    ['lead that repeats a printed notice line', '<p class="lead">' + esc(here.text[0][1]) + '</p>'],
+    ['lead that repeats a notice line that is not printed', '<p class="lead">' + esc(elsewhere.text[0][1]) + '</p>'],
+  ]) {
+    ok('UDWR notice exception: official/licensed in a Ranger Hawk ' + where + ' still fail the wording sweep', wordingHits(withoutQuotedRules(html + sheet, quotes)).length === 2);
+    ok('UDWR notice exception: now/today in a Ranger Hawk ' + where + ' still fail the clock sweep', temporalHits(html + sheet, quotes).length === 2);
+  }
+  const fields = RULE_FIELDS.map(f => f.field), listed = (fishing.notices.notices || []);
+  ok('UDWR notice exception: every listed notice\'s title and text lines are collected', listed.every((n, i) => fields.includes('notices[' + i + '].title') && (n.text || []).every((_, j) => fields.includes('notices[' + i + '].text[' + j + ']'))));
+}
+
 /* ---------------------------------------- pages drawn by the fishing renderer */
 {
   const builtPaths = generated.pages.map(p => p.path).sort(), expectedPaths = FISH_PAGES.map(p => p.path).sort();
@@ -225,19 +292,21 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
   console.log('  water pages: ' + byKind('water') + ' water, ' + byKind('notice') + ' notice, ' + byKind('community') + ' community; as of noon ' + BUILD_DATE);
 
   for (const p of FISH_PAGES) {
-    const f = fileOf(p.path), n = p.id + ': ', e = p.entry, county = countyNames(e).join(', '), changes = keptChanges(p.id);
+    const f = fileOf(p.path), n = p.id + ': ', e = p.entry, where = countyLine(countyNames(e)), changes = keptChanges(p.id);
     ok(n + 'the static page exists', exists(f));
     if (!exists(f)) continue;
     const html = read(f), text = plain(html), url = SITE + p.path;
     const lead = p.kind === 'notice'
-      ? `${e.name}, ${county} County. The ${R._edition.year} Utah fishing guidebook has no entry of its own for this water; these are Utah DWR's emergency change for it and the statewide limits, as of noon, ${longDate(BUILD_DATE)}. Apart from the emergency change, the statewide rules apply.`
-      : `${e.name}, ${county} County. Utah DWR's rules for this ${p.kind === 'community' ? 'community fishing water' : 'water'} from the ${R._edition.year} Utah fishing guidebook, page ${p.page}, with the statewide limits and any emergency change in force, as of noon, ${longDate(BUILD_DATE)}.`;
-    let title = `${e.name} fishing rules, ${county} County, Utah | Ranger Hawk`;
-    if (title.length > 70) title = `${e.name} fishing rules, ${county} County | Ranger Hawk`;
+      ? `${e.name}, ${where}. The ${R._edition.year} Utah fishing guidebook has no entry of its own for this water; these are Utah DWR's emergency change for it and the statewide limits, as of noon, ${longDate(BUILD_DATE)}. Apart from the emergency change, the statewide rules apply.`
+      : `${e.name}, ${where}. Utah DWR's rules for this ${p.kind === 'community' ? 'community fishing water' : 'water'} from the ${R._edition.year} Utah fishing guidebook, page ${p.page}, with the statewide limits and any emergency change in force, as of noon, ${longDate(BUILD_DATE)}.`;
+    let title = `${e.name} fishing rules, ${where}, Utah | Ranger Hawk`;
+    if (title.length > 70) title = `${e.name} fishing rules, ${where} | Ranger Hawk`;
     let description = p.kind === 'notice'
-      ? `Utah DWR's emergency change for ${e.name} (${county} County), with the ${R._edition.year} statewide fishing limits.`
-      : `Utah DWR's ${R._edition.year} fishing rules for ${e.name} (${county} County): its own rules, the statewide limits and any emergency change in force.`;
-    if (description.length > 160) description = description.replace(` (${county} County)`, '');
+      ? `Utah DWR's emergency change for ${e.name} (${where}), with the ${R._edition.year} statewide fishing limits.`
+      : p.kind === 'community'
+        ? `Utah DWR's ${R._edition.year} rules for ${e.name} (${where}), a community fishing water: the community rules, the statewide limits and any emergency change in force.`
+        : `Utah DWR's ${R._edition.year} fishing rules for ${e.name} (${where}): its own rules, the statewide limits and any emergency change in force.`;
+    if (description.length > 160) description = description.replace(` (${where})`, '');
     ok(n + 'one guidebook-name h1 and the exact field-built lead', (html.match(/<h1>/g) || []).length === 1 && html.includes('<h1>' + esc(e.name) + '</h1>') && html.includes('<p class="lead">' + esc(lead) + '</p>'));
     ok(n + 'the static sheet appears unchanged after the lead', html.includes(esc(lead) + '</p>\n' + fishing.render(p.id)));
     ok(n + 'all own rules and stretch labels are escaped and verbatim', (e.reaches || []).every(reach => (reach.rules || []).every(rule => html.includes(esc(rule.text))) && (!reach.where || html.includes(esc(reach.where)))));
@@ -245,8 +314,9 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
     ok(n + 'community pages and the twin carry every shared rule and applicable note', !member || R.community.rules.concat((R.community.notes || []).filter(note => (note.members || []).includes(member.id))).every(rule => html.includes(esc(rule.text))));
     const tables = [...html.matchAll(/<table class="flim(?: chg)?">([\s\S]*?)<\/table>/g)].map(m => m[1]).join('');
     const rows = [...tables.matchAll(/<tr><td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td><\/tr>/g)];
-    ok(n + 'all 22 statewide rows appear once with the statewide figure', rows.length === 22 && R.statewide.limits.every(l => rows.filter(row => row[1].startsWith(esc(l.name)) && plain(row[2]).replace(/^statewide: /, '') === l.limit).length === 1), rows.length + ' rows');
-    const temporal = plain(withoutQuotedRules(html)).match(/\b(now|today|days left|tomorrow|Last day today)\b/gi) || [];
+    ok(n + 'the ' + APP_ROWS.length + ' statewide rows the app shows appear once with the statewide figure, and no others', rows.length === APP_ROWS.length && APP_ROWS.every(l => rows.filter(row => row[1].startsWith(esc(l.name)) && plain(row[2]).replace(/^statewide: /, '') === l.limit).length === 1), rows.length + ' rows');
+    ok(n + 'the kokanee and community rows appear in no table (the app folds them into the trout row and the community rules)', DROPPED_ROWS.length === 2 && DROPPED_ROWS.every(l => !rows.some(row => row[1].startsWith(esc(l.name)))), rows.map(row => plain(row[1])).join(' | '));
+    const temporal = temporalHits(html);
     ok(n + 'no relative clock wording outside verbatim rules', temporal.length === 0, temporal.join(', '));
     ok(n + 'no buttons, app data attributes, external scripts or executable JavaScript', !/<button\b|\bdata-fw\b|\bdata-fp\b|<script[^>]*\bsrc\s*=/i.test(html) && (html.match(/<script\b[^>]*>/g) || []).every(t => t === '<script type="application/ld+json">'));
     ok(n + 'no drive minutes, rule chips or reopening countdown lines', !/class="fchipline"|\b(?:min drive|minutes away|drive minutes|Last day open)\b|class="fdates">Opens\b/i.test(withoutQuotedRules(html)));
@@ -278,15 +348,28 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
 {
   const html = read('fishing/waters/index.html'), items = [...html.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map(m => m[1]);
   const targetPath = w => '/fishing/waters/' + (w.kind === 'pointer' ? w.see.water : w.id) + '/';
+  /* A community member that is also a guidebook water (Burraston Ponds) is listed once: its water entry is its line. */
   const indexItems = R.waters.map(w => ({ entry: w, path: w.kind === 'notice' && !keptChanges(w.id).length ? null : targetPath(w) }))
-    .concat(R.community.members.map(m => ({ entry: m, path: TWIN_IDS.has(m.id) ? '/fishing/waters/' + m.id + '/' : '/fishing/community/' + m.id + '/' })));
-  ok('water index: every entry and community member is named with its county and expected link', indexItems.every(({ entry, path: href }) => items.some(item => item.includes(esc(entry.name)) && countyNames(entry).every(c => item.includes(esc(c))) && (href ? item.includes('href="' + href + '"') : !/<a\b/.test(item)))));
-  ok('water index: pointers have no page and link to their named target stretches', R.waters.filter(w => w.kind === 'pointer').every(w => !exists('fishing/waters/' + w.id + '/index.html') && items.some(item => item.includes(esc(w.name)) && item.includes('href="' + targetPath(w) + '"') && (w.see.reaches || []).every(key => {
-    const target = R.waters.find(x => x.id === w.see.water), reach = target.reaches.find(r => r.key === key);
-    return !reach.where || item.includes(esc(reach.where));
-  }))));
-  const burraston = 'burraston-ponds-juab';
+    .concat(R.community.members.filter(m => !TWIN_IDS.has(m.id)).map(m => ({ entry: m, path: '/fishing/community/' + m.id + '/' })));
+  /* A line reads "<name> — <county text>", and a pointer's adds "— see <target>[, <stretch>]". */
+  const lineOf = item => { const parts = plain(item).split(' — '); return { name: parts[0], where: parts[1], rest: parts.slice(2).join(' — ') }; };
+  ok('water index: every entry and community member is named with its county text and expected link, and only a pointer says more', indexItems.every(({ entry, path: href }) => items.some(item => {
+    const l = lineOf(item);
+    return l.name === entry.name && l.where === countyLine(countyNames(entry)) && (entry.kind === 'pointer' || l.rest === '') && (href ? item.includes('href="' + href + '"') : !/<a\b/.test(item));
+  })));
+  ok('water index: a pointer has no page; its line says "see <target>" and the stretch UDWR names, and links to the target', R.waters.filter(w => w.kind === 'pointer').every(w => {
+    const target = R.waters.find(x => x.id === w.see.water);
+    const stretches = target.reaches.filter(r => (w.see.reaches || []).includes(r.key) && r.where).map(r => r.where);
+    const says = 'see ' + target.name + (stretches.length ? ', ' + stretches.join('; ') : '');
+    return !exists('fishing/waters/' + w.id + '/index.html') && items.some(item => {
+      const l = lineOf(item);
+      return l.name === w.name && l.where === countyLine(countyNames(w)) && l.rest === says && item.includes('href="' + targetPath(w) + '"');
+    });
+  }));
+  const burraston = 'burraston-ponds-juab', twin = R.waters.find(w => w.id === burraston);
   ok('water index: Burraston Ponds has exactly one page, at its water path', exists('fishing/waters/' + burraston + '/index.html') && !exists('fishing/community/' + burraston + '/index.html') && FISH_PAGES.filter(p => p.entry.id === burraston).length === 1);
+  ok('water index: Burraston Ponds is listed once, as the water entry, linking to that page', items.filter(item => lineOf(item).name === twin.name).length === 1 && items.some(item => lineOf(item).name === twin.name && item.includes('href="/fishing/waters/' + burraston + '/"')));
+  ok('water index: its title and description are the content words', html.includes('<title>' + esc(C.FISHING.waterIndex.title) + '</title>') && JSON.stringify(metaContent(html, 'name', 'description')) === JSON.stringify([C.FISHING.waterIndex.description]));
   const letters = [...html.matchAll(/<h2[^>]*>([A-Z])<\/h2>/g)].map(m => m[1]);
   const expectedLetters = [...new Set(indexItems.map(p => p.entry.name[0].toUpperCase()))].sort();
   ok('water index: alphabetical letter headings', JSON.stringify(letters) === JSON.stringify(expectedLetters));
@@ -310,6 +393,45 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
   } catch (err) { ok('Oct. 9 notice example build succeeds', false, err.message); }
   finally { B.build({ date: BUILD_DATE }); }
   ok('notice example restores every current-date build byte', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
+}
+
+/* ------------------- a build on either side of the edition year: the year-end banner */
+{
+  /* On 1 January the pages must not break the night's refresh: the banner names the date the new
+     guidebook governs from instead of saying "now", and a page built before the edition year says
+     when the rules take effect instead of quoting the phone's date. Both sweeps run on every fishing
+     page of each build. The two dates move with the edition: 2027-01-02 and 2025-12-31 for 2026. */
+  const year = R._edition.year;
+  try {
+    for (const [date, says] of [
+      [(year + 1) + '-01-02', `The ${year + 1} guidebook governs from January 1, ${year + 1}.`],
+      [(year - 1) + '-12-31', `They take effect January 1, ${year}. This page was built before then; do not rely on them yet.`],
+    ]) {
+      const output = B.build({ date }), index = 'fishing/waters/index.html';
+      const files = [index].concat(output.fishing.pages.map(p => fileOf(p.path)));
+      const words = [], clock = [], banner = [], rows = [], phone = [];
+      for (const f of files) {
+        const html = read(f), hits = wordingHits(withoutQuotedRules(html)), told = temporalHits(html);
+        if (hits.length) words.push(f + ': ' + hits.map(m => m[1]).join(', '));
+        if (told.length) clock.push(f + ': ' + told.join(', '));
+        if (f === index) continue;
+        if (!html.includes(esc(says))) banner.push(f);
+        if (/governs now|phone's date/.test(html)) phone.push(f);
+        const table = [...html.matchAll(/<table class="flim(?: chg)?">([\s\S]*?)<\/table>/g)].map(m => m[1]).join('');
+        const tr = [...table.matchAll(/<tr><td>([\s\S]*?)<\/td><td>/g)].map(m => m[1]);
+        if (tr.length !== APP_ROWS.length || DROPPED_ROWS.some(l => tr.some(r => r.startsWith(esc(l.name))))) rows.push(f + ' (' + tr.length + ' rows)');
+      }
+      console.log('  year boundary: ' + date + ' builds ' + (files.length - 1) + ' water pages and the index; the banner reads "' + says + '"');
+      ok(date + ': the build is for that Utah date and writes the index and water pages', output.date === date && files.length > 100 && files.every(f => exists(f)));
+      ok(date + ': every fishing page passes the wording sweep outside UDWR\'s text', words.length === 0, words.slice(0, 3).join('; '));
+      ok(date + ': every fishing page passes the clock sweep (no now, today, days left, tomorrow) outside UDWR\'s text', clock.length === 0, clock.slice(0, 3).join('; '));
+      ok(date + ': every water page names the date from the fields: "' + says + '"', banner.length === 0, banner.slice(0, 3).join(', '));
+      ok(date + ': no page says the new guidebook governs "now" or quotes the phone\'s date', phone.length === 0, phone.slice(0, 3).join(', '));
+      ok(date + ': every water page shows the app\'s ' + APP_ROWS.length + ' statewide rows and neither the kokanee nor the community row', rows.length === 0, rows.slice(0, 3).join(', '));
+    }
+  } catch (err) { ok('year boundary builds succeed', false, err.message); }
+  finally { B.build({ date: BUILD_DATE }); }
+  ok('year boundary builds restore every current-date build byte', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
 }
 
 /* ------------------------------------------------- every page: head and body */
@@ -481,6 +603,7 @@ for (const p of ALL_PAGES) {
     return !!m && m[2] === SITE + d.c.path && m[3] === DESC({ c: d.c });
   }), pagesSec);
   ok('llms.txt: the index is the only additional fishing page under Pages', pageLines.filter(line => line.includes(SITE + '/fishing/waters/')).length === 1 && pageLines.some(line => line.includes('- [Every water, A to Z](' + SITE + '/fishing/waters/): ')) && !/\/fishing\/(?:waters|community)\/[a-z0-9-]+\//.test(pagesSec));
+  ok('llms.txt: the index line carries the index description', pageLines.includes('- [' + C.FISHING.waterIndex.label + '](' + SITE + C.FISHING.waterIndex.path + '): ' + C.FISHING.waterIndex.description));
   ok('llms.txt: Sources lists every source', C.SOURCES.every(s => t.includes('- [' + s.label + '](' + s.url + ')')));
   ok('llms.txt: Optional has the calendar feed', t.includes('## Optional\n\n- [Calendar feed (hunt.ics)](' + SITE + '/hunt.ics): every Utah hunting deadline as a calendar feed\n'));
   const links = [...t.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map(m => m[1]).filter(u => u.startsWith(SITE));

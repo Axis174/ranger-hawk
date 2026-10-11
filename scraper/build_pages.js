@@ -38,6 +38,10 @@ const ldBlock = obj => '<script type="application/ld+json">\n' +
   JSON.stringify(obj, null, 2).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026') + '\n</script>';
 const readJson = f => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
 
+/* How a page says its counties: the sheet header's own words (docs/fishing.js, sheetFishWater).
+   One county reads "Summit County"; several read "Summit, Utah, Wasatch counties". */
+const countyText = counties => counties.join(', ') + (counties.length > 1 ? ' counties' : ' County');
+
 /* Water rules use Utah wall-clock fields, regardless of the build machine's zone.
    This Date subclass keeps real timestamps but supplies Denver's local fields to
    the app renderer. It avoids changing process.env.TZ, which would also change any
@@ -136,12 +140,15 @@ function fishingPages(fishing) {
       const named = (target.reaches || []).filter(reach => keys.includes(reach.key) && reach.where).map(reach => reach.where);
       targetReach = named.join('; ');
     }
-    index.push({ kind: w.kind, id: w.id, name: w.name, counties: fishing.counties(w), path: target.kind === 'notice' && !kept(target.id).length ? null : waterPath(target.id), target: target.id, targetReach });
+    index.push({ kind: w.kind, id: w.id, name: w.name, counties: fishing.counties(w), path: target.kind === 'notice' && !kept(target.id).length ? null : waterPath(target.id), target: target.id, targetName: target.name, targetReach });
   }
   for (const m of r.community.members) {
     const id = 'community:' + m.id, pagePath = communityPath(m.id);
-    if (pagePath.startsWith('/fishing/community/')) pages.push({ kind: 'community', id, name: m.name, counties: [m.county], path: pagePath, page: r.community.page, changes: kept(id), entry: m });
-    index.push({ kind: 'community', id, name: m.name, counties: [m.county], path: pagePath, target: waters.has(m.id) ? m.id : id, targetReach: '' });
+    /* A community member that is also a guidebook water (Burraston Ponds) has one page, the
+       water's, and one index line, the water entry's. Only the rest are listed here. */
+    if (!pagePath.startsWith('/fishing/community/')) continue;
+    pages.push({ kind: 'community', id, name: m.name, counties: [m.county], path: pagePath, page: r.community.page, changes: kept(id), entry: m });
+    index.push({ kind: 'community', id, name: m.name, counties: [m.county], path: pagePath, target: id, targetName: m.name, targetReach: '' });
   }
   const byName = (a, b) => a.name.localeCompare(b.name, 'en-US') || a.counties.join(', ').localeCompare(b.counties.join(', '), 'en-US') || a.id.localeCompare(b.id, 'en-US');
   pages.sort(byName); index.sort(byName);
@@ -383,16 +390,18 @@ ${site[d.embed]}
   const edition = fishing.rules._edition, asOf = longDate(fishing.date);
   const sourceChange = a => `<p class="fine">Source: <a href="${esc(a.url)}" rel="noopener">Utah DWR emergency change, in force ${esc(longDate(a.from))} through ${esc(longDate(a.last_day))}</a></p>`;
   for (const p of waterDefs.pages) {
-    const county = p.counties.join(', '), rel = '../../../';
-    let title = `${p.name} fishing rules, ${county} County, Utah | Ranger Hawk`;
+    const where = countyText(p.counties), rel = '../../../';
+    let title = `${p.name} fishing rules, ${where}, Utah | Ranger Hawk`;
     if (title.length > 70) title = title.replace(', Utah |', ' |');
     let description = p.kind === 'notice'
-      ? `Utah DWR's emergency change for ${p.name} (${county} County), with the ${edition.year} statewide fishing limits.`
-      : `Utah DWR's ${edition.year} fishing rules for ${p.name} (${county} County): its own rules, the statewide limits and any emergency change in force.`;
-    if (description.length > 160) description = description.replace(` (${county} County)`, '');
+      ? `Utah DWR's emergency change for ${p.name} (${where}), with the ${edition.year} statewide fishing limits.`
+      : p.kind === 'community'
+        ? `Utah DWR's ${edition.year} rules for ${p.name} (${where}), a community fishing water: the community rules, the statewide limits and any emergency change in force.`
+        : `Utah DWR's ${edition.year} fishing rules for ${p.name} (${where}): its own rules, the statewide limits and any emergency change in force.`;
+    if (description.length > 160) description = description.replace(` (${where})`, '');
     const lead = p.kind === 'notice'
-      ? `${p.name}, ${county} County. The ${edition.year} Utah fishing guidebook has no entry of its own for this water; these are Utah DWR's emergency change for it and the statewide limits, as of noon, ${asOf}. Apart from the emergency change, the statewide rules apply.`
-      : `${p.name}, ${county} County. Utah DWR's rules for this ${p.kind === 'community' ? 'community fishing water' : 'water'} from the ${edition.year} Utah fishing guidebook, page ${p.page}, with the statewide limits and any emergency change in force, as of noon, ${asOf}.`;
+      ? `${p.name}, ${where}. The ${edition.year} Utah fishing guidebook has no entry of its own for this water; these are Utah DWR's emergency change for it and the statewide limits, as of noon, ${asOf}. Apart from the emergency change, the statewide rules apply.`
+      : `${p.name}, ${where}. Utah DWR's rules for this ${p.kind === 'community' ? 'community fishing water' : 'water'} from the ${edition.year} Utah fishing guidebook, page ${p.page}, with the statewide limits and any emergency change in force, as of noon, ${asOf}.`;
     const guidebookSource = p.kind === 'notice' ? '' : `<p class="fine">Source: <a href="${esc(edition.pdf)}#page=${esc(p.page)}" rel="noopener">${esc(edition.title)}, page ${esc(p.page)}</a></p>`;
     const sheet = fishing.render(p.id);
     if (!sheet) throw new BuildError('the fishing renderer returned no sheet for ' + p.id);
@@ -419,7 +428,9 @@ ${p.changes.map(sourceChange).join('\n')}
         letter = first;
         list += `<section>\n<h2>${esc(letter)}</h2>\n<ul class="links">\n`;
       }
-      list += `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)} &mdash; ${esc(item.counties.join(', '))} County${item.targetReach ? ` &mdash; ${esc(item.targetReach)}` : ''}</li>\n`;
+      /* A pointer says where the guidebook sends it, and the stretch when UDWR names one. */
+      const see = item.kind === 'pointer' ? ` &mdash; see ${esc(item.targetName)}${item.targetReach ? ', ' + esc(item.targetReach) : ''}` : '';
+      list += `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)} &mdash; ${esc(countyText(item.counties))}${see}</li>\n`;
     }
     if (letter) list += '</ul>\n</section>\n';
     const main = `<div class="wrap page">\n<h1>${esc(c.label)}</h1>\n${list}</div>`;
