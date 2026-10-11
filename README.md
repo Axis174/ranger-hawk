@@ -802,6 +802,13 @@ Zoom 13 was chosen by test: dirt tracks and trails are already in the data at
 file limit. The service worker answers the map's byte-range reads from the saved
 copy, which lives in its own cache so an app update never discards it.
 
+An app update installs all or nothing (since v38): if any file in the service
+worker's SHELL fails to download, the new worker is dropped, the old one keeps
+serving its complete cache, and the browser tries again on a later visit. The old
+cache is deleted only after the new one is complete. So every SHELL file must exist
+in `docs/` under its exact name and be listed once, or no phone takes the update;
+`scraper/test_site.js` checks both, and plays a failed and a good update.
+
 Looked at and deliberately left out: **Open-Meteo** (its free tier is
 non-commercial only); **Turf.js** (half a megabyte to do one point-in-polygon
 test); **Workbox** (needs a build step this app does not have); and the one open

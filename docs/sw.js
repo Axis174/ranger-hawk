@@ -8,10 +8,12 @@
 
    Data is network-first with a cache fallback: a live refresh wins when there
    is signal, and the last good copy is there when there is none. */
-const VERSION = 'ranger-hawk-v37';
+const VERSION = 'ranger-hawk-v38';
 const SHELL = [
   './', './index.html', './state.js', './app.js', './cams.js', './finder.js', './fishing.js', './contacts.js', './trip.js', './roads.js', './go.js', './site.js', './styles.css', './fonts/ZillaSlab-500.woff2', './fonts/ZillaSlab-600.woff2', './fonts/ZillaSlab-700.woff2', './fonts/PublicSans-var.woff2', './fonts/IBMPlexMono-400.woff2', './fonts/IBMPlexMono-500.woff2', './fonts/IBMPlexMono-600.woff2', './data/ut/cam_rules.json', './data/ut/hunt_units_2026.json', './data/ut/landowner_tags.json',
   './manifest.webmanifest', './icons/rangerhawk-wordmark.svg', './icons/icon-192.png', './icons/icon-512.png',
+  // The icons index.html and the website pages link, so the tab and home-screen icons show with no signal.
+  './favicon.ico', './icons/favicon.svg', './icons/favicon-32.png', './icons/icon-180.png',
   // The website pages (scraper/build_pages.js), so one never opened still opens with no signal.
   './hunting/', './fishing/', './privacy/', './how-ranger-hawk-makes-money/', './about/', './page.css',
   './data/ut/bird_access.json', './data/ut/seasons.json', './data/ut/config.json',
@@ -19,10 +21,17 @@ const SHELL = [
   './data/ut/fishing_rules.json', './data/ut/fishing_places.json', './data/ut/fishing_notices.json', './data/ut/access_contacts.json', './data/ut/paid_links.json'
 ];
 
+/* Install copies the whole shell or fails. addAll stores nothing unless every
+   file came back OK, and its failure fails the install: the browser drops the
+   new worker, the old one keeps serving its complete cache, and the update is
+   tried again on a later visit. Only an install that finished reaches activate,
+   which is where the old cache is deleted. addAll also refuses a list that
+   names a file twice, so each file is listed once; scraper/test_site.js checks
+   that, and that every file exists. */
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(VERSION)
-      .then(c => Promise.allSettled(SHELL.map(u => c.add(new Request(u, {cache: 'reload'})))))
+      .then(c => c.addAll(SHELL.map(u => new Request(u, {cache: 'reload'}))))
       .then(() => self.skipWaiting())
   );
 });
