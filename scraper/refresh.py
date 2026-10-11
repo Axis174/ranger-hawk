@@ -248,13 +248,16 @@ if new_hashes:
 # ("unread_notices") and printed as NOTICE UNREAD lines at the end of the log. A page that cannot be read never
 # wipes the notices already held - it is recorded as a failed check instead, and
 # the app shows how long ago the list was last read successfully.
+notice_list_changed = False
 try:
     import fishing_notices as FN
     prev = load_prev("fishing_notices.json") or {}
     had = {n["slug"]: n for n in prev.get("notices", [])}
+    rules_now = load_prev("fishing_rules.json")
+    built_now = {a.get("notice") for a in rules_now["amendments"]} if rules_now and isinstance(rules_now.get("amendments"), list) else None
     try:
         got = FN.read(get(S.FISHING_REVISIONS["page"], timeout=90).decode("utf-8", "ignore"),
-                      S.FISHING_REVISIONS["block_id"], S.FISHING_REVISIONS["notice_path"])
+                      S.FISHING_REVISIONS["block_id"], S.FISHING_REVISIONS["notice_path"], built=built_now)
     except Exception as e:                # noqa: BLE001
         got = {"ok": False, "error": repr(e)[:200], "notices": [], "other": []}
     if got["ok"] and not got["notices"] and had:
@@ -307,14 +310,22 @@ try:
         else:
             report["ok"].append({"source": "fishing_notices", "features": len(got["notices"]),
                                  **({"first_run": True} if not prev else {})})
-        out.update({"ok": True, "last_ok": report["run"], "sha": got["sha"],
+        # "sha" is the whole page; "sha_built" is the page without the unread notices, the
+        # one test_fishing.js holds to the hash the rules were built from; "sha_chk" ties
+        # the two together so that neither can be edited alone.
+        out.update({"ok": True, "last_ok": report["run"], "sha": got["sha"], "sha_built": got["sha_built"],
+                    "sha_chk": hashlib.sha256(("%s|%s" % (got["sha_built"], got["sha"])).encode()).hexdigest()[:16],
                     "notices": got["notices"], "other": got["other"]})
+        if built_now is not None and got["sha_built"] != (rules_now or {}).get("_notices_sha") and FN.unread(got["notices"], built_now):
+            notice_list_changed = True
     else:
         report["errors"].append({"source": "fishing_notices", "error": got["error"]})
         out.update({"ok": False, "error": got["error"], "last_ok": prev.get("last_ok"),
                     "sha": prev.get("sha"), "notices": prev.get("notices", []), "other": prev.get("other", [])})
+        for k_ in ("sha_built", "sha_chk"):
+            if k_ in prev:
+                out[k_] = prev[k_]
     save("fishing_notices.json", out)
-    rules_now = load_prev("fishing_rules.json")
     if rules_now and isinstance(rules_now.get("amendments"), list):
         report["unread_notices"] = FN.unread(out["notices"], {a.get("notice") for a in rules_now["amendments"]})
     else:
@@ -619,3 +630,5 @@ for e in report["errors"]:
 # One line per notice, easy to find in the job log. Not an error: the job goes on.
 for u in report["unread_notices"]:
     print(f"NOTICE UNREAD: {u['title']} {u['first_seen']} {u['url']}")
+if notice_list_changed:
+    print("NOTICE LIST CHANGED: the page differs from the day the rules were built by more than the unread notices above")

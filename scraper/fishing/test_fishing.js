@@ -75,12 +75,22 @@ vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
 const T = box.T;
 const R = load('fishing_rules.json'), P = load('fishing_places.json'), NRAW = load('fishing_notices.json');
 /* N is UDWR's list as the rules were built from it. A notice nobody has read in yet is
-   taken out, and the list's hash put back, so that every check below that starts from
-   "an ordinary day" does not depend on whether tonight's run found a new notice. The
-   unread notices themselves are checked on NRAW, in "an unread notice is surfaced" below. */
+   taken out, and the list's hash becomes the one the refresh job recorded for the page
+   WITHOUT those notices (sha_built), so that every check below that starts from "an
+   ordinary day" does not depend on whether tonight's run found a new notice. That hash
+   is not put back by hand: if UDWR changed the page in any other way, it no longer
+   equals the one the rules were built from, and "today's list matches the day the rules
+   were built" below fails. sha_chk ties sha and sha_built together, so neither can be
+   edited without the other. The unread notices themselves are checked on NRAW, in "an
+   unread notice is surfaced" below. */
 const N = (() => {
   const built = new Set(R.amendments.map(a => a.notice)), n = JSON.parse(JSON.stringify(NRAW));
-  if (n.notices.some(x => !built.has(x.slug))) { n.notices = n.notices.filter(x => built.has(x.slug)); n.sha = R._notices_sha; }
+  if (n.notices.some(x => !built.has(x.slug))) {
+    n.notices = n.notices.filter(x => built.has(x.slug));
+    n.sha = n.sha_built;                              // missing or null: the line below fails
+    const chk = require('crypto').createHash('sha256').update(n.sha_built + '|' + NRAW.sha).digest('hex').slice(0, 16);
+    if (NRAW.sha_chk !== chk) n.sha = 'sha_built-and-sha-do-not-agree';
+  }
   return n;
 })();
 T.set(R, P, N);

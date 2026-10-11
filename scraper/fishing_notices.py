@@ -155,8 +155,15 @@ def split_line(ln):
     return [o for o in out if o["txt"]]
 
 
-def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
-    """-> {"ok", "error", "sha", "notices": [...], "other": [...]}"""
+def read(page, block_id, notice_path, base="https://wildlife.utah.gov", built=None):
+    """-> {"ok", "error", "sha", "sha_built", "notices": [...], "other": [...]}
+
+    "sha" is the hash of the whole Revisions block (its text and its link addresses),
+    which cannot be rebuilt from the parsed notices. "sha_built" is that hash with the
+    lines of every notice whose slug is not in `built` left out, so it can be compared
+    with the hash the rules were built from on a night when an unread notice is on the
+    page. It equals "sha" when nothing is left out, and is None if an unread notice
+    shares a line with something else (the two cannot be told apart)."""
     inner = block(page, block_id)
     if inner is None:
         return {"ok": False, "error": "the Revisions block was not found on the page", "notices": [], "other": []}
@@ -174,8 +181,10 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
 
     notices, other, cur, seen = [], [], None, set()
     by_slug = {}
-    for ln in [part for l_ in px.lines for part in split_line(l_)]:
+    owners = {}                           # line of the block -> the notices its parts went to (None: none)
+    for i_, ln in [(i_, part) for i_, l_ in enumerate(px.lines) for part in split_line(l_)]:
         tag, txt = ln["tag"], ln["txt"]
+        own = owners.setdefault(i_, set())
         hits = [] if tag == "h" else pdfs_of(ln["links"])
         hit = hits[0][:3] if hits else None
         head = None if tag == "h" else HEADED.match(txt)
@@ -184,6 +193,7 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
             # on the page it stands. It is added to it, so that notice reads as reworded.
             by_slug[hit[1]]["text"].append([tag, txt])
             by_slug[hit[1]]["bold"] += ln["bold"]
+            own.add(hit[1])
             continue
         if hit and hit[1] not in seen:
             href, slug, atext = hit
@@ -199,6 +209,7 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
                 cur["odd_path"] = True             # a PDF, but not where the notices are kept
             notices.append(cur)
             by_slug[slug] = cur
+            own.add(slug)
             continue
         if head:
             # Headed like a notice and carrying no PDF. It is a notice of its own.
@@ -211,16 +222,20 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
                        "name": head.group(1).strip(), "county": (head.group(2) or head.group(3) or "").strip(),
                        "text": [["p", txt]], "bold": list(ln["bold"]), "no_pdf": True}
                 notices.append(cur)
+                own.add(slug)
                 continue
         if tag == "h" or re.match(r"All other rules established", txt):
             cur = None
             other.append([tag, txt])
+            own.add(None)
             continue
         if cur is None:
             other.append([tag, txt])
+            own.add(None)
         else:
             cur["text"].append([tag, txt])
             cur["bold"] += ln["bold"]
+            own.add(cur["slug"])
     for n in notices:
         whole = " ".join(t for _, t in n["text"])
         m = re.search(r"went into effect (?:on )?" + DAY + r",?\s+and will remain in effect until " + DAY, whole)
@@ -228,8 +243,14 @@ def read(page, block_id, notice_path, base="https://wildlife.utah.gov"):
         n["until"] = iso(*m.groups()[3:]) if m else None
         n["bold"] = [b for b in n["bold"] if b and not b.lower().startswith("important")]
         n["sha"] = digest(whole)
-    whole = " ".join(t for ln in px.lines for t in [ln["txt"]] + [l[0] for l in ln["links"]])
-    return {"ok": True, "error": None, "sha": digest(whole), "notices": notices, "other": other}
+    def page_text(drop):
+        return " ".join(t for i_, ln in enumerate(px.lines) if i_ not in drop for t in [ln["txt"]] + [l[0] for l in ln["links"]])
+    whole = page_text(set())
+    skip = {n["slug"] for n in notices if built is not None and n["slug"] not in built}
+    drop = {i_ for i_, o_ in owners.items() if o_ & skip}
+    mixed = any(o_ - skip for i_, o_ in owners.items() if i_ in drop)
+    return {"ok": True, "error": None, "sha": digest(whole), "sha_built": None if mixed else digest(page_text(drop)),
+            "notices": notices, "other": other}
 
 
 def unread(notices, built):
