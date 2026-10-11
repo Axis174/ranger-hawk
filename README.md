@@ -563,7 +563,8 @@ the app says.
   the nightly build adds and removes those pages and the sitemap follows. Each page ends
   with a button that opens the water in the app (`/?water=<id>`). The wording sweep exempts
   UDWR's words wherever a page quotes them (rule text, rule bullets, community notes, the
-  limits table) and still sweeps every sentence Ranger Hawk writes.
+  limits table, UDWR's notices and its list of changes) and still sweeps every sentence
+  Ranger Hawk writes.
 - **`docs/robots.txt`** is written by hand. Every crawler is allowed, AI search and
   answer engines and model-training crawlers included; only `/maps/` (the offline map
   files) is closed. Decision 2026-10-09: allow training too, because the rules are free
