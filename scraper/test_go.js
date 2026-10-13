@@ -368,6 +368,23 @@ screen('fishing permit', 'fish');
     ok('"strawberry reservoir deer": the Wasatch rifle rows carry the October rifle dates alone, no early hunt', rd.length > 0 && rd.every(x => !x.early && early.indexOf(x.unit) < 0), JSON.stringify(rd));
     ok('across both answers, "Early" is on a rifle row exactly when the unit is on the Field Regulations list', ra.concat(rd).every(x => x.early === (early.indexOf(x.unit) >= 0)), JSON.stringify(ra.concat(rd)));
   }
+  /* Unit exceptions on a season row: except and unit_notes (2026 Field Regulations pages 5, 31, 45, 50). */
+  {
+    const S = load('seasons.json').seasons, row = id => S.find(s => s.id === id) || {};
+    const gen = load('hunt_units_2026.json').hunts.deer_gen.map(u => u.unit), spike = load('hunt_units_2026.json').hunts.elk_spike.map(u => u.unit);
+    const three = ['Beaver, West', 'Boulder/Kaiparowits', 'Cache'];
+    ok('deer-muzz and deer-rifle carry unit_notes for exactly the three restricted-weapons units, all general deer units', ['deer-muzz', 'deer-rifle'].every(id => same(Object.keys(row(id).unit_notes || {}).sort(), three) && three.every(u => gen.indexOf(u) >= 0)), JSON.stringify([row('deer-muzz').unit_notes, row('deer-rifle').unit_notes]));
+    ok('elk-archery-anybull excepts Paunsaugunt; elk-archery-spike notes both Book Cliffs spike polygons, which are on the spike list', same(row('elk-archery-anybull').except, ['Paunsaugunt']) && same(Object.keys(row('elk-archery-spike').unit_notes || {}).sort(), ['Book Cliffs, Bitter Creek/East', 'Book Cliffs, Little Creek Roadless']) && Object.keys(row('elk-archery-spike').unit_notes).every(u => spike.indexOf(u) >= 0), JSON.stringify(row('elk-archery-spike').unit_notes));
+    const c = answer('cache deer');
+    ok('"cache deer": restricted rifle and restricted muzzleloader rows for Cache, no plain rifle or muzzleloader row, and the no-scopes sentence', /General buck deer, restricted rifle - Cache/.test(c.txt) && /General buck deer, restricted muzzleloader - Cache/.test(c.txt) && !/General buck deer, rifle - Cache/.test(c.txt) && !/General buck deer, muzzleloader - Cache/.test(c.txt) && /no scopes of any kind/.test(c.txt), c.txt.slice(0, 400));
+    const bv = answer('beaver deer');
+    ok('"beaver deer": Beaver, West is restricted and Beaver, East is a plain rifle hunt', /restricted rifle - Beaver, West/.test(bv.txt) && /General buck deer, rifle - Beaver, East/.test(bv.txt) && !/restricted rifle - Beaver, East/.test(bv.txt), bv.txt.slice(0, 400));
+    const pg = answer('paunsaugunt elk');
+    ok('"paunsaugunt elk": no general archery any-bull row, the general rifle any-bull row stays', !/Any-bull elk, general archery - Paunsaugunt/.test(pg.txt) && /Any-bull elk, general rifle - Paunsaugunt/.test(pg.txt), pg.txt.slice(0, 300));
+    const bc = answer('book cliffs elk');
+    ok('"book cliffs elk": both spike archery rows say spike bull only and never "Spike or antlerless"', ['Book Cliffs, Little Creek Roadless', 'Book Cliffs, Bitter Creek/East'].every(u => { const i = bc.txt.indexOf('Spike elk, general archery - ' + u); const seg = i >= 0 ? bc.txt.slice(i, i + 260) : ''; return i >= 0 && /Spike bull only on Book Cliffs/.test(seg) && !/Spike or antlerless/.test(seg); }), bc.txt.slice(0, 500));
+    ok('the same answers at a unit with no exception are unchanged: "deer near fish lake" has no restricted word and 8 rows', !/restricted/.test(answer('deer near fish lake').txt) && answer('deer near fish lake').rows === 8, '');
+  }
   /* A mountain tagged as a lake in the data is not a lake. */
   for (const s of ['elk near thousand lake mountain', 'elk near tushar mountain lakes', 'elk near monroe mountain lakes', 'deer near willard peak pond']) {
     const a = answer(s);

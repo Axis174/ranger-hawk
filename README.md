@@ -626,7 +626,13 @@ them, that its dates apply to. Today the finder reads it on one row, the early
 any-weapon deer hunt (`deer-early-rifle`), and prints that row only on those
 units: in 2026 it is on 12 of the 31 general-season units (Field Regulations
 p.45), so the other 19 show the October rifle dates alone. `units` is for the
-code; `area` is the sentence a hunter reads.
+code; `area` is the sentence a hunter reads. A row may also carry `except` (printed on
+every unit but these) and `unit_notes` (list name to that unit's own words: the sentence
+after the dates, or `{"t": "restricted rifle", "s": "..."}` to change the title word too).
+In 2026: no general archery elk on Paunsaugunt (`except`); Book Cliffs spike archery is
+spike-only (`unit_notes`); on Beaver West, Boulder/Kaiparowits and Cache the general
+muzzleloader and rifle deer hunts are restricted-weapons hunts, no scopes of any kind
+(`unit_notes` on both rows). All from the Field Regulations, pages 5, 31, 45 and 50.
 
 Run locally:
 

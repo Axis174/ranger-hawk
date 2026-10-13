@@ -263,6 +263,13 @@ const fUnitMatch = (huntUnit, myUnits) => {
 };
 const fSeason = id => (DB.seasons.seasons || []).find(s => s.id === id);
 const fDates = id => { const s = fSeason(id); return s ? `${fmt(d0(s.start))} to ${fmt(d0(s.end))}` : ''; };
+/* Unit exceptions on a season row (seasons.json, hand-maintained from the Field Regulations): `units` = the row is printed
+   only on these list names; `except` = on every unit but these; `unit_notes` = list name to the unit's own words,
+   either the sentence after the dates or {t: the title word, s: that sentence}. */
+const fSkip = (id, unit) => { const s = fSeason(id); return !!(s && ((s.units && !s.units.includes(unit)) || (s.except && s.except.includes(unit)))); };
+const fNote = (id, unit) => { const s = fSeason(id), n = s && s.unit_notes && s.unit_notes[unit]; return n ? (typeof n === 'string' ? { s: n } : n) : null; };
+const fSent = (id, unit, dflt) => { const n = fNote(id, unit); return n && n.s ? n.s : dflt; };
+const fWord = (id, unit, dflt) => { const n = fNote(id, unit); return n && n.t ? n.t : dflt; };
 function fOddsLine(h) {                                       // last year's result at the user's points, if they set them
   if (!ODDS) return '';
   const grp = h.g, key = grp + '|' + h.s, typed = fq.parsed && fq.parsed.pt;
@@ -279,14 +286,14 @@ function fResults(q, myUnits) {
   if (!q.sp || q.sp === 'elk') {
     const ab = inList('elk_anybull'), sp = inList('elk_spike'), rows = [];
     for (const u of ab) {
-      if (wpOk('archery')) rows.push({ t: `Any-bull elk, general archery - ${u.unit}`, sub: sub(u), s: `${fDates('elk-archery-anybull')}. Over the counter. Any bull or antlerless.` });
-      if (wpOk('rifle')) rows.push({ t: `Any-bull elk, general rifle - ${u.unit}`, sub: sub(u), s: `Early ${fDates('elk-early-rifle')} or late ${fDates('elk-late-rifle')}. Over the counter; pick one.` });
-      if (wpOk('muzzleloader')) rows.push({ t: `Any-bull elk, general muzzleloader - ${u.unit}`, sub: sub(u), s: `${fDates('elk-muzz')}. Over the counter.` });
+      if (wpOk('archery') && !fSkip('elk-archery-anybull', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-archery-anybull', u.unit, 'archery')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-archery-anybull')}. ${fSent('elk-archery-anybull', u.unit, 'Over the counter. Any bull or antlerless.')}` });
+      if (wpOk('rifle') && !fSkip('elk-early-rifle', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-early-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: sub(u), s: `Early ${fDates('elk-early-rifle')} or late ${fDates('elk-late-rifle')}. ${fSent('elk-early-rifle', u.unit, 'Over the counter; pick one.')}` });
+      if (wpOk('muzzleloader') && !fSkip('elk-muzz', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-muzz')}. ${fSent('elk-muzz', u.unit, 'Over the counter.')}` });
     }
     for (const u of sp) {
-      if (wpOk('archery')) rows.push({ t: `Spike elk, general archery - ${u.unit}`, sub: sub(u), s: `${fDates('elk-archery-spike')}. Over the counter. Spike or antlerless only.` });
-      if (wpOk('rifle')) rows.push({ t: `Spike elk, general rifle - ${u.unit}`, sub: sub(u), s: `${fDates('elk-spike-rifle')}. Over the counter. Spike only - a branched bull here is a citation.` });
-      if (wpOk('muzzleloader')) rows.push({ t: `Spike elk, general muzzleloader - ${u.unit}`, sub: sub(u), s: `${fDates('elk-muzz')}. Over the counter.` });
+      if (wpOk('archery') && !fSkip('elk-archery-spike', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-archery-spike', u.unit, 'archery')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-archery-spike')}. ${fSent('elk-archery-spike', u.unit, 'Over the counter. Spike or antlerless only.')}` });
+      if (wpOk('rifle') && !fSkip('elk-spike-rifle', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-spike-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-spike-rifle')}. ${fSent('elk-spike-rifle', u.unit, 'Over the counter. Spike only - a branched bull here is a citation.')}` });
+      if (wpOk('muzzleloader') && !fSkip('elk-muzz', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-muzz')}. ${fSent('elk-muzz', u.unit, 'Over the counter.')}` });
     }
     if (!q.wantLE || q.wantGeneral) card('Elk you can buy over the counter', rows);
     const ctl = inList('antlerless_elk_control'); if (ctl.length && (q.wantAntlerless || !q.wantLE)) card('Antlerless elk control permits here', ctl.map(u => ({ t: `Antlerless elk control - ${u.unit}`, s: 'Sold separately; check dates and quota at wildlife.utah.gov/biggame.', sub: sub(u) })));
@@ -295,10 +302,10 @@ function fResults(q, myUnits) {
     const g = inList('deer_gen'), rows = [];
     for (const u of g) {
       const ex = /extended/i.test(u.unit);
-      if (wpOk('archery')) rows.push({ t: `General buck deer, archery - ${u.unit}`, sub: sub(u), s: `${fDates('deer-archery')}. Drawn with preference points (most units draw at 0-1 point). Extended archery ${fDates('deer-ext-archery')} on the Wasatch Front and others.` });
-      if (wpOk('muzzleloader')) rows.push({ t: `General buck deer, muzzleloader - ${u.unit}`, sub: sub(u), s: `${fDates('deer-muzz')}. Drawn with preference points.` });
+      if (wpOk('archery') && !fSkip('deer-archery', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-archery', u.unit, 'archery')} - ${u.unit}`, sub: sub(u), s: `${fDates('deer-archery')}. ${fSent('deer-archery', u.unit, `Drawn with preference points (most units draw at 0-1 point). Extended archery ${fDates('deer-ext-archery')} on the Wasatch Front and others.`)}` });
+      if (wpOk('muzzleloader') && !fSkip('deer-muzz', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: sub(u), s: `${fDates('deer-muzz')}. ${fSent('deer-muzz', u.unit, 'Drawn with preference points.')}` });
       const early = ((fSeason('deer-early-rifle') || {}).units || []).includes(u.unit);   // Field Regs p.45: 12 named units only
-      if (wpOk('rifle')) rows.push({ t: `General buck deer, rifle - ${u.unit}`, sub: sub(u), s: `${early ? `Early ${fDates('deer-early-rifle')} or ` : ''}${fDates('deer-rifle')}. Drawn with preference points.` });
+      if (wpOk('rifle') && !fSkip('deer-rifle', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: sub(u), s: `${early ? `Early ${fDates('deer-early-rifle')} or ` : ''}${fDates('deer-rifle')}. ${fSent('deer-rifle', u.unit, 'Drawn with preference points.')}` });
     }
     if (!q.wantLE || q.wantGeneral) card('Deer - general season (draw, preference points)', rows);
   }
