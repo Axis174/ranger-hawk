@@ -621,6 +621,12 @@ dies the app loses nothing else; failures are logged in `changelog.json`.
 dates and bag limits come out of a PDF that changes layout year to year; a
 scraper that guessed at them would eventually be confidently wrong about a legal
 limit. The job flags the reissue, a human reads the table, the file gets edited.
+A row may carry `units`: the list names, spelled as `hunt_units_2026.json` spells
+them, that its dates apply to. Today the finder reads it on one row, the early
+any-weapon deer hunt (`deer-early-rifle`), and prints that row only on those
+units: in 2026 it is on 12 of the 31 general-season units (Field Regulations
+p.45), so the other 19 show the October rifle dates alone. `units` is for the
+code; `area` is the sentence a hunter reads.
 
 Run locally:
 

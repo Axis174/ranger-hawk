@@ -354,6 +354,20 @@ screen('fishing permit', 'fish');
     const r = answer('deer near the weber river');
     ok('...a river after "the" still gets its river line (it resolves nothing)', !r.q.place && r.txt.indexOf(RIVER) >= 0, r.txt.slice(0, 160));
   }
+  /* The early any-weapon deer hunt (Oct 7-11) is on 12 named general-season units, not on all 31 (2026 Field Regulations p.45). */
+  {
+    const early = ((load('seasons.json').seasons.find(s => s.id === 'deer-early-rifle') || {}).units || []);
+    const gen = load('hunt_units_2026.json').hunts.deer_gen.map(u => u.unit);
+    const regs = ['Box Elder', 'Chalk Creek', 'East Canyon', 'Fillmore B', 'Fishlake', 'Kamas', 'Morgan-South Rich', 'Nine Mile', 'North Slope', 'Panguitch Lake', 'Pine Valley', 'Zion'];
+    ok('seasons.json names the 12 early-hunt units as the Field Regulations list them (Fillmore is "Fillmore B" in the deer_gen list)', same(early.slice().sort(), regs.slice().sort()), JSON.stringify(early));
+    ok('every early-hunt unit is a general-season deer unit in hunt_units_2026.json', early.length === 12 && early.every(u => gen.indexOf(u) >= 0), JSON.stringify(early.filter(u => gen.indexOf(u) < 0)));
+    const rifle = txt => txt.split('General buck deer, rifle - ').slice(1).map(p => ({ unit: p.split('|')[0].trim(), early: /\bEarly\b/.test(p.slice(0, p.indexOf('Drawn with preference points'))) }));
+    const a = answer('deer near fish lake'), d = answer('strawberry reservoir deer');
+    const ra = rifle(a.txt), rd = rifle(d.txt);
+    ok('"deer near fish lake": the Fishlake rifle row says "Early <dates> or <dates>" (Fishlake is on the list)', ra.some(x => x.unit === 'Fishlake' && x.early), JSON.stringify(ra));
+    ok('"strawberry reservoir deer": the Wasatch rifle rows carry the October rifle dates alone, no early hunt', rd.length > 0 && rd.every(x => !x.early && early.indexOf(x.unit) < 0), JSON.stringify(rd));
+    ok('across both answers, "Early" is on a rifle row exactly when the unit is on the Field Regulations list', ra.concat(rd).every(x => x.early === (early.indexOf(x.unit) >= 0)), JSON.stringify(ra.concat(rd)));
+  }
   /* A mountain tagged as a lake in the data is not a lake. */
   for (const s of ['elk near thousand lake mountain', 'elk near tushar mountain lakes', 'elk near monroe mountain lakes', 'deer near willard peak pond']) {
     const a = answer(s);

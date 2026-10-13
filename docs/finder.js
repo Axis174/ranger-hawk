@@ -297,7 +297,8 @@ function fResults(q, myUnits) {
       const ex = /extended/i.test(u.unit);
       if (wpOk('archery')) rows.push({ t: `General buck deer, archery - ${u.unit}`, sub: sub(u), s: `${fDates('deer-archery')}. Drawn with preference points (most units draw at 0-1 point). Extended archery ${fDates('deer-ext-archery')} on the Wasatch Front and others.` });
       if (wpOk('muzzleloader')) rows.push({ t: `General buck deer, muzzleloader - ${u.unit}`, sub: sub(u), s: `${fDates('deer-muzz')}. Drawn with preference points.` });
-      if (wpOk('rifle')) rows.push({ t: `General buck deer, rifle - ${u.unit}`, sub: sub(u), s: `Early ${fDates('deer-early-rifle')} or ${fDates('deer-rifle')}. Drawn with preference points.` });
+      const early = ((fSeason('deer-early-rifle') || {}).units || []).includes(u.unit);   // Field Regs p.45: 12 named units only
+      if (wpOk('rifle')) rows.push({ t: `General buck deer, rifle - ${u.unit}`, sub: sub(u), s: `${early ? `Early ${fDates('deer-early-rifle')} or ` : ''}${fDates('deer-rifle')}. Drawn with preference points.` });
     }
     if (!q.wantLE || q.wantGeneral) card('Deer - general season (draw, preference points)', rows);
   }
