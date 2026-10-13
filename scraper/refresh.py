@@ -177,43 +177,6 @@ try:
 except Exception as e:                    # noqa: BLE001
     report["errors"].append({"source": "pheasant_release_probe", "error": repr(e)[:200]})
 
-# ------------------------------------------------------------- migration ----
-mig = {"type": "FeatureCollection", "features": []}
-for lname, lid in S.MIGRATION_LAYERS.items():
-    try:
-        fc = fetch_all(f"{S.MIGRATION_BASE}/{lid}", bbox=S.UTAH_BBOX)
-        for f in fc["features"]:
-            f.setdefault("properties", {})["_layer"] = lname
-        mig["features"].extend(fc["features"])
-        report["ok"].append({"source": f"migration:{lname}", "features": len(fc["features"])})
-    except Exception as e:                # noqa: BLE001
-        report["errors"].append({"source": f"migration:{lname}", "error": repr(e)[:300]})
-if mig["features"]:
-    prev = load_prev("migration_utah.json")
-    if prev and digest(prev) != digest(mig):
-        report["changes"].append({"source": "migration_utah",
-                                  "desc": "USGS ungulate migration layers (Utah extent)",
-                                  "features": len(mig["features"]), "detail": []})
-    # Thin it. The raw pull is ~6 MB, which is too heavy to commit daily and far
-    # too heavy to hand a phone. 4 decimal places is ~11 m - well inside the
-    # precision of a collar-derived corridor - and we keep only the layer tag.
-    def thin(coords):
-        if isinstance(coords[0], (int, float)):
-            return [round(coords[0], 4), round(coords[1], 4)]
-        return [thin(c) for c in coords]
-    slim = {"type": "FeatureCollection", "_source":
-            "USGS Ungulate Migrations of the Western United States, Volume 1 (Utah extent)",
-            "_note": "Coordinates rounded to 4 dp (~11 m).", "features": []}
-    for f in mig["features"]:
-        g = f.get("geometry")
-        if not g or not g.get("coordinates"):
-            continue
-        slim["features"].append({
-            "type": "Feature",
-            "geometry": {"type": g["type"], "coordinates": thin(g["coordinates"])},
-            "properties": {"layer": f["properties"].get("_layer")}})
-    save("migration_utah.json", slim)
-
 # ------------------------------------------------------------------ PDFs ----
 hashes = load_prev("pdf_hashes.json") or {}
 new_hashes = {}

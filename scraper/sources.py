@@ -54,19 +54,6 @@ ARCGIS = {
     },
 }
 
-# USGS Ungulate Migrations of the Western United States, Volume 1.
-# Verified Utah coverage 2026-09-20: 278 elk routes, 111 mule deer routes,
-# 56 mule deer corridors, 47 mule deer winter-range polygons inside the Utah bbox.
-MIGRATION_BASE = ("https://services1.arcgis.com/754BERmVIq3RqSf8/arcgis/rest/services"
-                  "/Ungulate_Migrations_of_the_Western_United_States_Volume_1/FeatureServer")
-MIGRATION_LAYERS = {
-    "elk_routes": 1,
-    "mule_deer_routes": 6,
-    "mule_deer_corridors": 8,
-    "mule_deer_winter_range": 9,
-}
-UTAH_BBOX = "-114.1,36.9,-109.0,42.1"
-
 # UDOT's traffic API. Every endpoint needs a free developer key passed as ?key=,
 # so with no key in the environment the scraper skips this block entirely rather
 # than failing the run. Throttle is ten calls per 60 seconds; we make four.

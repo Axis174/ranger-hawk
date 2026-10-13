@@ -234,7 +234,6 @@ Everything lands in `docs/data/ut/`.
 | `fishing_notices.json` | UDWR's list of emergency changes to the fishing guidebook, read **daily** |
 | `config.json` | The twelve anchor towns, contacts, landowner calls, permits, trespass law |
 | `access_contacts.json` | Properties where UDWR asks you to phone the owner first, in UDWR's wording with the owner's name and number removed. Built by `scraper/build_access_contacts.py` from the two property layers. |
-| `migration_utah.json` | 492 USGS ungulate migration features, Utah extent |
 | `raw_*.json` | Verbatim upstream pulls, kept so diffs are auditable |
 | `community.json` | UDWR news and Reddit, filtered for relevance |
 | `changelog.json` | Last 60 runs: what changed, field by field |
@@ -295,9 +294,6 @@ stops with a plain message if one of the three ids is missing from `anchors`.
 - UDWR 2026 Big Game Field Regulations and Application Guidebooks
 - UDWR ArcGIS services: Walk-In Access, pheasant release areas, all public
   properties, commercial hunting areas, big game hunt boundaries
-- USGS *Ungulate Migrations of the Western United States, Volume 1* — Utah
-  extent: 278 elk routes, 111 mule deer routes, 56 corridors, 47 winter-range
-  polygons
 - UGRC county and NHD lake geometry
 - Road routing: OSRM
 
