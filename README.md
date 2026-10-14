@@ -229,6 +229,8 @@ Everything lands in `docs/data/ut/`.
 |---|---|
 | `bird_access.json` | 107 access points; 88 carry road-routed drive times from all twelve anchor towns, the other 19 have none |
 | `seasons.json` | Season dates and deadlines. **Hand-maintained** from the guidebooks |
+| `hunt_units_2026.json` | UDWR's hunt-type unit lists, with polygon ids and verbatim boundary descriptions. Built **nightly** by `scraper/build_hunt_units.py` inside `refresh.py`; `config.json` selects `hunt_year` |
+| `hunt_table_2026.json` | Hunt numbers, headings and printed season spans from the Big Game Application Guidebook. Built by hand with `scraper/build_hunt_table.py` after the PDF-reissue flag and a reviewed diff |
 | `fishing_rules.json` | The fishing guidebook, in UDWR's words, with emergency changes. Built by `scraper/build_fishing.py`, never edited by hand |
 | `fishing_places.json` | 435 places to fish, with the rules each is linked to. Built by `scraper/build_fishing_places.py` |
 | `fishing_notices.json` | UDWR's list of emergency changes to the fishing guidebook, read **daily** |
@@ -617,6 +619,16 @@ dies the app loses nothing else; failures are logged in `changelog.json`.
 dates and bag limits come out of a PDF that changes layout year to year; a
 scraper that guessed at them would eventually be confidently wrong about a legal
 limit. The job flags the reissue, a human reads the table, the file gets edited.
+The hunt-type lists are a separate nightly ArcGIS pull. The producer discovers
+year-prefixed big-game services, joins names to polygon ids by exact spelling
+and the reviewed alias table, and preserves UDWR's boundary descriptions.
+A failed pull, unresolved name, slug collision or list losing more than a third
+of its rows leaves the committed file unchanged and adds a named changelog flag.
+When next year's lists appear the job flags them and keeps the current file;
+the lead selects the year by editing `config.json`'s `hunt_year`.
+The hunt-number table is parsed by hand-run `python3 scraper/build_hunt_table.py`
+and committed after a diff; the nightly never writes it or infers dates for
+multiseason or Dedicated Hunter rows whose guidebook entries give no span.
 A row may carry `units`: the list names, spelled as `hunt_units_2026.json` spells
 them, that its dates apply to. Today the finder reads it on one row, the early
 any-weapon deer hunt (`deer-early-rifle`), and prints that row only on those

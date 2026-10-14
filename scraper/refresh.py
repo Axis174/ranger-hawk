@@ -160,6 +160,11 @@ for key, spec in S.ARCGIS.items():
     except Exception as e:                # noqa: BLE001
         report["errors"].append({"source": key, "error": repr(e)[:300]})
 
+# Hunt lists use the same ArcGIS directory, but a failed or partial pull must
+# leave the fully resolved committed file intact and let every other source run.
+import build_hunt_units as HU
+HU.update_hunt_units(DATA, get, report, pulled=report["run"][:10])
+
 # Probe for a newer pheasant-release layer year (UDWR renames it annually).
 try:
     yr = datetime.now().year
