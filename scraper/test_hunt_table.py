@@ -6,6 +6,7 @@ the committed data. The real PDF's layout excerpt is a committed test fixture.
 """
 import copy
 import hashlib
+import html
 import json
 from pathlib import Path
 import re
@@ -84,8 +85,9 @@ class HuntListTests(unittest.TestCase):
                     self.assertIn(row["boundary_id"], names)
                     self.assertEqual(names[row["boundary_id"]], lists.LIST_ALIASES.get(row["unit"], row["unit"]))
                     self.assertTrue(isinstance(row["description"], str) and row["description"])
+                    self.assertNotRegex(row["description"], r"&#?\w+;")
                     if "offline enrichment" in self.document["_source"]:
-                        self.assertEqual(row["description"], descriptions[row["boundary_id"]])
+                        self.assertEqual(row["description"], html.unescape(descriptions[row["boundary_id"]]))
 
     def test_same_live_data_on_later_days_preserves_bytes_and_all_five_aliases_are_used(self):
         # The lead's committed live file is the fixture. Re-enriching from the
@@ -157,6 +159,20 @@ class HuntListTests(unittest.TestCase):
             self.assertIn("pulled 2026-10-14", result["document"]["_source"])
             self.assertEqual(result["document"]["hunts"]["elk_anybull"][0]["description"],
                              "UDWR's revised live boundary description.")
+
+    def test_live_description_html_entities_are_decoded(self):
+        # UDWR's Box Elder and Cache, East Rich attributes spell the dash as "&#8212;".
+        rows = copy.deepcopy(self.document["hunts"])
+        rows["elk_anybull"][0]["description"] = "Rich County&#8212;Boundary begins at the state line &amp; US-89."
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            self.temporary_data(directory)
+            log = report()
+            result = lists.update_hunt_units(directory, fake_arcgis(rows), log, "2026-10-22")
+            self.assertEqual(log["errors"], [])
+            self.assertTrue(result["updated"])
+            self.assertEqual(result["document"]["hunts"]["elk_anybull"][0]["description"],
+                             "Rich County\u2014Boundary begins at the state line & US-89.")
 
     def test_real_row_id_description_and_slug_changes_still_rewrite(self):
         # A changed description is checked through the full adapter above.

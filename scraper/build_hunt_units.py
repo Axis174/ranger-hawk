@@ -8,6 +8,7 @@ Name aliases are the lead's approved packet-5 stop-1 judgments, not fuzzy joins.
 """
 import argparse
 import copy
+import html
 import json
 import os
 from pathlib import Path
@@ -145,6 +146,10 @@ def enrich_rows(hunts, raw, geo, live=False):
             description = row.get("description") if live else b["description"]
             if not isinstance(description, str) or not description:
                 raise HuntBuildError("missing verbatim boundary description", key, [name])
+            # UDWR's attribute text carries HTML entities on some polygons
+            # ("&#8212;" on Box Elder and Cache, East Rich); the sheet must print
+            # the dash the agency means, not the entity.
+            description = html.unescape(description)
             new = {k: row[k] for k in ROW_FIELDS}
             new.update(boundary_id=b["id"], description=description)
             result[key].append(new)
