@@ -15,7 +15,7 @@ function hUnit(id) {
 }
 function unitLink(id) {
   const u = hUnit(id), rows = hUnitRows(id);
-  const slug = u && HU.slugs && Object.prototype.hasOwnProperty.call(HU.slugs, u.n) ? HU.slugs[u.n] : null;
+  const slug = u && HU && HU.slugs && Object.prototype.hasOwnProperty.call(HU.slugs, u.n) ? HU.slugs[u.n] : null;
   return slug && rows.length ? `<a href="/?unit=${esc(slug)}"${units.static ? '' : ` data-unit="${u.id}"`}>Open unit</a>` : '';
 }
 function hUnitParam() {
@@ -71,7 +71,7 @@ function hHuntRow(hunt) {
   const dates = fHuntDates(hunt);
   const year = ODDS && Object.keys(ODDS.years || {}).sort().pop(), result = year && ODDS.years[year][hunt.code];
   const target = !units.static && result;
-  const detail = `${hunt.weapon ? esc(hunt.weapon) + ' &middot; ' : ''}${esc(dates)}`;
+  const detail = [...fHuntKind(hunt), dates].map(esc).join(' &middot; ');
   return `<${target ? 'button' : 'div'} class="row"${target ? ` data-draw="${esc(hunt.code)}"` : ''} style="--g:var(--brand)"><span class="pill"></span><span><span class="t">${esc(code)} &middot; ${esc(hunt.name)}</span><span class="s">${detail}</span></span><span class="v"></span></${target ? 'button' : 'div'}>` +
     (result ? ['r', 'x'].map(res => `<p class="fine" style="padding:8px 16px 0">${res === 'r' ? 'residents' : 'nonresidents'}</p><div class="stats">${drawStats(result, res)}</div>`).join('') : '');
 }
@@ -84,9 +84,10 @@ function sheetUnit(boundaryId) {
   html += `<h3>${esc(u.n)}</h3><p class="where">${species.map(esc).join(' &middot; ')}</p>`;
   html += [...new Set(rows.map(r => r.description))].map(text => `<p class="fine" style="padding:0 16px">${esc(text)}</p>`).join('');
   const base = u.n.split(',')[0];
-  const others = (UNITS || []).filter(other => other.id !== u.id && other.n.startsWith(base) && hUnitRows(other.id).length)
+  const others = (UNITS || []).filter(other => other.id !== u.id && other.n.startsWith(base))
     .sort((a, b) => a.n.localeCompare(b.n, 'en-US'));
-  if (others.length) html += `<p class="fine" style="padding:0 16px">Other units named ${esc(base)}: ${others.map(other => `${esc(other.n)} ${unitLink(other.id)}`).join('; ')}</p>`;
+  // A name match only: every polygon that shares the base name is listed, and the link goes to those with a sheet.
+  if (others.length) html += `<p class="fine" style="padding:0 16px">Other units named ${esc(base)}: ${others.map(other => { const link = unitLink(other.id); return esc(other.n) + (link ? ' ' + link : ''); }).join('; ')}</p>`;
   for (const group of ['Deer', 'Elk', 'Pronghorn', 'Moose', 'Bison', 'Bighorn sheep', 'Mountain Goat']) {
     const entries = rows.filter(r => group === 'Bighorn sheep' ? /Bighorn Sheep$/.test(r.species) : r.species === group);
     if (!entries.length) continue;
@@ -95,7 +96,8 @@ function sheetUnit(boundaryId) {
       html += `<div class="sec-title" style="padding:0 16px">${esc(row.type)}${group === 'Bighorn sheep' ? ' &middot; ' + esc(row.species) : ''}</div><div class="card">`;
       const general = fGeneralRows(row.species, row, null);
       if (general.length) html += general.map(r => `<div class="row" style="--g:var(--brand)"><span class="pill"></span><span><span class="t">${esc(r.t)}</span><span class="s">${r.s}</span></span><span class="v"></span></div>`).join('');
-      else html += fTableHunts(row).map(hHuntRow).join('');
+      // A list entry with no hunt number in the guidebook table shows UDWR's own season label, as the finder does.
+      else html += fTableHunts(row).map(hHuntRow).join('') || `<div class="row" style="--g:var(--brand)"><span class="pill"></span><span><span class="t">${esc(row.unit)}</span><span class="s">${esc(row.season)}</span></span><span class="v"></span></div>`;
       html += '</div>';
     }
   }

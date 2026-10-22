@@ -165,6 +165,9 @@ async function renderChecks() {
     ok('polygon header uses the boundary spelling: ' + polygon.n, html.includes('<h3>' + esc(polygon.n) + '</h3>'));
     for (const description of new Set(entries.map(r => r.description))) ok('escaped verbatim description: ' + polygon.n, html.includes(esc(description)));
     for (const r of entries) ok('list type is represented: ' + polygon.n + ' / ' + r.type, html.includes(esc(r.type)));
+    ok('no empty card: ' + polygon.n, !/<div class="card">\s*<\/div>/.test(html));
+    for (const r of entries) if (!p.T.fGeneralRows(r.species, r, null).length && !p.T.fTableHunts(r).length)
+      ok('list entry without a guidebook hunt shows UDWR\'s own season label: ' + polygon.n + ' / ' + r.type, plain.includes(r.season), plain.slice(0, 300));
     ok('static sheet has no button or draw target: ' + polygon.n, !/<button\b|\bdata-draw\s*=/i.test(html));
     ok('static sheet has no personal state or hedge: ' + polygon.n, !/\bmaybe\b|Set your points|check the boundary|You, \d+ pt/i.test(plain));
     const actualCodes = displayedCodes(html);
@@ -176,6 +179,7 @@ async function renderChecks() {
       eq('each hunt is rendered once, with only its required date-reference repetition: ' + h.code + ' on ' + polygon.n,
         (plain.match(new RegExp('\\b' + h.code + '\\b', 'g')) || []).length, h.seasons.length ? 1 : 2);
       if (h.weapon) ok('printed weapon retained: ' + h.code + ' on ' + polygon.n, part.toLowerCase().includes(h.weapon.toLowerCase()));
+      ok('guidebook sub-heading printed verbatim (cow only, multiseason, management buck): ' + h.code + ' on ' + polygon.n, part.includes(h.hunt_type), part.slice(0, 200));
       for (const span of h.seasons) ok('every printed date span appears: ' + h.code + ' on ' + polygon.n,
         part.includes(dateWords(span.start) + ' to ' + dateWords(span.end)), part);
       if (!h.seasons.length) ok('undated hunt cites its own guidebook code: ' + h.code, plain.includes('Dates: see the 2026 Big Game Application Guidebook, hunt ' + h.code));
@@ -202,11 +206,13 @@ async function renderChecks() {
       ok('general title is the finder builder output: ' + polygon.n + ' / ' + row.t, html.includes(esc(row.t)));
       ok('general sentence is the finder builder output: ' + polygon.n + ' / ' + row.t, html.includes(row.s));
     }
-    const base = polygon.n.split(',')[0], others = GEO.filter(u => u.id !== id && u.n.startsWith(base) && ELIGIBLE.includes(u.id));
-    if (others.length) {
+    const base = polygon.n.split(',')[0], named = GEO.filter(u => u.id !== id && u.n.startsWith(base)), others = named.filter(u => ELIGIBLE.includes(u.id));
+    if (named.length) {
       ok('name-neighbour label is literal: ' + polygon.n, plain.includes('Other units named ' + base + ':'));
-      for (const other of others) ok('every name-neighbour has a link: ' + polygon.n + ' -> ' + other.n, html.includes('/?unit=' + HU.slugs[other.n]));
-    }
+      for (const other of others) ok('every name-neighbour with a sheet has a link: ' + polygon.n + ' -> ' + other.n, html.includes('/?unit=' + HU.slugs[other.n]));
+      for (const other of named) ok('every name-neighbour is named, with or without a sheet: ' + polygon.n + ' -> ' + other.n, plain.includes(other.n));
+      eq('neighbour links go only to polygons with a sheet: ' + polygon.n, (html.match(/>Open unit<\/a>/g) || []).length, others.length);
+    } else ok('no name-neighbour line without a name match: ' + polygon.n, !plain.includes('Other units named'));
     ok('source footer names the year and actual list pull date: ' + polygon.n, plain.includes("Hunts: UDWR's 2026 hunt boundary lists, pulled") && plain.includes((HU._source.match(/pulled (\d{4}-\d{2}-\d{2})/) || [])[1]));
     ok('source footer names both guidebooks, edition and last draw year: ' + polygon.n, plain.includes('2026 Big Game Field Regulations (general seasons)') && plain.includes('2026 Big Game Application Guidebook') && plain.includes(HT._edition.reissued) && plain.includes("Last year's draw: " + LATEST_YEAR));
     ok('footnote explanation appears once: ' + polygon.n, plain.split("A mark after a hunt number is the guidebook's footnote; read it there.").length === 2);
@@ -250,6 +256,9 @@ async function renderChecks() {
   p.T.mode(true, new Date('2026-10-15T18:00:00Z'));
   ok('static links keep their destination without app interaction data', p.T.unitLink(wasatch.id).includes('/?unit=' + HU.slugs[wasatch.n]) && !/data-unit/.test(p.T.unitLink(wasatch.id)));
   eq('live and static unit rendering never touches localStorage', p.storageCalls, []);
+  p.T.clearHuntData();
+  let withoutLists; try { withoutLists = p.T.unitLink(wasatch.id); } catch (e) { withoutLists = 'threw: ' + e.message; }
+  eq('unit shapes loaded but hunt lists missing: the unit link is empty and does not throw', withoutLists, '');
 }
 
 function dayAfter(iso) { return new Date(Date.parse(iso + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10); }

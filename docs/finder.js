@@ -337,6 +337,13 @@ function fHuntDates(hunt) {
   return spans.length ? spans.map(s => `${fmt(d0(s.start))} to ${fmt(d0(s.end))}`).join('; ')
     : `Dates: see the ${year} Big Game Application Guidebook, hunt ${hunt.code}${(hunt.marks || []).join('')}`;
 }
+/* The guidebook's own sub-heading for the hunt, verbatim ("Any legal weapon hunts, cow
+   only", "Multiseason hunts"), plus the derived weapon word only when neither the
+   sub-heading nor the printed name already carries it. */
+function fHuntKind(hunt) {
+  const kind = hunt.hunt_type || '', shown = (kind + ' ' + hunt.name).toLowerCase();
+  return [kind, hunt.weapon && !shown.includes(hunt.weapon.toLowerCase()) ? hunt.weapon : ''].filter(Boolean);
+}
 function fResults(q, myUnits) {
   const out = [], H = HU.hunts, yr = ODDS ? Object.keys(ODDS.years).sort().pop() : null, hunts = yr ? Object.entries(ODDS.years[yr]) : [];
   const myIds = new Set((UNITS || []).filter(u => myUnits.includes(u.n)).map(u => u.id));
@@ -364,7 +371,7 @@ function fResults(q, myUnits) {
       const title = u.species + ' - ' + u.type;
       if (!extra.has(title)) extra.set(title, []);
       extra.get(title).push({ t: u.unit, sub: fUnitSub(u), unitId: u.boundary_id,
-        s: table.map(h => `${esc(h.code)}${esc((h.marks || []).join(''))}${h.weapon ? ' &middot; ' + esc(h.weapon) : ''} &middot; ${esc(fHuntDates(h))}`).join('<br>') || esc(u.season) });
+        s: table.map(h => [h.code + (h.marks || []).join(''), ...fHuntKind(h), fHuntDates(h)].map(esc).join(' &middot; ')).join('<br>') || esc(u.season) });
     }
   }
   extra.forEach((rows, title) => card(title, rows));
