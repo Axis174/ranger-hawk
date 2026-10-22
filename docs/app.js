@@ -8,7 +8,7 @@ const DAY = 86400000;
 const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
 const d0 = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const days = (a, b) => Math.round((b - a) / DAY);
-const fmt = d => d.toLocaleDateString(typeof fish !== 'undefined' && fish.static ? 'en-US' : undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const fmt = d => d.toLocaleDateString((typeof fish !== 'undefined' && fish.static) || (typeof units !== 'undefined' && units.static) ? 'en-US' : undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const GC = { bird: 'var(--bird)', deer: 'var(--deer)', elk: 'var(--elk)', turkey: 'var(--turkey)', smallgame: 'var(--small)' };
 
 let DB = { birds: [], seasons: null, config: null, community: null, lake: null, snow: null };
@@ -186,6 +186,7 @@ async function whereAmI() {
       UNITS = j && j.units ? j.units : null;
     } catch (e) { UNITS = null; }
   }
+  if (typeof unitsLoad === 'function') await unitsLoad();
   navigator.geolocation.getCurrentPosition(pos => {
     const lat = pos.coords.latitude, lon = pos.coords.longitude;
     const hits = UNITS ? unitsAt(lon, lat) : null;
@@ -195,7 +196,7 @@ async function whereAmI() {
       <div class="acts"><button class="btn ghost" data-copy="${lat.toFixed(5)}, ${lon.toFixed(5)}">Copy coordinates</button></div>
       <dl class="f"><dt>Big game hunt boundaries here</dt><dd>${
         hits == null ? 'Unit shapes are not on this phone yet. Open the app once with a signal.'
-        : hits.length ? hits.map(u => esc(u.n)).join('<br>')
+        : hits.length ? hits.map(u => esc(u.n) + (typeof unitLink === 'function' && unitLink(u.id) ? ' ' + unitLink(u.id) : '')).join('<br>')
         : 'None found. You may be outside Utah or on a unit edge.'}</dd>
       <dt>Closest access points</dt><dd>${near.map(x => `${esc(x.p.name)} &middot; ${x.mi.toFixed(1)} mi`).join('<br>')}</dd></dl>
       <div class="warnbox" style="margin:14px 16px 0">Boundaries are simplified to about 200 m, and one spot can sit inside
@@ -547,7 +548,7 @@ async function initMap() {
     }
     if (ug && ug.units) {
       UNITS = UNITS || ug.units;
-      MAP.addSource('units', { type: 'geojson', data: { type: 'FeatureCollection', features: ug.units.map(u => ({ type: 'Feature', properties: { n: u.n }, geometry: { type: 'MultiPolygon', coordinates: u.p } })) } });
+      MAP.addSource('units', { type: 'geojson', data: { type: 'FeatureCollection', features: ug.units.map(u => ({ type: 'Feature', properties: { n: u.n, id: u.id }, geometry: { type: 'MultiPolygon', coordinates: u.p } })) } });
       MAP.addLayer({ id: 'units-line', type: 'line', source: 'units', paint: { 'line-color': '#7A1F5C', 'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.6, 12, 1.8], 'line-opacity': 0.7 } });
     }
     MAP.addSource('pts', { type: 'geojson', data: { type: 'FeatureCollection', features: DB.birds.map(p => ({ type: 'Feature', properties: { id: p.id, name: p.name, sp: String(p.species || '').split(/[\/,; ]+/)[0] }, geometry: { type: 'Point', coordinates: [p.lon, p.lat] } })) } });
@@ -556,10 +557,13 @@ async function initMap() {
       'circle-color': ['match', ['get', 'sp'], 'duck', SPC.duck, 'pheasant', SPC.pheasant, 'chukar', SPC.chukar, 'ptarmigan', SPC.ptarmigan, '#333'] } });
     MAP.addLayer({ id: 'pts-name', type: 'symbol', source: 'pts', minzoom: 9.5, layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': 11, 'text-offset': [0, 1.1], 'text-anchor': 'top', 'text-max-width': 9 }, paint: { 'text-color': '#1c1c1c', 'text-halo-color': '#fff', 'text-halo-width': 1.4 } });
     MAP.on('click', 'pts', e => { const p = DB.birds.find(x => x.id === e.features[0].properties.id); if (p) { openSheet(sheetPoint(p)); loadWx(p.lat, p.lon); } });
-    MAP.on('click', e => {
-      if (MAP.queryRenderedFeatures(e.point, { layers: ['pts'] }).length) return;
+    MAP.on('click', async e => {
+      const map = MAP;
+      if (!map || map.queryRenderedFeatures(e.point, { layers: ['pts'] }).length) return;
+      if (typeof unitsLoad === 'function') await unitsLoad();
+      if (MAP !== map || !map.getStyle()) return;
       const hit = MAP.queryRenderedFeatures(e.point, { layers: ['dwr-fill', 'wia-fill'].filter(id => MAP.getLayer(id)) })[0];
-      const un = UNITS ? unitsAt(e.lngLat.lng, e.lngLat.lat).map(u => esc(u.n)) : [];
+      const un = UNITS ? unitsAt(e.lngLat.lng, e.lngLat.lat).map(u => esc(u.n) + (typeof unitLink === 'function' && unitLink(u.id) ? ' ' + unitLink(u.id) : '')) : [];
       const lf = landOn ? MAP.queryRenderedFeatures(e.point, { layers: ['land-fill', 'land-private'].filter(id => MAP.getLayer(id)) })[0] : null;
       const lc = lf ? LAND.find(l => l[0] === lf.properties.c) : null;
       const rd = roadsOn ? MAP.queryRenderedFeatures([[e.point.x - 9, e.point.y - 9], [e.point.x + 9, e.point.y + 9]], { layers: ROAD_LINES.filter(id => MAP.getLayer(id)) })[0] : null;
@@ -672,7 +676,7 @@ function vAccess() {
 /* UDWR's published draw results, parsed by scraper/build_odds.py. These are LAST
    YEAR'S RESULTS at each point level, not a forecast. Points the hunter types in
    stay on the phone (localStorage) and are never sent anywhere. */
-let ODDS = null, oddsLoading = false, seasonsMode = 'dates';
+let ODDS = null, oddsLoading = false, oddsPromise = null, seasonsMode = 'dates';
 const DRAW_GROUPS = [['Limited entry and once-in-a-lifetime', 'Limited entry'], ['General-season buck deer', 'General deer'], ['Antlerless', 'Antlerless']];
 let draw = { res: 'r', grp: DRAW_GROUPS[0][0], sp: 'Elk', pts: {} };
 try { Object.assign(draw, JSON.parse(localStorage.getItem('ha.draw') || '{}')); } catch (e) { /* private mode */ }
@@ -680,10 +684,12 @@ const saveDraw = () => { try { localStorage.setItem('ha.draw', JSON.stringify(dr
 const ptsKey = () => draw.grp + '|' + draw.sp;
 const myPts = () => draw.pts[ptsKey()] || 0;
 function loadOdds() {
-  if (ODDS || oddsLoading) return;
+  if (ODDS) return Promise.resolve(ODDS);
+  if (oddsPromise) return oddsPromise;
   oddsLoading = true;
-  fetch('data/' + STATE + '/draw_odds.json').then(r => r.json()).then(j => { ODDS = j && j.years ? j : null; })
-    .catch(() => { ODDS = null; }).finally(() => { oddsLoading = false; if (tab === 'seasons') render(); });
+  oddsPromise = fetch('data/' + STATE + '/draw_odds.json').then(r => r.json()).then(j => { ODDS = j && j.years ? j : null; return ODDS; })
+    .catch(() => { ODDS = null; }).finally(() => { oddsPromise = null; oddsLoading = false; if (tab === 'seasons') render(); });
+  return oddsPromise;
 }
 function oddsAt(h, pts) {
   const rows = h[draw.res] || [];
@@ -696,11 +702,19 @@ function oddsAt(h, pts) {
   if (got >= apps) return { k: 'all', txt: 'All ' + apps + ' drew', sort: 1.5, apps, got };
   return { k: 'some', txt: '1 in ' + (apps / got).toFixed(1), pct: Math.round(got / apps * 100), sort: got / apps, apps, got };
 }
-function sureAt(h) {                       // lowest point level from which everyone who applied drew
-  const rows = (h[draw.res] || []).filter(r => r[1] > 0).sort((a, b) => b[0] - a[0]);
+function sureAt(h, residency = draw.res) {   // lowest point level from which everyone who applied drew
+  const rows = (h[residency] || []).filter(r => r[1] > 0).sort((a, b) => b[0] - a[0]);
   let sure = null;
   for (const r of rows) { if (r[2] + r[3] >= r[1]) sure = r[0]; else break; }
   return sure;
+}
+function drawTotals(h, residency) {
+  return (h[residency] || []).reduce((t, r) => [t[0] + r[1], t[1] + r[2], t[2] + r[3]], [0, 0, 0]);
+}
+function drawStats(h, residency) {
+  const tot = drawTotals(h, residency), sure = sureAt(h, residency);
+  return `<div class="stat"><div class="k">Everyone drew at</div><div class="v" style="font-size:13px">${sure == null ? 'no level' : sure + '+ pts'}</div></div>
+      <div class="stat"><div class="k">Permits / applicants</div><div class="v" style="font-size:13px">${tot[1] + tot[2]} / ${tot[0]}</div></div>`;
 }
 function vDraw() {
   if (!ODDS) { loadOdds(); return `<p class="empty">${oddsLoading ? 'Loading draw results&hellip;' : 'Draw results are not on this phone yet. Open this once with a signal.'}</p>`; }
@@ -737,15 +751,13 @@ function sheetDraw(code) {
   const years = Object.keys(ODDS.years).sort().reverse(), yr = years[0], h = ODDS.years[yr][code];
   if (!h) return '';
   const pts = draw.pts[h.g + '|' + h.s] || 0, rows = (h[draw.res] || []).slice().sort((a, b) => b[0] - a[0]);
-  const tot = rows.reduce((t, r) => [t[0] + r[1], t[1] + r[2], t[2] + r[3]], [0, 0, 0]), sure = sureAt(h);
   const prev = years[1] && ODDS.years[years[1]][code], po = prev ? oddsAt(prev, pts) : null, o = oddsAt(h, pts);
   const bonus = h.k === 'b';
   return `<h3>${esc(h.n)}</h3><p class="where mono">${esc(code)} &middot; ${esc(h.g)} &middot; ${draw.res === 'r' ? 'residents' : 'nonresidents'}</p>
     <div class="stats">
       <div class="stat"><div class="k">You, ${pts} pt${pts === 1 ? '' : 's'} (${yr})</div><div class="v" style="font-size:13px">${esc(o.txt)}</div></div>
       ${po ? `<div class="stat"><div class="k">Same points, ${years[1]}</div><div class="v" style="font-size:13px">${esc(po.txt)}</div></div>` : ''}
-      <div class="stat"><div class="k">Everyone drew at</div><div class="v" style="font-size:13px">${sure == null ? 'no level' : sure + '+ pts'}</div></div>
-      <div class="stat"><div class="k">Permits / applicants</div><div class="v" style="font-size:13px">${tot[1] + tot[2]} / ${tot[0]}</div></div>
+      ${drawStats(h, draw.res)}
     </div>
     <table class="odds"><tr><th>Points</th><th>Applied</th><th>${bonus ? 'Bonus' : 'Drew'}</th>${bonus ? '<th>Random</th>' : ''}<th>Odds</th></tr>
     ${rows.map(r => { const g = r[2] + r[3]; return `<tr${r[0] === pts ? ' class="me"' : ''}><td>${r[0]}</td><td>${r[1]}</td><td>${bonus ? r[2] : g}</td>${bonus ? `<td>${r[3]}</td>` : ''}<td>${!g ? '&mdash;' : g >= r[1] ? 'all' : '1 in ' + (r[1] / g).toFixed(1)}</td></tr>`; }).join('')}</table>
@@ -1055,6 +1067,7 @@ load().then(ok => {
   if (!ok) return;
   render(); net();
   if (typeof fWaterParam === 'function' && fWaterParam()) fishLoad();
+  if (typeof hUnitParam === 'function' && hUnitParam()) unitsLoad();
   import('./vendor/suncalc.js').then(m => { SUN = m; if (tab === 'today') render(); }).catch(() => { /* no legal-light card */ });
 });
 /* Register the worker, and when a new one takes over, reload once so the

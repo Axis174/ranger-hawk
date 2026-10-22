@@ -15,6 +15,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Beaver, East"
@@ -40,6 +41,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Beaver, West"
@@ -65,6 +67,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Boulder/Kaiparowits"
@@ -90,6 +93,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Box Elder"
@@ -115,6 +119,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Cache"
@@ -140,6 +145,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Cedar/Stansbury"
@@ -165,6 +171,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Chalk Creek"
@@ -190,6 +197,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "East Canyon"
@@ -215,6 +223,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Fillmore"
@@ -240,6 +249,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Fishlake"
@@ -265,6 +275,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Kamas"
@@ -290,6 +301,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "La Sal Mtns"
@@ -315,6 +327,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Manti/San Rafael"
@@ -340,6 +353,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Monroe"
@@ -365,6 +379,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Morgan-South Rich"
@@ -390,6 +405,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Mt Dutton"
@@ -415,6 +431,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Nebo"
@@ -440,6 +457,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Nine Mile"
@@ -465,6 +483,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "North Slope"
@@ -490,6 +509,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Ogden"
@@ -515,6 +535,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Oquirrh/Tintic"
@@ -540,6 +561,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Panguitch Lake"
@@ -565,6 +587,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Pine Valley"
@@ -590,6 +613,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "San Juan, Abajo Mtns"
@@ -615,6 +639,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Southwest Desert"
@@ -640,6 +665,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Vernal/Bonanza"
@@ -665,6 +691,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Wasatch Mtns, East"
@@ -690,6 +717,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Wasatch Mtns, West"
@@ -715,6 +743,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "West Desert, Swasey"
@@ -740,6 +769,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Yellowstone"
@@ -765,6 +795,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Archery",
       "units": [
         "Zion"
@@ -790,6 +821,7 @@
       "species": "Deer",
       "hunt_type": "Extended archery only",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Extended archery",
       "units": [
         "Deer extended archery only"
@@ -808,6 +840,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder"
@@ -833,6 +866,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Chalk Creek"
@@ -858,6 +892,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "East Canyon"
@@ -883,6 +918,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore"
@@ -908,6 +944,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fishlake"
@@ -933,6 +970,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Kamas"
@@ -958,6 +996,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Morgan-South Rich"
@@ -983,6 +1022,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nine Mile"
@@ -1008,6 +1048,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "North Slope"
@@ -1033,6 +1074,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Panguitch Lake"
@@ -1058,6 +1100,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Pine Valley"
@@ -1083,6 +1126,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Zion"
@@ -1108,6 +1152,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Beaver, East"
@@ -1133,6 +1178,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder"
@@ -1158,6 +1204,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cedar/Stansbury"
@@ -1183,6 +1230,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Chalk Creek"
@@ -1208,6 +1256,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "East Canyon"
@@ -1233,6 +1282,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore"
@@ -1258,6 +1308,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fishlake"
@@ -1283,6 +1334,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Kamas"
@@ -1308,6 +1360,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "La Sal Mtns"
@@ -1333,6 +1386,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Manti/San Rafael"
@@ -1358,6 +1412,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Monroe"
@@ -1383,6 +1438,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Morgan-South Rich"
@@ -1408,6 +1464,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Mt Dutton"
@@ -1433,6 +1490,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nebo"
@@ -1458,6 +1516,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nine Mile"
@@ -1483,6 +1542,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "North Slope"
@@ -1510,6 +1570,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Ogden"
@@ -1535,6 +1596,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Oquirrh/Tintic"
@@ -1560,6 +1622,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Panguitch Lake"
@@ -1585,6 +1648,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Pine Valley"
@@ -1610,6 +1674,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Juan, Abajo Mtns"
@@ -1635,6 +1700,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Southwest Desert"
@@ -1660,6 +1726,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Vernal/Bonanza"
@@ -1685,6 +1752,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Wasatch Mtns, East"
@@ -1710,6 +1778,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Wasatch Mtns, West"
@@ -1735,6 +1804,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "West Desert, Swasey"
@@ -1760,6 +1830,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Yellowstone"
@@ -1785,6 +1856,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Zion"
@@ -1810,6 +1882,7 @@
       "species": "Deer",
       "hunt_type": "Restricted rifle hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Restricted rifle",
       "units": [
         "Beaver, West"
@@ -1835,6 +1908,7 @@
       "species": "Deer",
       "hunt_type": "Restricted rifle hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Restricted rifle",
       "units": [
         "Boulder/Kaiparowits"
@@ -1860,6 +1934,7 @@
       "species": "Deer",
       "hunt_type": "Restricted rifle hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Restricted rifle",
       "units": [
         "Cache"
@@ -1885,6 +1960,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Beaver, East"
@@ -1910,6 +1986,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Box Elder"
@@ -1935,6 +2012,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Cedar/Stansbury"
@@ -1960,6 +2038,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Chalk Creek"
@@ -1985,6 +2064,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "East Canyon"
@@ -2010,6 +2090,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Fillmore"
@@ -2035,6 +2116,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Fishlake"
@@ -2060,6 +2142,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Kamas"
@@ -2085,6 +2168,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "La Sal Mtns"
@@ -2110,6 +2194,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Manti/San Rafael"
@@ -2135,6 +2220,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Monroe"
@@ -2160,6 +2246,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Morgan-South Rich"
@@ -2185,6 +2272,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Mt Dutton"
@@ -2210,6 +2298,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Nebo"
@@ -2235,6 +2324,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Nine Mile"
@@ -2260,6 +2350,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "North Slope"
@@ -2285,6 +2376,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Ogden"
@@ -2310,6 +2402,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Oquirrh/Tintic"
@@ -2335,6 +2428,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Panguitch Lake"
@@ -2360,6 +2454,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Pine Valley"
@@ -2385,6 +2480,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "San Juan, Abajo Mtns"
@@ -2410,6 +2506,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Southwest Desert"
@@ -2435,6 +2532,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Vernal/Bonanza"
@@ -2460,6 +2558,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Wasatch Mtns, East"
@@ -2485,6 +2584,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Wasatch Mtns, West"
@@ -2510,6 +2610,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "West Desert, Swasey"
@@ -2535,6 +2636,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Yellowstone"
@@ -2560,6 +2662,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Zion"
@@ -2585,6 +2688,7 @@
       "species": "Deer",
       "hunt_type": "Restricted muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Restricted muzzleloader",
       "units": [
         "Beaver, West"
@@ -2610,6 +2714,7 @@
       "species": "Deer",
       "hunt_type": "Restricted muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Restricted muzzleloader",
       "units": [
         "Boulder/Kaiparowits"
@@ -2635,6 +2740,7 @@
       "species": "Deer",
       "hunt_type": "Restricted muzzleloader hunts",
       "hunt_group": "GENERAL-SEASON BUCK DEER",
+      "list_type": "General Season",
       "weapon": "Restricted muzzleloader",
       "units": [
         "Cache"
@@ -2660,6 +2766,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Beaver, East"
@@ -2682,6 +2789,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Beaver, West"
@@ -2704,6 +2812,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Boulder/Kaiparowits"
@@ -2724,6 +2833,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Box Elder"
@@ -2746,6 +2856,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Cache"
@@ -2766,6 +2877,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Cedar/Stansbury"
@@ -2786,6 +2898,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Chalk Creek"
@@ -2806,6 +2919,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "East Canyon"
@@ -2826,6 +2940,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Fillmore"
@@ -2846,6 +2961,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Fishlake"
@@ -2866,6 +2982,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Kamas"
@@ -2886,6 +3003,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "La Sal Mtns"
@@ -2906,6 +3024,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Manti/San Rafael"
@@ -2926,6 +3045,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Monroe"
@@ -2946,6 +3066,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Morgan-South Rich"
@@ -2966,6 +3087,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Mt Dutton"
@@ -2986,6 +3108,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Nebo"
@@ -3006,6 +3129,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Nine Mile"
@@ -3026,6 +3150,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "North Slope"
@@ -3048,6 +3173,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Ogden"
@@ -3068,6 +3194,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Oquirrh/Tintic"
@@ -3088,6 +3215,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Panguitch Lake"
@@ -3108,6 +3236,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Pine Valley"
@@ -3128,6 +3257,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "San Juan, Abajo Mtns"
@@ -3148,6 +3278,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Southwest Desert"
@@ -3168,6 +3299,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Vernal/Bonanza"
@@ -3188,6 +3320,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Wasatch Mtns, East"
@@ -3208,6 +3341,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Wasatch Mtns, West"
@@ -3228,6 +3362,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "West Desert, Swasey"
@@ -3248,6 +3383,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Yellowstone"
@@ -3268,6 +3404,7 @@
       "species": "Deer",
       "hunt_type": "DEDICATED HUNTER BUCK DEER",
       "hunt_group": "DEDICATED HUNTER BUCK DEER",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Zion"
@@ -3288,6 +3425,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Archery",
       "units": [
         "Henry Mtns"
@@ -3313,6 +3451,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Archery",
       "units": [
         "Paunsaugunt"
@@ -3338,6 +3477,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Antelope Island"
@@ -3363,6 +3503,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Henry Mtns"
@@ -3388,6 +3529,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Paunsaugunt"
@@ -3413,6 +3555,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Henry Mtns"
@@ -3438,6 +3581,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Paunsaugunt"
@@ -3463,6 +3607,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": null,
       "units": [
         "Henry Mtns"
@@ -3483,6 +3628,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "PREMIUM LIMITED-ENTRY BUCK DEER",
+      "list_type": "Premium Limited Entry",
       "weapon": null,
       "units": [
         "Paunsaugunt"
@@ -3505,6 +3651,7 @@
       "species": "Deer",
       "hunt_type": "Management buck hunts",
       "hunt_group": "MANAGEMENT AND CACTUS BUCK DEER",
+      "list_type": "Management Buck",
       "weapon": "any legal weapon",
       "units": [
         "Antelope Island"
@@ -3530,6 +3677,7 @@
       "species": "Deer",
       "hunt_type": "Management buck hunts",
       "hunt_group": "MANAGEMENT AND CACTUS BUCK DEER",
+      "list_type": "Management Buck",
       "weapon": "any legal weapon",
       "units": [
         "Henry Mtns"
@@ -3555,6 +3703,7 @@
       "species": "Deer",
       "hunt_type": "Management buck hunts",
       "hunt_group": "MANAGEMENT AND CACTUS BUCK DEER",
+      "list_type": "Management Buck",
       "weapon": "archery",
       "units": [
         "Paunsaugunt"
@@ -3580,6 +3729,7 @@
       "species": "Deer",
       "hunt_type": "Management buck hunts",
       "hunt_group": "MANAGEMENT AND CACTUS BUCK DEER",
+      "list_type": "Management Buck",
       "weapon": "muzzleloader",
       "units": [
         "Paunsaugunt"
@@ -3605,6 +3755,7 @@
       "species": "Deer",
       "hunt_type": "Management buck hunts",
       "hunt_group": "MANAGEMENT AND CACTUS BUCK DEER",
+      "list_type": "Management Buck",
       "weapon": "any legal weapon",
       "units": [
         "Paunsaugunt"
@@ -3630,6 +3781,7 @@
       "species": "Deer",
       "hunt_type": "Cactus buck hunt",
       "hunt_group": "MANAGEMENT AND CACTUS BUCK DEER",
+      "list_type": "Cactus Buck",
       "weapon": null,
       "units": [
         "Paunsaugunt"
@@ -3655,6 +3807,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Book Cliffs"
@@ -3680,6 +3833,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Diamond Mtn"
@@ -3705,6 +3859,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Dolores Triangle"
@@ -3730,6 +3885,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Fillmore, Oak Creek LE"
@@ -3755,6 +3911,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "San Juan, Elk Ridge"
@@ -3780,6 +3937,7 @@
       "species": "Deer",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "West Desert, Vernon"
@@ -3805,6 +3963,7 @@
       "species": "Deer",
       "hunt_type": "Restricted archery hunt",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Restricted archery",
       "units": [
         "Thousand Lakes"
@@ -3830,6 +3989,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, North"
@@ -3855,6 +4015,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, South"
@@ -3882,6 +4043,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Castle Valley"
@@ -3907,6 +4069,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Diamond Mtn"
@@ -3932,6 +4095,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Dolores Triangle"
@@ -3957,6 +4121,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore, Oak Creek LE"
@@ -3982,6 +4147,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Little Rockies"
@@ -4007,6 +4173,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Moab Valley"
@@ -4032,6 +4199,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Juan, Elk Ridge"
@@ -4057,6 +4225,7 @@
       "species": "Deer",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "West Desert, Vernon"
@@ -4082,6 +4251,7 @@
       "species": "Deer",
       "hunt_type": "Restricted rifle hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Restricted rifle",
       "units": [
         "Thousand Lakes"
@@ -4107,6 +4277,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Book Cliffs"
@@ -4132,6 +4303,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Cache, Crawford Mtn"
@@ -4157,6 +4329,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Diamond Mtn"
@@ -4182,6 +4355,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Dolores Triangle"
@@ -4207,6 +4381,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Fillmore, Oak Creek LE"
@@ -4232,6 +4407,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "San Juan, Elk Ridge"
@@ -4257,6 +4433,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "West Desert, Vernon"
@@ -4282,6 +4459,7 @@
       "species": "Deer",
       "hunt_type": "Restricted muzzleloader hunt",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Restricted muzzleloader",
       "units": [
         "Thousand Lakes"
@@ -4307,6 +4485,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Beaver, East"
@@ -4332,6 +4511,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Beaver, West"
@@ -4357,6 +4537,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Boulder/Kaiparowits"
@@ -4382,6 +4563,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Box Elder"
@@ -4407,6 +4589,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Cache"
@@ -4432,6 +4615,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Cedar/Stansbury"
@@ -4457,6 +4641,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Chalk Creek"
@@ -4482,6 +4667,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "East Canyon"
@@ -4507,6 +4693,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Fillmore"
@@ -4532,6 +4719,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Fishlake"
@@ -4557,6 +4745,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Kamas"
@@ -4582,6 +4771,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "La Sal Mtns"
@@ -4607,6 +4797,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Manti/San Rafael"
@@ -4632,6 +4823,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Monroe"
@@ -4657,6 +4849,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Morgan-South Rich"
@@ -4682,6 +4875,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Mt Dutton"
@@ -4707,6 +4901,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Nebo"
@@ -4732,6 +4927,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Nine Mile"
@@ -4757,6 +4953,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "North Slope"
@@ -4782,6 +4979,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Ogden"
@@ -4807,6 +5005,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Oquirrh/Tintic"
@@ -4832,6 +5031,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Panguitch Lake"
@@ -4857,6 +5057,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Pine Valley"
@@ -4882,6 +5083,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "San Juan, Abajo Mtns"
@@ -4907,6 +5109,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Southwest Desert"
@@ -4932,6 +5135,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Vernal/Bonanza"
@@ -4957,6 +5161,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Wasatch Mtns, East"
@@ -4982,6 +5187,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Wasatch Mtns, West"
@@ -5007,6 +5213,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "West Desert, Swasey"
@@ -5032,6 +5239,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Yellowstone"
@@ -5057,6 +5265,7 @@
       "species": "Deer",
       "hunt_type": "Muzzleloader hunts on general-season units",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry on General Season",
       "weapon": "Muzzleloader",
       "units": [
         "Zion"
@@ -5084,6 +5293,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Book Cliffs"
@@ -5104,6 +5314,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Diamond Mtn"
@@ -5124,6 +5335,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Fillmore, Oak Creek LE"
@@ -5146,6 +5358,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "San Juan, Elk Ridge"
@@ -5166,6 +5379,7 @@
       "species": "Deer",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "West Desert, Vernon"
@@ -5186,6 +5400,7 @@
       "species": "Deer",
       "hunt_type": "Restricted multiseason hunt",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Restricted multiseason",
       "units": [
         "Thousand Lakes"
@@ -5206,6 +5421,7 @@
       "species": "Deer",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry buck deer hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "Book Cliffs, Floy Canyon"
@@ -5231,6 +5447,7 @@
       "species": "Deer",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry buck deer hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "East Canyon"
@@ -5256,6 +5473,7 @@
       "species": "Deer",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry buck deer hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "Kaiparowits HAMSS"
@@ -5281,6 +5499,7 @@
       "species": "Deer",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry buck deer hunts",
       "hunt_group": "LIMITED-ENTRY BUCK DEER",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "San Juan, Mancos Mesa"
@@ -5308,6 +5527,7 @@
       "species": "Elk",
       "hunt_type": "DRAW-ONLY YOUTH ANY BULL/HUNTER’S CHOICE ELK",
       "hunt_group": "DRAW-ONLY YOUTH ANY BULL/HUNTER’S CHOICE ELK",
+      "list_type": null,
       "weapon": null,
       "units": [
         "Draw-only youth any bull/hunter’s choice elk"
@@ -5331,6 +5551,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Beaver, East"
@@ -5356,6 +5577,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -5381,6 +5603,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, Little Creek Roadless"
@@ -5406,6 +5629,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Boulder"
@@ -5431,6 +5655,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Box Elder, Pilot Mtn"
@@ -5458,6 +5683,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Cache, Meadowville"
@@ -5483,6 +5709,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Cache, South"
@@ -5508,6 +5735,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Diamond Mtn"
@@ -5533,6 +5761,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Fillmore, Pahvant"
@@ -5558,6 +5787,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Fishlake/Thousand Lakes"
@@ -5583,6 +5813,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "La Sal Mtns"
@@ -5608,6 +5839,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Manti"
@@ -5633,6 +5865,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Monroe"
@@ -5658,6 +5891,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Mt Dutton"
@@ -5683,6 +5917,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Nebo/San Pitch Mtns"
@@ -5708,6 +5943,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "North Slope, Three Corners"
@@ -5733,6 +5969,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Panguitch Lake"
@@ -5758,6 +5995,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "San Juan Bull Elk"
@@ -5783,6 +6021,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Southwest Desert, South"
@@ -5808,6 +6047,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Wasatch Mtns"
@@ -5833,6 +6073,7 @@
       "species": "Elk",
       "hunt_type": "September archery",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Barney Top/Kaiparowits"
@@ -5858,6 +6099,7 @@
       "species": "Elk",
       "hunt_type": "September archery",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Cache, North"
@@ -5883,6 +6125,7 @@
       "species": "Elk",
       "hunt_type": "September archery",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Southwest Desert, North"
@@ -5908,6 +6151,7 @@
       "species": "Elk",
       "hunt_type": "September archery",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "West Desert, Deep Creek"
@@ -5933,6 +6177,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Beaver, East"
@@ -5958,6 +6203,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -5983,6 +6229,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Boulder"
@@ -6010,6 +6257,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Cache, Meadowville"
@@ -6035,6 +6283,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Cache, South"
@@ -6060,6 +6309,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Diamond Mtn"
@@ -6085,6 +6335,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Fillmore, Pahvant"
@@ -6110,6 +6361,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Fishlake/Thousand Lakes"
@@ -6135,6 +6387,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "La Sal Mtns"
@@ -6160,6 +6413,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Manti"
@@ -6185,6 +6439,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Monroe"
@@ -6210,6 +6465,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Mt Dutton"
@@ -6235,6 +6491,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Nebo/San Pitch Mtns"
@@ -6260,6 +6517,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Panguitch Lake"
@@ -6285,6 +6543,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "San Juan Bull Elk"
@@ -6310,6 +6569,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Southwest Desert, South"
@@ -6335,6 +6595,7 @@
       "species": "Elk",
       "hunt_type": "Archery hunts — late season",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Wasatch Mtns"
@@ -6360,6 +6621,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Beaver, East"
@@ -6385,6 +6647,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -6410,6 +6673,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, Little Creek Roadless"
@@ -6435,6 +6699,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Boulder"
@@ -6460,6 +6725,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, Grouse Creek"
@@ -6485,6 +6751,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, Pilot Mtn"
@@ -6512,6 +6779,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, Meadowville"
@@ -6537,6 +6805,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, South"
@@ -6562,6 +6831,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Diamond Mtn"
@@ -6587,6 +6857,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore, Pahvant"
@@ -6612,6 +6883,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fishlake/Thousand Lakes"
@@ -6637,6 +6909,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "La Sal Mtns"
@@ -6662,6 +6935,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Manti"
@@ -6687,6 +6961,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Monroe"
@@ -6712,6 +6987,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Mt Dutton"
@@ -6737,6 +7013,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nebo/San Pitch Mtn"
@@ -6762,6 +7039,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "North Slope, Three Corners"
@@ -6787,6 +7065,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Panguitch Lake"
@@ -6812,6 +7091,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Juan Bull Elk"
@@ -6837,6 +7117,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Southwest Desert, South"
@@ -6862,6 +7143,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — early hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Wasatch Mtns"
@@ -6887,6 +7169,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Beaver, East"
@@ -6912,6 +7195,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -6937,6 +7221,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, Little Creek Roadless"
@@ -6962,6 +7247,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Boulder"
@@ -6987,6 +7273,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, Grouse Creek"
@@ -7014,6 +7301,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, Meadowville"
@@ -7039,6 +7327,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, South"
@@ -7064,6 +7353,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Diamond Mtn"
@@ -7089,6 +7379,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore, Pahvant"
@@ -7114,6 +7405,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fishlake/Thousand Lakes"
@@ -7139,6 +7431,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "La Sal Mtns"
@@ -7164,6 +7457,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Manti"
@@ -7189,6 +7483,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Monroe"
@@ -7214,6 +7509,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Mt Dutton"
@@ -7239,6 +7535,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nebo/San Pitch Mtn"
@@ -7264,6 +7561,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "North Slope, Three Corners"
@@ -7289,6 +7587,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Panguitch Lake"
@@ -7314,6 +7613,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Juan Bull Elk"
@@ -7339,6 +7639,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Southwest Desert, South"
@@ -7364,6 +7665,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — midseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Wasatch Mtns"
@@ -7389,6 +7691,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Beaver, East"
@@ -7414,6 +7717,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -7439,6 +7743,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Boulder"
@@ -7466,6 +7771,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, Meadowville"
@@ -7491,6 +7797,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, South"
@@ -7516,6 +7823,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Diamond Mtn"
@@ -7541,6 +7849,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Dolores Triangle"
@@ -7566,6 +7875,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore, Pahvant"
@@ -7591,6 +7901,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fishlake/Thousand Lakes"
@@ -7616,6 +7927,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "La Sal Mtns"
@@ -7641,6 +7953,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Manti"
@@ -7666,6 +7979,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Monroe"
@@ -7691,6 +8005,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Morgan-South Rich"
@@ -7716,6 +8031,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Mt Dutton"
@@ -7741,6 +8057,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nebo/San Pitch Mtns"
@@ -7766,6 +8083,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Panguitch Lake"
@@ -7791,6 +8109,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Juan Bull Elk"
@@ -7816,6 +8135,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Southwest Desert, South"
@@ -7841,6 +8161,7 @@
       "species": "Elk",
       "hunt_type": "Any legal weapon (rifle) — late hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Wasatch Mtns"
@@ -7866,6 +8187,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Beaver, East"
@@ -7891,6 +8213,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -7916,6 +8239,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Book Cliffs, Little Creek Roadless"
@@ -7941,6 +8265,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Boulder"
@@ -7966,6 +8291,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Box Elder, Grouse Creek"
@@ -7993,6 +8319,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Cache, Meadowville"
@@ -8018,6 +8345,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Cache, South"
@@ -8043,6 +8371,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Diamond Mtn"
@@ -8068,6 +8397,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Fillmore, Pahvant"
@@ -8093,6 +8423,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Fishlake/Thousand Lakes"
@@ -8118,6 +8449,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "La Sal Mtns"
@@ -8143,6 +8475,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Manti"
@@ -8168,6 +8501,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Monroe"
@@ -8193,6 +8527,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Mt Dutton"
@@ -8218,6 +8553,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Nebo/San Pitch Mtns"
@@ -8243,6 +8579,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "North Slope, Three Corners"
@@ -8268,6 +8605,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Panguitch Lake"
@@ -8293,6 +8631,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "San Juan Bull Elk"
@@ -8318,6 +8657,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Southwest Desert, South"
@@ -8343,6 +8683,7 @@
       "species": "Elk",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Wasatch Mtns"
@@ -8368,6 +8709,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Beaver, East"
@@ -8388,6 +8730,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Book Cliffs, Bitter Creek/East"
@@ -8408,6 +8751,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Book Cliffs, Little Creek Roadless"
@@ -8428,6 +8772,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Boulder"
@@ -8450,6 +8795,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Cache, Meadowville"
@@ -8470,6 +8816,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Cache, South"
@@ -8490,6 +8837,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Diamond Mtn"
@@ -8510,6 +8858,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Fillmore, Pahvant"
@@ -8530,6 +8879,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Fishlake/Thousand Lakes"
@@ -8550,6 +8900,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "La Sal Mtns"
@@ -8570,6 +8921,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Manti"
@@ -8590,6 +8942,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Monroe"
@@ -8610,6 +8963,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Mt Dutton"
@@ -8630,6 +8984,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Nebo/San Pitch Mtns"
@@ -8650,6 +9005,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "North Slope, Three Corners"
@@ -8670,6 +9026,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Panguitch Lake"
@@ -8690,6 +9047,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "San Juan Bull Elk"
@@ -8710,6 +9068,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Southwest Desert, South"
@@ -8730,6 +9089,7 @@
       "species": "Elk",
       "hunt_type": "Multiseason hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": null,
       "units": [
         "Wasatch Mtns"
@@ -8750,6 +9110,7 @@
       "species": "Elk",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry bull elk hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "Barney Top/Kaiparowits"
@@ -8775,6 +9136,7 @@
       "species": "Elk",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry bull elk hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "Cache, North"
@@ -8800,6 +9162,7 @@
       "species": "Elk",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry bull elk hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "East Canyon"
@@ -8825,6 +9188,7 @@
       "species": "Elk",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry bull elk hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "Southwest Desert, North"
@@ -8850,6 +9214,7 @@
       "species": "Elk",
       "hunt_type": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS) limited-entry bull elk hunts",
       "hunt_group": "LIMITED-ENTRY BULL ELK",
+      "list_type": "Limited Entry",
       "weapon": "Handgun-archery-muzzleloader-shotgun-straight walled rifle-only (HAMSS)",
       "units": [
         "West Desert, Deep Creek"
@@ -8875,6 +9240,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Beaver"
@@ -8900,6 +9266,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, Bitter Creek"
@@ -8925,6 +9292,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, South"
@@ -8952,6 +9320,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Box Elder, Promontory"
@@ -8977,6 +9346,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Box Elder, Puddle Valley"
@@ -9002,6 +9372,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Box Elder, Snowville"
@@ -9027,6 +9398,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Box Elder, West"
@@ -9052,6 +9424,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Cache, Rich"
@@ -9077,6 +9450,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Diamond Mtn/Bonanza"
@@ -9102,6 +9476,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Fillmore, Oak Creek South"
@@ -9127,6 +9502,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "La Sal, Potash/South Cisco"
@@ -9152,6 +9528,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Mt Dutton/Paunsaugunt"
@@ -9177,6 +9554,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Nine Mile, Anthro-Myton Bench"
@@ -9202,6 +9580,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Nine Mile, Range Creek"
@@ -9227,6 +9606,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "North Slope, Three Corners/West Daggett"
@@ -9252,6 +9632,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Panguitch Lake/Zion, North"
@@ -9277,6 +9658,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Parker Mtn"
@@ -9302,6 +9684,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Pine Valley"
@@ -9327,6 +9710,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "San Rafael, Desert"
@@ -9352,11 +9736,14 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "San Rafael, North"
       ],
-      "boundary_ids": [],
+      "boundary_ids": [
+        202
+      ],
       "seasons": [
         {
           "start": "2026-08-15",
@@ -9375,6 +9762,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Southwest Desert"
@@ -9400,6 +9788,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "Vernal"
@@ -9425,6 +9814,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "West Desert, Riverbed"
@@ -9450,6 +9840,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "West Desert, Rush Valley"
@@ -9475,6 +9866,7 @@
       "species": "Pronghorn",
       "hunt_type": "Archery hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Archery",
       "units": [
         "West Desert, Snake Valley"
@@ -9500,6 +9892,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Box Elder, Snowville"
@@ -9525,6 +9918,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Box Elder, West"
@@ -9550,6 +9944,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Cache, Rich"
@@ -9575,6 +9970,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Diamond Mtn/Bonanza"
@@ -9600,6 +9996,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Fillmore, Oak Creek South"
@@ -9625,6 +10022,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Nine Mile, Anthro-Myton Bench"
@@ -9650,6 +10048,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "North Slope, Three Corners/West Daggett"
@@ -9675,6 +10074,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Panguitch Lake/Zion, North"
@@ -9700,6 +10100,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Parker Mtn"
@@ -9725,6 +10126,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Pine Valley"
@@ -9750,11 +10152,14 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "San Rafael, North"
       ],
-      "boundary_ids": [],
+      "boundary_ids": [
+        202
+      ],
       "seasons": [
         {
           "start": "2026-09-23",
@@ -9773,6 +10178,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Southwest Desert"
@@ -9798,6 +10204,7 @@
       "species": "Pronghorn",
       "hunt_type": "Muzzleloader hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Muzzleloader",
       "units": [
         "Vernal"
@@ -9823,6 +10230,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Beaver"
@@ -9848,6 +10256,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, Bitter Creek"
@@ -9873,6 +10282,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Book Cliffs, South"
@@ -9900,6 +10310,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, Promontory"
@@ -9925,6 +10336,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, Puddle Valley"
@@ -9950,6 +10362,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, Snowville"
@@ -9975,6 +10388,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Box Elder, West"
@@ -10000,6 +10414,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Cache, Rich"
@@ -10025,6 +10440,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Diamond Mtn/Bonanza"
@@ -10050,6 +10466,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Fillmore, Oak Creek South"
@@ -10075,6 +10492,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Kaiparowits"
@@ -10100,6 +10518,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "La Sal, Potash/South Cisco"
@@ -10125,6 +10544,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Mt Dutton/Paunsaugunt"
@@ -10150,6 +10570,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nine Mile, Anthro-Myton Bench"
@@ -10175,6 +10596,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Nine Mile, Range Creek"
@@ -10200,6 +10622,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "North Slope, Summit"
@@ -10225,6 +10648,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "North Slope, Three Corners/West Daggett"
@@ -10250,6 +10674,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Panguitch Lake/Zion, North"
@@ -10275,6 +10700,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Parker Mtn"
@@ -10300,6 +10726,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Pine Valley"
@@ -10325,6 +10752,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Juan, Hatch Point"
@@ -10350,6 +10778,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Rafael, Desert"
@@ -10375,11 +10804,14 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "San Rafael, North"
       ],
-      "boundary_ids": [],
+      "boundary_ids": [
+        202
+      ],
       "seasons": [
         {
           "start": "2026-09-12",
@@ -10398,6 +10830,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Southwest Desert"
@@ -10423,6 +10856,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "Vernal"
@@ -10448,6 +10882,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "West Desert, Riverbed"
@@ -10473,6 +10908,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "West Desert, Rush Valley"
@@ -10498,6 +10934,7 @@
       "species": "Pronghorn",
       "hunt_type": "Any legal weapon (rifle) hunts",
       "hunt_group": "LIMITED-ENTRY BUCK PRONGHORN",
+      "list_type": "Limited Entry",
       "weapon": "Any legal weapon (rifle)",
       "units": [
         "West Desert, Snake Valley"
@@ -10523,6 +10960,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Box Elder"
@@ -10548,6 +10986,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Cache"
@@ -10575,6 +11014,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Chalk Creek"
@@ -10600,6 +11040,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Diamond Mtn/Vernal"
@@ -10627,6 +11068,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "East Canyon"
@@ -10654,6 +11096,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "East Canyon, Morgan-Summit"
@@ -10679,6 +11122,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Kamas"
@@ -10706,6 +11150,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Morgan-South Rich"
@@ -10731,6 +11176,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "North Slope, Summit"
@@ -10756,6 +11202,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "North Slope, Three Corners/West Daggett"
@@ -10783,6 +11230,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Ogden"
@@ -10808,6 +11256,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Wasatch Mtns/Central Mtns"
@@ -10833,6 +11282,7 @@
       "species": "Moose",
       "hunt_type": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
       "hunt_group": "ONCE-IN-A-LIFETIME BULL MOOSE HUNTS",
+      "list_type": "OIAL",
       "weapon": null,
       "units": [
         "Yellowstone"
@@ -10858,6 +11308,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, Bitter Creek"
@@ -10883,6 +11334,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, Bitter Creek"
@@ -10908,6 +11360,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, Little Creek/South"
@@ -10933,6 +11386,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, Little Creek/South"
@@ -10958,6 +11412,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -10983,6 +11438,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -11008,6 +11464,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -11033,6 +11490,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunt",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Antelope Island"
@@ -11058,6 +11516,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, cow only",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, Bitter Creek"
@@ -11083,6 +11542,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, cow only",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, Little Creek/South"
@@ -11108,6 +11568,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, cow only",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -11133,6 +11594,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, cow only",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -11160,6 +11622,7 @@
       "species": "Bison",
       "hunt_type": "Any legal weapon hunts, cow only",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -11185,6 +11648,7 @@
       "species": "Bison",
       "hunt_type": "Archery hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, Bitter Creek"
@@ -11210,6 +11674,7 @@
       "species": "Bison",
       "hunt_type": "Archery hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Book Cliffs, Little Creek/South"
@@ -11235,6 +11700,7 @@
       "species": "Bison",
       "hunt_type": "Archery hunts, hunter’s choice",
       "hunt_group": "ONCE-IN-A-LIFETIME BISON HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Henry Mtns"
@@ -11260,6 +11726,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Escalante, East"
@@ -11285,6 +11752,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Escalante, West"
@@ -11310,6 +11778,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Henry Mtns"
@@ -11335,6 +11804,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Kaiparowits, East"
@@ -11360,6 +11830,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Kaiparowits, West"
@@ -11385,6 +11856,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "La Sal, Potash/South Cisco"
@@ -11410,6 +11882,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Mineral Mtns"
@@ -11435,6 +11908,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Pine Valley, Beaver Dam"
@@ -11460,6 +11934,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Pine Valley, Virgin River"
@@ -11485,6 +11960,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Juan, Lockhart"
@@ -11510,6 +11986,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Juan, North"
@@ -11535,6 +12012,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Juan, San Juan River"
@@ -11560,6 +12038,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Juan, South"
@@ -11587,6 +12066,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Rafael, Dirty Devil"
@@ -11612,6 +12092,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Rafael, North"
@@ -11639,6 +12120,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "San Rafael, South"
@@ -11664,6 +12146,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Zion"
@@ -11689,6 +12172,7 @@
       "species": "Desert Bighorn Sheep",
       "hunt_type": "Archery hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME DESERT BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "San Rafael, Dirty Devil"
@@ -11714,6 +12198,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Antelope Island"
@@ -11739,6 +12224,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Book Cliffs, South"
@@ -11764,6 +12250,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Box Elder, Newfoundland Mtn"
@@ -11789,6 +12276,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Box Elder, Newfoundland Mtn"
@@ -11814,6 +12302,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Fillmore, Oak Creek"
@@ -11839,6 +12328,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Fillmore, Oak Creek"
@@ -11864,6 +12354,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Nebo"
@@ -11889,6 +12380,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Nine Mile, Gray Canyon"
@@ -11914,6 +12406,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Nine Mile, Jack Creek"
@@ -11939,6 +12432,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "North Slope, Summit/West Daggett"
@@ -11964,6 +12458,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "North Slope, Three Corners"
@@ -11989,6 +12484,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Oquirrh-Stansbury, West"
@@ -12014,6 +12510,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Wasatch Mtns, West"
@@ -12039,6 +12536,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Archery hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Box Elder, Newfoundland Mtn"
@@ -12064,6 +12562,7 @@
       "species": "Rocky Mountain Bighorn Sheep",
       "hunt_type": "Archery hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME ROCKY MOUNTAIN BIGHORN SHEEP HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Fillmore, Oak Creek"
@@ -12089,6 +12588,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Beaver"
@@ -12114,6 +12614,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Beaver"
@@ -12139,6 +12640,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "High Uintas Central"
@@ -12164,6 +12666,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "High Uintas East"
@@ -12189,6 +12692,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "High Uintas Kamas"
@@ -12214,6 +12718,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "High Uintas Leidy Peak"
@@ -12239,6 +12744,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "High Uintas West"
@@ -12264,6 +12770,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "La Sal Mtns"
@@ -12289,6 +12796,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Mt Dutton"
@@ -12314,6 +12822,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Nebo"
@@ -12339,6 +12848,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Ogden, Willard Peak"
@@ -12364,6 +12874,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Wasatch Mtns, Box Elder Peak"
@@ -12389,6 +12900,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Wasatch Mtns, Lone Peak"
@@ -12414,6 +12926,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Wasatch Mtns, Provo Peak"
@@ -12439,6 +12952,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Any legal weapon hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Any legal weapon",
       "units": [
         "Wasatch Mtns, Timpanogos"
@@ -12464,6 +12978,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Archery hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Beaver"
@@ -12489,6 +13004,7 @@
       "species": "Mountain Goat",
       "hunt_type": "Archery hunts",
       "hunt_group": "ONCE-IN-A-LIFETIME MOUNTAIN GOAT HUNTS",
+      "list_type": "OIAL",
       "weapon": "Archery",
       "units": [
         "Nebo"

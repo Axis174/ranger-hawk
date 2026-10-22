@@ -160,11 +160,6 @@ for key, spec in S.ARCGIS.items():
     except Exception as e:                # noqa: BLE001
         report["errors"].append({"source": key, "error": repr(e)[:300]})
 
-# Hunt lists use the same ArcGIS directory, but a failed or partial pull must
-# leave the fully resolved committed file intact and let every other source run.
-import build_hunt_units as HU
-HU.update_hunt_units(DATA, get, report, pulled=report["run"][:10])
-
 # Probe for a newer pheasant-release layer year (UDWR renames it annually).
 try:
     yr = datetime.now().year
@@ -508,6 +503,14 @@ try:
         report["errors"].append({"source": "units_geo", "error": f"only {len(units)} units returned"})
 except Exception as e:                    # noqa: BLE001
     report["errors"].append({"source": "units_geo", "error": repr(e)[:200]})
+
+# Hunt lists use the newly rebuilt unit shapes. A failed or partial pull leaves
+# the fully resolved committed file intact and lets every other source run.
+try:
+    import build_hunt_units as HU
+    HU.update_hunt_units(DATA, get, report, pulled=report["run"][:10])
+except Exception as e:                    # noqa: BLE001
+    report["errors"].append({"source": "hunt_units", "error": repr(e)[:300]})
 
 # ------------------------------------------------------------------ UDOT ----
 # Road cameras, weather stations, road conditions and mountain passes, so the app

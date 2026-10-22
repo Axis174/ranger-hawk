@@ -41,7 +41,8 @@ class TestDate extends Date {
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const DATA = {
   config: load('config.json'), seasons: load('seasons.json'), birds: load('bird_access.json'), units: load('units_geo.json').units,
-  rules: load('fishing_rules.json'), places: load('fishing_places.json'), notices: load('fishing_notices.json')
+  rules: load('fishing_rules.json'), places: load('fishing_places.json'), notices: load('fishing_notices.json'),
+  huntTable: load('hunt_table_2026.json')
 };
 /* What one hunter's phone holds (docs/state.js keeps it in localStorage): three chosen towns, each with
    the words the finders used to listen for before the towns became public, and the header on the middle
@@ -97,7 +98,8 @@ function page(withFishing, net, opts) {
   vm.createContext(box);
   vm.runInContext(fs.readFileSync(D('state.js'), 'utf8'), box);   // the chosen towns, read from the stubbed storage
   vm.runInContext(APP_GEO, box);
-  vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.T_fq = () => fq; this.T_hu = j => { HU = j; };', box);
+  vm.runInContext(fs.readFileSync(D('finder.js'), 'utf8') + '\n;this.T_fq = () => fq; this.T_hu = j => { HU = j; HT = this.huntTable; };', box);
+  box.huntTable = DATA.huntTable;
   vm.runInContext(fs.readFileSync(D('fishing.js'), 'utf8') +
     '\n;this.T_fish = () => fish; this.T_vFish = vFish; this.T_state = () => fishState;' +
     ' this.T_set = function (r, p, n) { FR = r; FP = p || F_NOPLACES(); FNT = n; fNames = null; if (r) fishIndex(); fishState = "ready"; };', box);
@@ -279,6 +281,41 @@ screen('fishing permit', 'fish');
   };
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+  /* Packet 5: each formerly unread list now has a card, using the guidebook's
+     mapped type and dates. The old draw-title join remains in the union. */
+  {
+    const lists = load('hunt_units_2026.json').hunts;
+    const keys = ['elk_le', 'deer_le', 'pronghorn_le', 'moose', 'goat', 'bison', 'desert_sheep', 'rm_sheep'];
+    for (const key of keys) {
+      const u = lists[key][0], polygon = DATA.units.find(p => p.id === u.boundary_id);
+      const sp = /sheep/i.test(u.species) ? 'sheep' : u.species.toLowerCase();
+      const cards = P.box.fResults({ sp }, [polygon.n]);
+      const card = cards.find(c => c.title === u.species + ' - ' + u.type);
+      ok(`new hunt list ${key}: its species/type card names the polygon's list row`,
+        card && card.rows.some(r => r.t === u.unit && r.unitId === u.boundary_id), JSON.stringify(cards.map(c => c.title)));
+      const hunts = P.box.fTableHunts(u);
+      ok(`new hunt list ${key}: its own mapped guidebook hunt codes are printed`,
+        card && hunts.every(h => card.rows.some(r => r.unitId === u.boundary_id && r.s.includes(h.code))), hunts.map(h => h.code).join(','));
+    }
+    const codes = (q, names) => P.box.fResults(q, names).flatMap(c => c.rows).filter(r => r.code).map(r => r.code);
+    const wasatch = codes({ sp: 'elk' }, ['Wasatch Mtns']);
+    ok('Wasatch elk: the guidebook union restores all seven limited-entry bull elk hunts',
+      ['EB3022', 'EB3072', 'EB3073', 'EB3100', 'EB3124', 'EB3127', 'EB3199'].every(c => wasatch.includes(c)), wasatch.join(','));
+    ok('Book Cliffs: the old Bitter Creek title match survives the exact-polygon union',
+      ['PB5001', 'PB5026'].every(c => codes({ sp: 'pronghorn' }, ['Book Cliffs']).includes(c)), codes({ sp: 'pronghorn' }, ['Book Cliffs']).join(','));
+    const h = DATA.huntTable.hunts.find(h => h.species === 'Elk' && h.weapon === 'Archery' && h.boundary_ids.length && P.box.ODDS.years['2025'][h.code]);
+    const priorTitle = P.box.ODDS.years['2025'][h.code].n;
+    P.box.ODDS.years['2025'][h.code].n = priorTitle.replace(/archery/ig, 'Archer y');
+    const names = DATA.units.filter(u => h.boundary_ids.includes(u.id)).map(u => u.n);
+    ok('draw union: a split word in the old PDF title cannot veto the guidebook weapon',
+      codes({ sp: 'elk', wp: 'archery' }, names).includes(h.code), h.code);
+    P.box.ODDS.years['2025'][h.code].n = priorTitle;
+    const huge = [];
+    for (const n of DATA.units) huge.push(n.n);
+    ok('draw union: adding hunts cannot hide old matches behind a forty-row cap',
+      codes({ sp: 'elk' }, huge).length > 40, String(codes({ sp: 'elk' }, huge).length));
+  }
+
   /* 1. The bug: Fish Lake. */
   {
     const a = answer('deer near fish lake');
@@ -286,7 +323,7 @@ screen('fishing permit', 'fish');
     ok('"deer near fish lake": the place is Fish Lake, Sevier Co. (the full place name and county, not the typed text) at its point',
       a.q.place && a.q.place.kind === 'water' && a.q.place.label === 'Fish Lake, Sevier Co.' && a.q.place.lat === 38.5481 && a.q.place.lon === -111.70987 && !a.q.place.units, JSON.stringify(a.q.place));
     ok('"deer near fish lake": the units at that point are Fishlake, Fishlake/Thousand Lakes and Plateau', same(a.units.slice().sort(), ['Fishlake', 'Fishlake/Thousand Lakes', 'Plateau']), JSON.stringify(a.units));
-    ok('"deer near fish lake": answers with deer rows (8) and does not stop on "Where?"', a.rows === 8 && !a.asks && !a.which && !a.nothing && /Deer/.test(a.head), JSON.stringify({ rows: a.rows, asks: a.asks, head: a.head }));
+    ok('"deer near fish lake": answers with deer rows (9, including the newly read limited-entry list) and does not stop on "Where?"', a.rows === 9 && !a.asks && !a.which && !a.nothing && /Deer/.test(a.head), JSON.stringify({ rows: a.rows, asks: a.asks, head: a.head }));
     ok('"deer near fish lake": says "Units at one point on Fish Lake, Sevier Co. A lake can touch more than one hunt unit. Check the unit boundary map before you hunt."',
       a.txt.indexOf(CAUTION('Fish Lake, Sevier Co.')) >= 0, a.txt.slice(0, 220));
     ok('"deer near fish lake": the sentence is in the caution style (warnbox) and comes before the heading and every row',
@@ -295,11 +332,11 @@ screen('fishing permit', 'fish');
   }
   {
     const a = answer('elk near fish lake');
-    ok('"elk near fish lake": elk rows (7) from the elk unit the lake is in', a.rows === 7 && a.units.indexOf('Fishlake/Thousand Lakes') >= 0 && !a.asks && !a.nothing && a.txt.indexOf(CAUTION('Fish Lake, Sevier Co.')) >= 0, JSON.stringify({ rows: a.rows, units: a.units }));
+    ok('"elk near fish lake": elk rows (12, including limited-entry and newly joined draw hunts) from the elk unit the lake is in', a.rows === 12 && a.units.indexOf('Fishlake/Thousand Lakes') >= 0 && !a.asks && !a.nothing && a.txt.indexOf(CAUTION('Fish Lake, Sevier Co.')) >= 0, JSON.stringify({ rows: a.rows, units: a.units }));
     const b = answer('elk hunting at fish lake');
-    ok('"elk hunting at fish lake": the same Fish Lake spot', b.q.place && b.q.place.label === 'Fish Lake, Sevier Co.' && b.rows === 7, JSON.stringify({ rows: b.rows }));
+    ok('"elk hunting at fish lake": the same Fish Lake spot', b.q.place && b.q.place.label === 'Fish Lake, Sevier Co.' && b.rows === 12, JSON.stringify({ rows: b.rows }));
     const c = answer('pronghorn near fish lake');
-    ok('"pronghorn near fish lake": units under the lake (incl. Plateau), the data has no pronghorn hunt there so the normal "Nothing matched" line, not "Where?"', c.q.place && c.units.indexOf('Plateau') >= 0 && c.nothing && !c.asks, JSON.stringify({ units: c.units, nothing: c.nothing }));
+    ok('"pronghorn near fish lake": units under the lake (incl. Plateau), the previously unread pronghorn list supplies Plateau hunts and their Parker Mtn dates', c.q.place && c.units.indexOf('Plateau') >= 0 && !c.nothing && !c.asks && /Pronghorn - Limited Entry/.test(c.txt) && /PB5076/.test(c.txt), JSON.stringify({ units: c.units, nothing: c.nothing }));
     const d = answer('strawberry reservoir deer');
     ok('"strawberry reservoir deer": answers from the units under that reservoir', d.q.place && d.q.place.label === 'Strawberry Reservoir, Wasatch Co.' && d.units.indexOf('Wasatch Mtns') >= 0 && d.rows > 0 && !d.asks, JSON.stringify({ label: d.q.place && d.q.place.label, units: d.units, rows: d.rows }));
   }
@@ -350,7 +387,7 @@ screen('fishing permit', 'fish');
   }
   {
     const a = answer('deer near fish lake');
-    ok('...and "deer near fish lake" (no article) still resolves to Fish Lake', a.q.place && a.q.place.label === 'Fish Lake, Sevier Co.' && a.rows === 8, JSON.stringify(a.q.place));
+    ok('...and "deer near fish lake" (no article) still resolves to Fish Lake', a.q.place && a.q.place.label === 'Fish Lake, Sevier Co.' && a.rows === 9, JSON.stringify(a.q.place));
     const r = answer('deer near the weber river');
     ok('...a river after "the" still gets its river line (it resolves nothing)', !r.q.place && r.txt.indexOf(RIVER) >= 0, r.txt.slice(0, 160));
   }
@@ -383,7 +420,7 @@ screen('fishing permit', 'fish');
     ok('"paunsaugunt elk": no general archery any-bull row, the general rifle any-bull row stays', !/Any-bull elk, general archery - Paunsaugunt/.test(pg.txt) && /Any-bull elk, general rifle - Paunsaugunt/.test(pg.txt), pg.txt.slice(0, 300));
     const bc = answer('book cliffs elk');
     ok('"book cliffs elk": both spike archery rows say spike bull only and never "Spike or antlerless"', ['Book Cliffs, Little Creek Roadless', 'Book Cliffs, Bitter Creek/East'].every(u => { const i = bc.txt.indexOf('Spike elk, general archery - ' + u); const seg = i >= 0 ? bc.txt.slice(i, i + 260) : ''; return i >= 0 && /Spike bull only on Book Cliffs/.test(seg) && !/Spike or antlerless/.test(seg); }), bc.txt.slice(0, 500));
-    ok('the same answers at a unit with no exception are unchanged: "deer near fish lake" has no restricted word and 8 rows', !/restricted/.test(answer('deer near fish lake').txt) && answer('deer near fish lake').rows === 8, '');
+    ok('general-season wording at a unit with no exception is unchanged: "deer near fish lake" keeps the unrestricted general sentences and gains its limited-entry row (9 rows)', !/restricted/.test(answer('deer near fish lake').txt) && answer('deer near fish lake').rows === 9, '');
   }
   /* A mountain tagged as a lake in the data is not a lake. */
   for (const s of ['elk near thousand lake mountain', 'elk near tushar mountain lakes', 'elk near monroe mountain lakes', 'deer near willard peak pond']) {
@@ -461,7 +498,7 @@ screen('fishing permit', 'fish');
   }
   {
     const b = answer('elk in the panguitch lake unit');
-    ok('"elk in the panguitch lake unit": the old answer, 10 rows', b.rows === 10, 'rows=' + b.rows);
+    ok('"elk in the panguitch lake unit": 15 rows including limited-entry and newly joined draw hunts', b.rows === 15, 'rows=' + b.rows);
     /* "unit" after a water's name does not make a FRAGMENT of that name the unit ("valley" in "joes valley reservoir"): the answer is the one the same sentence gives without "unit". */
     const c = answer('elk in the joes valley reservoir unit'), c0 = answer('elk in the joes valley reservoir');
     ok('"elk in the joes valley reservoir unit": no unit is picked from a fragment of the water\'s name (not Valley Mtns); after "the" it is the plain Where? screen, no rows', !c.q.place && !c.q.waterNote && !c.q.waterPick && c.asks && c.rows === 0 && c.units.indexOf('Valley Mtns') < 0 && c.txt.indexOf('Units at one point') < 0, JSON.stringify(c.q.place));
@@ -535,7 +572,7 @@ screen('fishing permit', 'fish');
     ok('"Where I am now": the phone is asked for its location, and the screen says it is getting a fix', calls.length === 1 && P.box.T_fq().parsed.place.kind === 'gps' && /Getting a GPS fix/.test(P.box.vFind()), 'calls=' + calls.length);
     calls[0].okFn({ coords: { latitude: 38.5481, longitude: -111.70987 } });
     const q = P.box.T_fq().parsed, html = P.box.vFind();
-    ok('...and when the fix arrives it answers from it: the Fish Lake units, deer rows, no Where?', q.place.lat === 38.5481 && (html.match(/class="row"/g) || []).length === 8 && !/<div class="sec-title">Where\?</.test(html) && html.indexOf('Hunt boundaries under that spot: <b>Fishlake') >= 0, JSON.stringify(q.place));
+    ok('...and when the fix arrives it answers from it: the Fish Lake units, deer rows, no Where?', q.place.lat === 38.5481 && (html.match(/class="row"/g) || []).length === 9 && !/<div class="sec-title">Where\?</.test(html) && html.indexOf('Hunt boundaries under that spot: <b>Fishlake') >= 0, JSON.stringify(q.place));
     answer('deer near a big lake');
     click(P, { fask: 'place', fval: 'gps' });
     calls[1].errFn({ code: 1, message: 'User denied Geolocation' });
@@ -625,7 +662,7 @@ screen('fishing permit', 'fish');
     ok('"hunt near fish lake" still asks what to hunt', !a.q.sp && /What do you want to hunt\?/.test(a.html), a.txt.slice(0, 140));
     click(P, { fask: 'sp', fval: 'deer' });
     const q = P.box.T_fq().parsed, html = P.box.vFind();
-    ok('...and after the animal is tapped, the lake becomes the place and the deer answer is drawn', q.place && q.place.label === 'Fish Lake, Sevier Co.' && (html.match(/class="row"/g) || []).length === 8 && !/<div class="sec-title">Where\?</.test(html), JSON.stringify({ place: q.place && q.place.label }));
+    ok('...and after the animal is tapped, the lake becomes the place and the deer answer is drawn', q.place && q.place.label === 'Fish Lake, Sevier Co.' && (html.match(/class="row"/g) || []).length === 9 && !/<div class="sec-title">Where\?</.test(html), JSON.stringify({ place: q.place && q.place.label }));
     const b = answer('hunt near weber river');
     click(P, { fask: 'sp', fval: 'elk' });
     ok('...a river with the animal tapped later gets the river line', !P.box.T_fq().parsed.place && text(P.box.vFind()).indexOf(RIVER) >= 0, '');
@@ -1097,7 +1134,7 @@ async function elsewhere() {
         sentence asks "Where?" and picks no unit (never a wrong answer); when the rules land the
         sentence is read again, and the water becomes the spot with the units under it. */
 async function spotArrives() {
-  for (const [s, unit, rows] of [['deer near fish lake', 'Fishlake', 8], ['elk near fish lake', 'Fishlake/Thousand Lakes', 7]]) {
+  for (const [s, unit, rows] of [['deer near fish lake', 'Fishlake', 9], ['elk near fish lake', 'Fishlake/Thousand Lakes', 12]]) {
     const L = page(false, { on: true });
     L.box.T_hu(load('hunt_units_2026.json')); L.box.ODDS = load('draw_odds.json');
     L.type(s);
@@ -1133,7 +1170,7 @@ async function gpsLate() {
     const rows = (html.match(/class="row"/g) || []).length, stuck = /Getting a GPS fix/.test(html);
     const label = `"${sentence}", ${kind} arriving ${order} the rules re-read the sentence`;
     ok(`${label}: one request to the phone, and never stuck on "Getting a GPS fix"`, cbs.length === 1 && !stuck, JSON.stringify({ requests: cbs.length, stuck }));
-    if (kind === 'fix') ok(`${label}: answers from the fix`, sentence.startsWith('deer') ? (q.place && q.place.lat === 38.5481 && rows === 8 && html.indexOf('Hunt boundaries under that spot: <b>Fishlake') >= 0) : (q.place && q.place.lat === 38.5481 && rows > 0), JSON.stringify({ place: q.place, rows }));
+    if (kind === 'fix') ok(`${label}: answers from the fix`, sentence.startsWith('deer') ? (q.place && q.place.lat === 38.5481 && rows === 9 && html.indexOf('Hunt boundaries under that spot: <b>Fishlake') >= 0) : (q.place && q.place.lat === 38.5481 && rows > 0), JSON.stringify({ place: q.place, rows }));
     else ok(`${label}: says why, in words, above the Where? chips`, !q.place && (kind === 'refused' ? tx.indexOf('No GPS fix: User denied Geolocation. Allow location for this app in the phone settings and try again.') >= 0 : tx.indexOf('No GPS fix yet. Try again in the open.') >= 0 && tx.indexOf('Allow location') < 0), tx.slice(0, 200));
   }
   /* No location service at all: said at once, not left waiting. */

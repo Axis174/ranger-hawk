@@ -87,13 +87,32 @@ class HuntListTests(unittest.TestCase):
                     if "offline enrichment" in self.document["_source"]:
                         self.assertEqual(row["description"], descriptions[row["boundary_id"]])
 
-    def test_offline_enrichment_is_idempotent_and_all_five_aliases_are_used(self):
-        built, used = lists.enrich_committed(self.document, self.raw, self.geo, 2026)
-        second, _ = lists.enrich_committed(built, self.raw, self.geo, 2026)
-        unused = sorted(set(lists.LIST_ALIASES) - used)
-        print("Unused list aliases:", unused)
-        self.assertEqual(unused, [])
-        self.assertEqual(lists.serialize_document(built), lists.serialize_document(second))
+    def test_same_live_data_on_later_days_preserves_bytes_and_all_five_aliases_are_used(self):
+        # The lead's committed live file is the fixture. Re-enriching from the
+        # older raw boundary attributes would restore Cedar/Stansbury's prefix.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            before = self.temporary_data(directory)
+            for pulled in ["2026-10-22", "2026-10-23"]:
+                log = report()
+                result = lists.update_hunt_units(directory, fake_arcgis(self.document["hunts"]), log, pulled)
+                self.assertFalse(result["updated"])
+                self.assertEqual((directory / "hunt_units_2026.json").read_bytes(), before)
+                self.assertEqual(result["document"], self.document)
+                self.assertEqual(log["errors"], [])
+                self.assertEqual(log["changes"], [])
+                self.assertEqual([row["source"] for row in log["ok"]], ["hunt_units"])
+                unused = sorted(set(lists.LIST_ALIASES) - set(result["used_aliases"]))
+                print("Unused list aliases:", unused)
+                self.assertEqual(unused, [])
+
+    def test_live_cedar_stansbury_description_keeps_the_leads_pull(self):
+        descriptions = [r["description"] for rows in self.document["hunts"].values()
+                        for r in rows if r["unit"] == "Cedar/Stansbury"]
+        self.assertEqual(len(descriptions), 3)
+        self.assertEqual(len(set(descriptions)), 1)
+        self.assertTrue(all(s.startswith("Tooele and Juab counties") for s in descriptions))
+        self.assertNotIn("offline enrichment", self.document["_source"])
 
     def test_slugs_cover_exactly_reached_polygons_and_are_unique(self):
         reached = {r["boundary_id"] for rows in self.document["hunts"].values() for r in rows}
@@ -138,6 +157,27 @@ class HuntListTests(unittest.TestCase):
             self.assertIn("pulled 2026-10-14", result["document"]["_source"])
             self.assertEqual(result["document"]["hunts"]["elk_anybull"][0]["description"],
                              "UDWR's revised live boundary description.")
+
+    def test_real_row_id_description_and_slug_changes_still_rewrite(self):
+        # A changed description is checked through the full adapter above.
+        # Each remaining payload category must also survive the comparison.
+        for kind in ["row", "boundary_id", "slugs"]:
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp) / "hunt_units_2026.json"
+                before = lists.serialize_document(self.document)
+                output.write_bytes(before)
+                changed = copy.deepcopy(self.document)
+                changed["_source"] = "same source stamp"
+                if kind == "row":
+                    changed["hunts"]["elk_anybull"][0]["season"] = "UDWR revised season label"
+                elif kind == "boundary_id":
+                    changed["hunts"]["elk_anybull"][0]["boundary_id"] += 100000
+                else:
+                    name = next(iter(changed["slugs"]))
+                    changed["slugs"][name] += "-revised"
+                self.assertTrue(lists.atomic_write(output, changed))
+                self.assertNotEqual(output.read_bytes(), before)
+                self.assertEqual(json.loads(output.read_text()), changed)
 
     def assert_failure_preserves(self, get, expected_list=None, expected_name=None):
         with tempfile.TemporaryDirectory() as tmp:
@@ -204,7 +244,7 @@ class HuntListTests(unittest.TestCase):
 
     def test_table_join_never_uses_another_species_polygon(self):
         # The exact-name North polygon is a sheep unit; pronghorn has North A.
-        self.assertEqual(lists.resolve_hunt_name("San Rafael, North", "Pronghorn", self.document), [])
+        self.assertEqual(lists.resolve_hunt_name("San Rafael, North", "Pronghorn", self.document), [202])
         self.assertEqual(lists.resolve_hunt_name("San Rafael, North", "Desert Bighorn Sheep", self.document), [194])
         self.assertEqual(lists.resolve_hunt_name("Henry Mtns", "Bison", self.document), [637])
         self.assertNotEqual(lists.resolve_hunt_name("Henry Mtns", "Deer", self.document), [637])
@@ -225,7 +265,7 @@ class HuntTableTests(unittest.TestCase):
             with self.subTest(code=r["code"]):
                 self.assertTrue(re.fullmatch(r"[A-Z]{2}\d{4}", r["code"]))
                 self.assertNotIn("CWMU", r["hunt_group"])
-                self.assertTrue(all(k in r for k in ["name", "marks", "species", "hunt_type",
+                self.assertTrue(all(k in r for k in ["name", "marks", "species", "hunt_type", "list_type",
                     "hunt_group", "weapon", "units", "boundary_ids", "seasons", "start", "end"]))
 
     def test_at_least_440_dated_rows_with_zero_or_one_printed_span(self):
@@ -315,12 +355,42 @@ class HuntTableTests(unittest.TestCase):
             available = {v["boundary_id"] for rows in self.hunts["hunts"].values()
                          for v in rows if v["species"] == r["species"]}
             self.assertTrue(set(r["boundary_ids"]) <= available, r["code"])
-        for code in ["PB5015", "PB5056", "PB5046", "DB1115", "DB0008", "EB1007"]:
+        for code in ["PB5015", "PB5056", "PB5046"]:
+            self.assertEqual(self.by_code[code]["boundary_ids"], [202], code)
+        for code in ["DB1115", "DB0008", "EB1007"]:
             self.assertEqual(self.by_code[code]["boundary_ids"], [], code)
+        self.assertEqual(sum(not r["boundary_ids"] for r in self.rows), 3)
+
+    def test_every_nonempty_mapping_exists_on_its_assigned_species_polygon_list(self):
+        available = {(row["species"], row["boundary_id"], row["type"])
+                     for rows in self.hunts["hunts"].values() for row in rows}
+        for row in self.rows:
+            expected = table_builder.HUNT_TYPE_MAP[(row["hunt_group"], row["hunt_type"])]
+            self.assertEqual(row["list_type"], expected, row["code"])
+            if row["list_type"] is not None:
+                for ident in row["boundary_ids"]:
+                    self.assertIn((row["species"], ident, row["list_type"]), available, row["code"])
+
+    def test_dedicated_hunter_keeps_identity_ids_and_the_approved_null_mapping(self):
+        dedicated = [r for r in self.rows if r["hunt_group"] == "DEDICATED HUNTER BUCK DEER"]
+        self.assertEqual(len(dedicated), 31)
+        self.assertTrue(all(r["boundary_ids"] and r["list_type"] is None for r in dedicated))
+
+    def test_missing_nonempty_list_type_is_left_unplaced_and_reported(self):
+        row = copy.deepcopy(self.by_code["DB1121"])
+        hunts = copy.deepcopy(self.hunts)
+        for values in hunts["hunts"].values():
+            for entry in values:
+                if entry["boundary_id"] in row["boundary_ids"] and entry["species"] == "Deer" and entry["type"] == "Management Buck":
+                    entry["type"] = "A different UDWR hunt type"
+        warnings = table_builder.place_rows([row], hunts)
+        self.assertEqual(row["boundary_ids"], [])
+        self.assertEqual([w["code"] for w in warnings], ["DB1121"])
+        self.assertEqual(warnings[0]["list_type"], "Management Buck")
 
     def test_committed_layout_fixture_reproduces_every_parsed_row(self):
         parsed = table_builder.parse_layout(FIXTURE.read_text(), year=2026, first_page=43)
-        fields = ["code", "name", "marks", "species", "hunt_type", "hunt_group",
+        fields = ["code", "name", "marks", "species", "hunt_type", "hunt_group", "list_type",
                   "weapon", "units", "seasons", "start", "end"]
         self.assertEqual([{k: r[k] for k in fields} for r in parsed],
                          [{k: r[k] for k in fields} for r in self.rows])

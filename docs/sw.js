@@ -11,6 +11,7 @@
 const VERSION = 'ranger-hawk-v41';
 const SHELL = [
   './', './index.html', './state.js', './app.js', './cams.js', './finder.js', './fishing.js', './contacts.js', './trip.js', './roads.js', './go.js', './site.js', './styles.css', './fonts/ZillaSlab-500.woff2', './fonts/ZillaSlab-600.woff2', './fonts/ZillaSlab-700.woff2', './fonts/PublicSans-var.woff2', './fonts/IBMPlexMono-400.woff2', './fonts/IBMPlexMono-500.woff2', './fonts/IBMPlexMono-600.woff2', './data/ut/cam_rules.json', './data/ut/hunt_units_2026.json', './data/ut/landowner_tags.json',
+  './units.js', './data/ut/hunt_table_2026.json',
   './manifest.webmanifest', './icons/rangerhawk-wordmark.svg', './icons/icon-192.png', './icons/icon-512.png',
   // The icons index.html and the website pages link, so the tab and home-screen icons show with no signal.
   './favicon.ico', './icons/favicon.svg', './icons/favicon-32.png', './icons/icon-180.png',

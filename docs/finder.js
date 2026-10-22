@@ -7,7 +7,8 @@
    Loaded after app.js; shares its globals. */
 'use strict';
 
-let HU = null;                         // hunt_units_2026.json
+let HU = null, HT = null;              // hunt lists and the guidebook's hunt-number table
+let fHuntsPromise = null, fHuntsRetry = 0;
 let fq = { text: '', sp: null, wp: null, place: null, pt: null, units: null, ask: null };
 /* The first match wins, so the narrow name is tested before the wide one that
    contains it: "mountain goat" before the "goat" of pronghorn, "bull moose"
@@ -39,11 +40,30 @@ function fUnitNames() {
   return out.sort((a, b) => b[0].length - a[0].length);
 }
 
+function fLoadHunts() {
+  if (HU && HT && UNITS) return Promise.resolve(true);
+  if (fHuntsPromise) return fHuntsPromise;
+  if (Date.now() < fHuntsRetry) return Promise.resolve(false);
+  const year = DB.config.hunt_year, jobs = [];
+  let changed = false, failed = false;
+  const grab = (file, valid, set) => fetch('data/' + STATE + '/' + file).then(r => {
+    if (r.ok === false) throw new Error('hunt data unavailable');
+    return r.json();
+  }).then(j => { if (!j || j.offline || !valid(j)) throw new Error('hunt data incomplete'); set(j); changed = true; }).catch(() => { failed = true; });
+  if (!HU) jobs.push(grab('hunt_units_' + year + '.json', j => j.hunts && j.slugs, j => { HU = j; }));
+  if (!HT) jobs.push(grab('hunt_table_' + year + '.json', j => Array.isArray(j.hunts) && j._edition, j => { HT = j; }));
+  if (!UNITS) jobs.push(grab('units_geo.json', j => Array.isArray(j.units), j => { UNITS = j.units; }));
+  fHuntsPromise = Promise.all(jobs).then(() => {
+    if (failed) fHuntsRetry = Date.now() + 20000;
+    if (changed && tab === 'seasons') render();
+    return !!(HU && HT && UNITS);
+  }).finally(() => { fHuntsPromise = null; });
+  return fHuntsPromise;
+}
 function fLoad() {
   if (typeof fishLoad === 'function') fishLoad();
-  if (!HU) fetch('data/' + STATE + '/hunt_units_2026.json').then(r => r.json()).then(j => { HU = j; if (tab === 'seasons') render(); }).catch(() => { HU = { hunts: {} }; });
   if (!ODDS) loadOdds();
-  if (!UNITS) fetch('data/' + STATE + '/units_geo.json').then(r => r.json()).then(j => { UNITS = j.units; if (tab === 'seasons') render(); }).catch(() => {});
+  return fLoadHunts();
 }
 /* What a sentence says to hunt, read from text that already has its place names taken out:
    { gap, bird, sp }. The one place the hunt finder's species words are tested; the Fish box
@@ -277,45 +297,92 @@ function fOddsLine(h) {                                       // last year's res
   if (pts == null) return '<span class="s">Set your points to see last year\'s odds.</span>';
   const o = oddsAt(h, pts); return `<span class="s">${pts} pt${pts === 1 ? '' : 's'} last year: <b>${esc(o.txt)}</b>${o.pct != null ? ' (' + o.pct + '%)' : ''}</span>`;
 }
+const fUnitSub = r => r.m === 'maybe' ? ' <i>(a part of this unit - check the boundary on the map)</i>' : '';
+const fWeaponOk = (filter, name) => !filter || (filter === 'archery' ? /archery/i : filter === 'muzzleloader' ? /muzz/i : /any legal|rifle|alw/i).test(name);
+/* The finder and the unit sheet use these same general-season sentences and
+   hand-maintained unit exceptions. No points or other personal state is read. */
+function fGeneralRows(species, listRow, weaponFilter) {
+  const rows = [], u = listRow, wpOk = name => fWeaponOk(weaponFilter, name);
+  if (species.toLowerCase() === 'elk' && u.type === 'General Season - Any Bull') {
+      if (wpOk('archery') && !fSkip('elk-archery-anybull', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-archery-anybull', u.unit, 'archery')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('elk-archery-anybull')}. ${fSent('elk-archery-anybull', u.unit, 'Over the counter. Any bull or antlerless.')}` });
+      if (wpOk('rifle') && !fSkip('elk-early-rifle', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-early-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: fUnitSub(u), s: `Early ${fDates('elk-early-rifle')} or late ${fDates('elk-late-rifle')}. ${fSent('elk-early-rifle', u.unit, 'Over the counter; pick one.')}` });
+      if (wpOk('muzzleloader') && !fSkip('elk-muzz', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('elk-muzz')}. ${fSent('elk-muzz', u.unit, 'Over the counter.')}` });
+
+  } else if (species.toLowerCase() === 'elk' && u.type === 'General Season - Spike Bull') {
+      if (wpOk('archery') && !fSkip('elk-archery-spike', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-archery-spike', u.unit, 'archery')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('elk-archery-spike')}. ${fSent('elk-archery-spike', u.unit, 'Over the counter. Spike or antlerless only.')}` });
+      if (wpOk('rifle') && !fSkip('elk-spike-rifle', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-spike-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('elk-spike-rifle')}. ${fSent('elk-spike-rifle', u.unit, 'Over the counter. Spike only - a branched bull here is a citation.')}` });
+      if (wpOk('muzzleloader') && !fSkip('elk-muzz', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('elk-muzz')}. ${fSent('elk-muzz', u.unit, 'Over the counter.')}` });
+
+  } else if (species.toLowerCase() === 'deer' && u.type === 'General Season') {
+      const ex = /extended/i.test(u.unit);
+      if (wpOk('archery') && !fSkip('deer-archery', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-archery', u.unit, 'archery')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('deer-archery')}. ${fSent('deer-archery', u.unit, `Drawn with preference points (most units draw at 0-1 point). Extended archery ${fDates('deer-ext-archery')} on the Wasatch Front and others.`)}` });
+      if (wpOk('muzzleloader') && !fSkip('deer-muzz', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: fUnitSub(u), s: `${fDates('deer-muzz')}. ${fSent('deer-muzz', u.unit, 'Drawn with preference points.')}` });
+      const early = ((fSeason('deer-early-rifle') || {}).units || []).includes(u.unit);   // Field Regs p.45: 12 named units only
+      if (wpOk('rifle') && !fSkip('deer-rifle', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: fUnitSub(u), s: `${early ? `Early ${fDates('deer-early-rifle')} or ` : ''}${fDates('deer-rifle')}. ${fSent('deer-rifle', u.unit, 'Drawn with preference points.')}` });
+
+  } else if (u.type === 'Antlerless Elk Control') {
+    rows.push({ t: `Antlerless elk control - ${u.unit}`, s: 'Sold separately; check dates and quota at wildlife.utah.gov/biggame.', sub: fUnitSub(u) });
+  }
+  return rows.map(r => Object.assign(r, { unitId: u.boundary_id }));
+}
+/* The approved heading mapping lives in the data producer. JS consumes only its
+   result and joins through a row's own species, list type and polygon id. */
+function fTableHunts(listRow) {
+  return ((HT || {}).hunts || []).filter(h => h.species === listRow.species && h.list_type === listRow.type &&
+    (h.boundary_ids || []).includes(listRow.boundary_id));
+}
+function fHuntDates(hunt) {
+  const spans = hunt.seasons || [];
+  const year = ((HT || {})._edition || {}).year || DB.config.hunt_year;
+  return spans.length ? spans.map(s => `${fmt(d0(s.start))} to ${fmt(d0(s.end))}`).join('; ')
+    : `Dates: see the ${year} Big Game Application Guidebook, hunt ${hunt.code}${(hunt.marks || []).join('')}`;
+}
 function fResults(q, myUnits) {
   const out = [], H = HU.hunts, yr = ODDS ? Object.keys(ODDS.years).sort().pop() : null, hunts = yr ? Object.entries(ODDS.years[yr]) : [];
-  const inList = k => (H[k] || []).map(r => Object.assign({}, r, { m: fUnitMatch(r.unit, myUnits) })).filter(r => r.m);
-  const sub = r => r.m === 'maybe' ? ' <i>(a part of this unit - check the boundary on the map)</i>' : '';
-  const wpOk = name => !q.wp || (q.wp === 'archery' ? /archery/i : q.wp === 'muzzleloader' ? /muzz/i : /any legal|rifle|alw/i).test(name);
+  const myIds = new Set((UNITS || []).filter(u => myUnits.includes(u.n)).map(u => u.id));
+  const inList = (k, polygons) => (H[k] || []).map(r => Object.assign({}, r, { m: polygons && myIds.has(r.boundary_id) ? 'yes' : fUnitMatch(r.unit, myUnits) })).filter(r => r.m);
+  const wpOk = name => fWeaponOk(q.wp, name);
   const card = (title, rows) => rows.length && out.push({ title, rows });
   if (!q.sp || q.sp === 'elk') {
-    const ab = inList('elk_anybull'), sp = inList('elk_spike'), rows = [];
-    for (const u of ab) {
-      if (wpOk('archery') && !fSkip('elk-archery-anybull', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-archery-anybull', u.unit, 'archery')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-archery-anybull')}. ${fSent('elk-archery-anybull', u.unit, 'Over the counter. Any bull or antlerless.')}` });
-      if (wpOk('rifle') && !fSkip('elk-early-rifle', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-early-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: sub(u), s: `Early ${fDates('elk-early-rifle')} or late ${fDates('elk-late-rifle')}. ${fSent('elk-early-rifle', u.unit, 'Over the counter; pick one.')}` });
-      if (wpOk('muzzleloader') && !fSkip('elk-muzz', u.unit)) rows.push({ t: `Any-bull elk, general ${fWord('elk-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-muzz')}. ${fSent('elk-muzz', u.unit, 'Over the counter.')}` });
-    }
-    for (const u of sp) {
-      if (wpOk('archery') && !fSkip('elk-archery-spike', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-archery-spike', u.unit, 'archery')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-archery-spike')}. ${fSent('elk-archery-spike', u.unit, 'Over the counter. Spike or antlerless only.')}` });
-      if (wpOk('rifle') && !fSkip('elk-spike-rifle', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-spike-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-spike-rifle')}. ${fSent('elk-spike-rifle', u.unit, 'Over the counter. Spike only - a branched bull here is a citation.')}` });
-      if (wpOk('muzzleloader') && !fSkip('elk-muzz', u.unit)) rows.push({ t: `Spike elk, general ${fWord('elk-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: sub(u), s: `${fDates('elk-muzz')}. ${fSent('elk-muzz', u.unit, 'Over the counter.')}` });
-    }
+    const rows = inList('elk_anybull').concat(inList('elk_spike')).flatMap(u => fGeneralRows('elk', u, q.wp));
     if (!q.wantLE || q.wantGeneral) card('Elk you can buy over the counter', rows);
-    const ctl = inList('antlerless_elk_control'); if (ctl.length && (q.wantAntlerless || !q.wantLE)) card('Antlerless elk control permits here', ctl.map(u => ({ t: `Antlerless elk control - ${u.unit}`, s: 'Sold separately; check dates and quota at wildlife.utah.gov/biggame.', sub: sub(u) })));
+    const ctl = inList('antlerless_elk_control');
+    if (q.wantAntlerless || !q.wantLE) card('Antlerless elk control permits here', ctl.flatMap(u => fGeneralRows('elk', u, q.wp)));
   }
   if (!q.sp || q.sp === 'deer') {
-    const g = inList('deer_gen'), rows = [];
-    for (const u of g) {
-      const ex = /extended/i.test(u.unit);
-      if (wpOk('archery') && !fSkip('deer-archery', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-archery', u.unit, 'archery')} - ${u.unit}`, sub: sub(u), s: `${fDates('deer-archery')}. ${fSent('deer-archery', u.unit, `Drawn with preference points (most units draw at 0-1 point). Extended archery ${fDates('deer-ext-archery')} on the Wasatch Front and others.`)}` });
-      if (wpOk('muzzleloader') && !fSkip('deer-muzz', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-muzz', u.unit, 'muzzleloader')} - ${u.unit}`, sub: sub(u), s: `${fDates('deer-muzz')}. ${fSent('deer-muzz', u.unit, 'Drawn with preference points.')}` });
-      const early = ((fSeason('deer-early-rifle') || {}).units || []).includes(u.unit);   // Field Regs p.45: 12 named units only
-      if (wpOk('rifle') && !fSkip('deer-rifle', u.unit)) rows.push({ t: `General buck deer, ${fWord('deer-rifle', u.unit, 'rifle')} - ${u.unit}`, sub: sub(u), s: `${early ? `Early ${fDates('deer-early-rifle')} or ` : ''}${fDates('deer-rifle')}. ${fSent('deer-rifle', u.unit, 'Drawn with preference points.')}` });
-    }
+    const rows = inList('deer_gen').flatMap(u => fGeneralRows('deer', u, q.wp));
     if (!q.wantLE || q.wantGeneral) card('Deer - general season (draw, preference points)', rows);
   }
-  // Draw hunts from last year's results, matched by unit name in the hunt title
+  const speciesKey = s => /sheep/i.test(s) ? 'sheep' : s.toLowerCase();
+  const extra = new Map(), general = new Set(['elk_anybull', 'elk_spike', 'antlerless_elk_control', 'deer_gen']);
+  if (!q.wantGeneral && !q.wantAntlerless) for (const key of Object.keys(H)) {
+    if (general.has(key)) continue;
+    for (const u of inList(key, true)) {
+      if (q.sp && speciesKey(u.species) !== q.sp) continue;
+      const all = fTableHunts(u), table = all.filter(h => !h.weapon || wpOk(h.weapon));
+      if (q.wp && all.length && !table.length) continue;
+      const title = u.species + ' - ' + u.type;
+      if (!extra.has(title)) extra.set(title, []);
+      extra.get(title).push({ t: u.unit, sub: fUnitSub(u), unitId: u.boundary_id,
+        s: table.map(h => `${esc(h.code)}${esc((h.marks || []).join(''))}${h.weapon ? ' &middot; ' + esc(h.weapon) : ''} &middot; ${esc(fHuntDates(h))}`).join('<br>') || esc(u.season) });
+    }
+  }
+  extra.forEach((rows, title) => card(title, rows));
+  // Keep every old title match, and add the guidebook's exact polygon matches.
+  // There is no cap: adding an earlier hunt must never hide an old visible row.
   const spMap = { elk: ['EB', 'EA'], deer: ['DB', 'DA'], pronghorn: ['PB', 'PD', 'PA'], moose: ['MB', 'MA'], sheep: ['DS', 'RS', 'RE', 'DE'], 'mountain goat': ['GO'], bison: ['BI'] };
-  const want = q.sp ? spMap[q.sp] : null;
-  const drawRows = hunts.filter(([c, h]) => (!want || want.includes(c.slice(0, 2))) && wpOk(h.n) && (!q.wantAntlerless || h.g === 'Antlerless') && (!q.wantGeneral || h.g !== 'Limited entry and once-in-a-lifetime'))
-    .map(([c, h]) => { const segs = h.n.split(' - '); const unit = h.g === 'General-season buck deer' ? segs[0] : (segs[1] || ''); return [c, h, fUnitMatch(unit, myUnits)]; }).filter(x => x[2])
-    .map(([c, h, m]) => ({ t: h.n + (m === 'maybe' ? ' (part of the unit - check the boundary)' : ''), s: `${esc(c)} &middot; ${h.g}${h.k === 'p' ? ' &middot; preference points' : ' &middot; bonus points'}. ${fOddsLine(h)}`, code: c }));
-  if (!q.wantGeneral) card(`Draw hunts here (${yr || 'last year'} results)`, drawRows.slice(0, 40));
+  const want = q.sp ? spMap[q.sp] : null, byCode = new Map(((HT || {}).hunts || []).map(h => [h.code, h]));
+  const drawRows = hunts.filter(([c, h]) => (!want || want.includes(c.slice(0, 2))) && (!q.wantAntlerless || h.g === 'Antlerless') && (!q.wantGeneral || h.g !== 'Limited entry and once-in-a-lifetime'))
+    .map(([c, h]) => {
+      const segs = h.n.split(' - '), name = h.g === 'General-season buck deer' ? segs[0] : (segs[1] || '');
+      const table = byCode.get(c), placed = table && (table.boundary_ids || []).some(id => myIds.has(id)) &&
+        (!q.wp || (table.weapon && wpOk(table.weapon)));
+      const old = wpOk(h.n) ? fUnitMatch(name, myUnits) : '', match = placed ? 'yes' : old;
+      const ids = table ? (table.boundary_ids || []).slice() : (UNITS || []).filter(u => u.n === name).map(u => u.id);
+      return { c, h, match, ids };
+    }).filter(x => x.match)
+    .map(({ c, h, match, ids }) => ({ t: h.n + (match === 'maybe' ? ' (part of the unit - check the boundary)' : ''), s: `${esc(c)} &middot; ${h.g}${h.k === 'p' ? ' &middot; preference points' : ' &middot; bonus points'}. ${fOddsLine(h)}`, code: c, unitIds: ids }));
+  if (!q.wantGeneral) card(`Draw hunts here (${yr || 'last year'} results)`, drawRows);
   return out;
 }
 /* Unit names carry their own commas ("Wasatch Mtns, East"), so joining a list of
@@ -509,7 +576,11 @@ function vFind() {
     This answer is for ${esc(q.place.label)}, because that is your own word for it. If you meant the unit, switch:</div>
     <div class="chipsrow">${useful.map(u => `<button class="chip" data-fask="useunit" data-fval="${esc(u.label)}">${esc(u.label)}</button>`).join('')}</div>`;
   if (!q.wp) h += fAsk('Which weapon? (or leave it open)', [['archery', 'Archery'], ['muzzleloader', 'Muzzleloader'], ['rifle', 'Rifle / any legal weapon'], ['any', 'Show all']], 'wp');
-  for (const c of res) h += `<div class="sec-title">${esc(c.title)}</div><div class="card">${c.rows.map(r => `<${r.code ? 'button' : 'div'} class="row" ${r.code ? `data-draw="${esc(r.code)}"` : ''} style="--g:var(--brand)"><span class="pill"></span><span><span class="t">${esc(r.t)}${r.sub || ''}</span><span class="s">${r.s}</span></span><span class="v"></span></${r.code ? 'button' : 'div'}>`).join('')}</div>`;
+  for (const c of res) h += `<div class="sec-title">${esc(c.title)}</div><div class="card">${c.rows.map(r => {
+    const ids = r.unitIds || (r.unitId != null ? [r.unitId] : []);
+    const links = typeof unitLink === 'function' ? [...new Set(ids)].map(id => unitLink(id)).filter(Boolean).join(' &middot; ') : '';
+    return `<${r.code ? 'button' : 'div'} class="row" ${r.code ? `data-draw="${esc(r.code)}"` : ''} style="--g:var(--brand)"><span class="pill"></span><span><span class="t">${esc(r.t)}${r.sub || ''}</span><span class="s">${r.s}</span></span><span class="v"></span></${r.code ? 'button' : 'div'}>${links ? '<p class="fine" style="padding:0 16px 10px">' + links + '</p>' : ''}`;
+  }).join('')}</div>`;
   if (!res.length) h += `<p class="empty">Nothing matched in ${fList(myUnits)} for ${esc(F_LABEL[q.sp])}${q.wp ? ' with ' + q.wp : ''}. Try another weapon or drop the extra words.</p>`;
   h += `<p class="fine" style="padding-left:2px">General dates from the 2026 guidebook; unit lists from UDWR's 2026 hunt boundaries; draw odds from UDWR's published results. Over-the-counter permits still have sale dates and, for some hunts, caps. Confirm at wildlife.utah.gov before you buy.</p>`;
   return h;

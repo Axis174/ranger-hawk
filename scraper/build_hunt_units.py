@@ -4,7 +4,7 @@
 The nightly calls update_hunt_units with refresh.py's GET and changelog report.
 An upstream failure leaves the committed file untouched. --offline deliberately
 uses the committed lists and boundary attributes without claiming a new pull.
-Name aliases are judgments awaiting the packet's stop-1 review, not fuzzy joins.
+Name aliases are the lead's approved packet-5 stop-1 judgments, not fuzzy joins.
 """
 import argparse
 import copy
@@ -41,15 +41,14 @@ LIST_ALIASES = {
     "Moab Valley": "La Sal, Moab Valley",
     "Nebo, Moroni Hills": "Moroni Hills",
 }
-# Species-scoped guidebook spellings from audit appendix 2A. Parker Mtn is a
-# provisional audit mapping, explicitly listed for the lead's stop-1 approval.
-# San Rafael, North is intentionally absent for pronghorn: its exact-name
-# polygon belongs to the desert-sheep list, not the pronghorn list.
+# Species-scoped guidebook spellings approved by the lead at packet-5 stop 1.
+# The exact-name San Rafael, North polygon belongs to desert sheep; the
+# pronghorn hunt resolves only through its species list to North A (202).
 HUNT_ALIASES = {
     "Deer": {"Fillmore": "Fillmore B", "Kaiparowits HAMSS": "Kaiparowits (HAMS)"},
     "Elk": {"Boulder": "Boulder Elk", "Nebo/San Pitch Mtn": "Nebo/San Pitch Mtns"},
     "Pronghorn": {"Book Cliffs, Bitter Creek": "Book Cliffs, Bitter Creek (pronghorn)",
-                  "Parker Mtn": "Plateau"},
+                  "Parker Mtn": "Plateau", "San Rafael, North": "San Rafael, North A"},
     "Bison": {"Henry Mtns": "Henry Mtns (bison)",
               "Book Cliffs, Bitter Creek": "Book Cliffs, Bitter Creek (pronghorn)"},
     "Desert Bighorn Sheep": {"Mineral Mtns": "Mineral Mountain"},
@@ -257,11 +256,23 @@ def serialize_document(document):
     return (json.dumps(document, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
 
 
+def hunt_data(document):
+    """Only hunt rows and slugs decide whether a successful pull changed data.
+
+    The rows contain the unit ids and verbatim descriptions. Pull dates and
+    source stamps describe the last material change, so another successful
+    check does not rewrite the file or hide real changes in the changelog.
+    """
+    return {key: document.get(key) for key in ("hunts", "slugs")}
+
+
 def atomic_write(path, document):
     path = Path(path)
     value = serialize_document(document)
-    if path.exists() and path.read_bytes() == value:
-        return False
+    if path.exists():
+        previous = json.loads(path.read_text())
+        if hunt_data(previous) == hunt_data(document):
+            return False
     tmp = None
     try:
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + ".", delete=False) as f:
@@ -298,6 +309,8 @@ def update_hunt_units(data_dir, get, report, pulled=None):
             json.loads((data_dir / "units_geo.json").read_text()), previous, year,
             pulled or datetime.now(timezone.utc).date().isoformat(), services)
         changed = atomic_write(path, document)
+        if not changed and previous is not None:
+            document = previous
         dest = report["changes"] if changed else report["ok"]
         dest.append({"source": "hunt_units", "desc": "UDWR hunt-type unit lists", "lists": len(rows),
                      "rows": sum(map(len, rows.values()))})

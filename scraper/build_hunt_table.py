@@ -90,8 +90,8 @@ SUBHEAD_WEAPONS = {
     "Any legal weapon hunts": "Any legal weapon",
 }
 
-# (top heading, most-specific subheading) -> hunt_units' type. These are
-# proposals for the lead's stop-1 review; the table keeps both printed headings.
+# (top heading, most-specific subheading) -> hunt_units' type. The 48 observed
+# pairs were approved at packet-5 stop 1; the table keeps both printed headings.
 # Dedicated Hunter and the statewide youth hunt have no corresponding list.
 HUNT_TYPE_MAP = {}
 for _group in GROUP_SPECIES:
@@ -222,7 +222,8 @@ def parse_layout(text, year=2026, first_page=1):
             rows.append({
                 "code": code, "name": name, "marks": marks,
                 "species": GROUP_SPECIES[group], "hunt_type": heading,
-                "hunt_group": group, "weapon": row_weapon, "units": [unit],
+                "hunt_group": group, "list_type": HUNT_TYPE_MAP[(group, heading)],
+                "weapon": row_weapon, "units": [unit],
                 "boundary_ids": [], "seasons": [span] if span else [],
                 "start": span["start"] if span else None,
                 "end": span["end"] if span else None,
@@ -277,6 +278,34 @@ def serialize_table(table):
     return json.dumps(table, ensure_ascii=False, indent=2) + "\n"
 
 
+def place_rows(rows, hunt_lists):
+    """Resolve identity, then validate each nonempty approved list-type mapping.
+
+    Dedicated Hunter's approved null mapping retains its identity ids but does
+    not match any list entry for rendering. A nonempty mapping absent from any
+    assigned polygon's species list leaves the whole hunt unplaced and reported.
+    """
+    try:
+        from .build_hunt_units import resolve_hunt_name, species_name
+    except ImportError:
+        from build_hunt_units import resolve_hunt_name, species_name
+    lists = hunt_lists.get("hunts", hunt_lists)
+    available = {(species_name(row["species"]), row["boundary_id"], row["type"])
+                 for values in lists.values() for row in values}
+    warnings = []
+    for row in rows:
+        boundary_ids = sorted({boundary_id for unit in row["units"]
+                               for boundary_id in resolve_hunt_name(unit, row["species"], hunt_lists)})
+        invalid = [ident for ident in boundary_ids if row["list_type"] is not None and
+                   (species_name(row["species"]), ident, row["list_type"]) not in available]
+        row["boundary_ids"] = [] if invalid else boundary_ids
+        if invalid:
+            warnings.append({"code": row["code"], "species": row["species"],
+                             "list_type": row["list_type"], "boundary_ids": invalid,
+                             "units": row["units"]})
+    return warnings
+
+
 def build_table(pdf_path, hunt_lists=None, pulled=None, year=None):
     """Return the proposed output; no file writes or network calls occur here."""
     pdf_path = Path(pdf_path)
@@ -298,15 +327,12 @@ def build_table(pdf_path, hunt_lists=None, pulled=None, year=None):
     rows = parse_layout(pdf_layout(pdf_path), year)
     if hunt_lists is None:
         hunt_lists = json.loads((DATA / ("hunt_units_%s.json" % year)).read_text())
-    try:
-        from .build_hunt_units import resolve_hunt_name
-    except ImportError:
-        from build_hunt_units import resolve_hunt_name
-    for row in rows:
-        row["boundary_ids"] = sorted({boundary_id for unit in row["units"]
-                                      for boundary_id in resolve_hunt_name(unit, row["species"], hunt_lists)})
-    return {"_edition": {**metadata, "year": year, "pulled": pulled,
-                         "pdf": PDF_URL, "sha": digest}, "hunts": rows}
+    warnings = place_rows(rows, hunt_lists)
+    result = {"_edition": {**metadata, "year": year, "pulled": pulled,
+                            "pdf": PDF_URL, "sha": digest}, "hunts": rows}
+    if warnings:
+        result["_placement_warnings"] = warnings
+    return result
 
 
 def write_table(table, output):
@@ -347,6 +373,8 @@ def main(argv=None):
           (len(table["hunts"]), dated, len(table["hunts"]) - dated, len(unresolved)))
     for row in unresolved:
         print("  unplaced: %s | %s | %s" % (row["code"], row["species"], "; ".join(row["units"])))
+    for warning in table.get("_placement_warnings", []):
+        print("  missing list type: " + json.dumps(warning, ensure_ascii=False))
     for row in table["hunts"]:
         if not row["seasons"] and not re.search(r"Dedicated Hunter|Multiseason", row["hunt_type"], re.IGNORECASE):
             print("  undated other type: %s | %s" % (row["code"], row["hunt_type"]))
