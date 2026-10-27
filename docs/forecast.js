@@ -62,7 +62,7 @@ function fxUnitSpot(u) {
     if (a && Math.abs(a) > bestArea) { bestArea = Math.abs(a); best = { lon: cx / (3 * a), lat: cy / (3 * a) }; }
   }
   if (!best) best = { lon: (u.bb[0] + u.bb[2]) / 2, lat: (u.bb[1] + u.bb[3]) / 2 };
-  return { lat: +best.lat.toFixed(4), lon: +best.lon.toFixed(4), label: u.n, kind: 'unit', id: u.id };
+  return { lat: +best.lat.toFixed(4), lon: +best.lon.toFixed(4), label: u.n, kind: 'unit', id: u.id, units: [u.n] };
 }
 function fxSetSpot(spot) {
   FX.spot = spot; FX.error = null; fxSave();
@@ -77,7 +77,7 @@ function fxLocate() {
     const lat = +pos.coords.latitude.toFixed(4), lon = +pos.coords.longitude.toFixed(4);
     const here = typeof unitsAt === 'function' && UNITS ? unitsAt(lon, lat) : [];
     FX.loading = null;
-    fxSetSpot({ lat, lon, label: here.length ? 'Where I am: ' + here[0].n : 'Where I am', kind: 'gps' });
+    fxSetSpot({ lat, lon, label: here.length ? 'Where I am: ' + here[0].n : 'Where I am', kind: 'gps', units: here.map(u => u.n) });
   }, err => { FX.loading = null; FX.error = { key: 'gps', msg: 'No GPS fix: ' + (err.message || 'location was refused') + '.' }; render(); },
   { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 });
 }
@@ -103,17 +103,22 @@ function fxRecord(key) {
    grid URLs for a spot never change, so they are kept with the record. */
 async function fxJson(url, tries = 2) {
   for (let i = 1; ; i++) {
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), 15000) : null;
     try {
-      const r = await fetch(url, { headers: { Accept: 'application/geo+json' } });
-      if (!r.ok) throw new Error('weather service answered ' + r.status);
+      const r = await fetch(url, { headers: { Accept: 'application/geo+json' }, signal: ctl ? ctl.signal : undefined });
+      if (!r.ok) { const e = new Error('weather service answered ' + r.status); e.status = r.status; throw e; }
       return await r.json();
-    } catch (e) { if (i >= tries) throw e; }
+    } catch (e) { if (i >= tries || (e.status >= 400 && e.status < 500)) throw e; }   // a 4xx will not change on a retry
+    finally { if (timer) clearTimeout(timer); }
   }
 }
 /* Grid layers come as (UTC validTime, SI value) chunks; keep what the day rows sum. */
 function fxGrid(g, name, scale) {
   const layer = g && g.properties && g.properties[name];
-  return (layer && layer.values || []).filter(v => v.value != null).map(v => ({ s: v.validTime.split('/')[0], v: +(v.value * scale).toFixed(2) }));
+  const span = iso => { const m = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/.exec(iso || ''); return m ? ((+m[1] || 0) * 24 + (+m[2] || 0)) * 3600000 + (+m[3] || 0) * 60000 : 0; };
+  // A chunk is dated by its midpoint: a six-hour chunk starting at 23:00 belongs to the next day, which matters once the clocks go back.
+  return (layer && layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { s: new Date(Date.parse(start) + span(dur) / 2).toISOString(), v: +(v.value * scale).toFixed(2) }; });
 }
 async function fxLoad(spot, force) {
   const key = fxKey(spot), have = fxRecord(key);
@@ -121,13 +126,18 @@ async function fxLoad(spot, force) {
   if (!navigator.onLine) return have;
   if (FX.loading && FX.loading.key === key && FX.loading.p) return FX.loading.p;
   const p = (async () => {
-    let urls = have && have.urls;
-    if (!urls || !urls.f || !urls.h) {
+    let urls = have && have.urls && have.urls.f && have.urls.h ? have.urls : null;
+    const reused = !!urls;
+    const points = async () => {
       const P = (await fxJson(`https://api.weather.gov/points/${spot.lat.toFixed(2)},${spot.lon.toFixed(2)}`)).properties;
       const near = P.relativeLocation && P.relativeLocation.properties;
       urls = { f: P.forecast, h: P.forecastHourly, g: P.forecastGridData, office: P.gridId, near: near ? near.city + ', ' + near.state : '' };
-    }
-    const [f, h, g] = await Promise.all([fxJson(urls.f), fxJson(urls.h), urls.g ? fxJson(urls.g).catch(() => null) : null]);
+    };
+    const week = () => Promise.all([fxJson(urls.f), fxJson(urls.h), urls.g ? fxJson(urls.g).catch(() => null) : null]);
+    if (!urls) await points();
+    let f, h, g;
+    try { [f, h, g] = await week(); }
+    catch (e) { if (!reused || e.status !== 404) throw e; await points(); [f, h, g] = await week(); }   // the stored grid URLs went stale
     const pop = p => p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value != null ? p.probabilityOfPrecipitation.value : null;
     const rec = {
       at: fxNow(), urls, issued: f.properties.updateTime || f.properties.generatedAt || null,
@@ -147,13 +157,38 @@ async function fxLoad(spot, force) {
 
 /* ------------------------------------------------------------ sun and moon -- */
 const FX_PHASES = [[0.03, 'New'], [0.22, 'Waxing crescent'], [0.28, 'First quarter'], [0.47, 'Waxing gibbous'], [0.53, 'Full'], [0.72, 'Waning gibbous'], [0.78, 'Last quarter'], [0.97, 'Waning crescent'], [2, 'New']];
+/* Moonrise and moonset by scanning the moon's altitude across the local day
+   (midnight to the next midnight, so a 23- or 25-hour day is covered) every
+   ten minutes and bisecting each crossing. SunCalc's own getMoonTimes misses a
+   rise on some days because it scans the UTC day, which starts at 6 pm here
+   (Cache on 2026-10-26, Salt Lake City on the 25th), and the sheet would print
+   a dash for a moon that plainly rises that evening. The
+   horizon is SunCalc's own moonHeight: the apparent altitude it reports (in
+   degrees, refraction and parallax included) plus the moon's semidiameter and
+   its 0.09-degree allowance, crossing zero. */
+function fxMoonTimes(day, lat, lon) {
+  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const end = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+  const up = t => { const p = SUN.getMoonPosition(new Date(t), lat, lon); return p.altitude + 0.2725 * Math.asin(6371 / p.distance) * 180 / Math.PI + 0.09; };
+  let rise = null, set = null, prev = up(start), anyUp = prev > 0, anyDown = prev <= 0;
+  for (let t = start + 600000; t <= end; t += 600000) {
+    const cur = up(t);
+    if ((prev <= 0) !== (cur <= 0)) {
+      let lo = t - 600000, hi = t;
+      for (let k = 0; k < 10; k++) { const mid = (lo + hi) / 2; if ((up(mid) <= 0) === (prev <= 0)) lo = mid; else hi = mid; }
+      const at = new Date(Math.round((lo + hi) / 2 / 60000) * 60000);
+      if (cur > 0) { if (!rise) rise = at; } else if (!set) set = at;
+    }
+    if (cur > 0) anyUp = true; else anyDown = true;
+    prev = cur;
+  }
+  return { rise, set, alwaysUp: !rise && !set && anyUp && !anyDown, alwaysDown: !rise && !set && anyDown && !anyUp };
+}
 function fxMoon(day, lat, lon) {
-  if (!SUN || !SUN.getMoonTimes) return null;
+  if (!SUN || !SUN.getMoonPosition || !SUN.getMoonIllumination) return null;
   const noon = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12);
-  const ill = SUN.getMoonIllumination(noon);
-  const t = SUN.getMoonTimes(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 1), lat, lon) || {};
-  const ok = v => v instanceof Date && !isNaN(v) ? v : null;
-  return { name: FX_PHASES.find(([lim]) => ill.phase < lim)[1], frac: Math.round(ill.fraction * 100), rise: ok(t.rise), set: ok(t.set), up: !!t.alwaysUp, down: !!t.alwaysDown };
+  const ill = SUN.getMoonIllumination(noon), t = fxMoonTimes(day, lat, lon);
+  return { name: FX_PHASES.find(([lim]) => ill.phase < lim)[1], frac: Math.round(ill.fraction * 100), rise: t.rise, set: t.set, up: t.alwaysUp, down: t.alwaysDown };
 }
 
 /* ------------------------------------------------------------------ days ---- */
@@ -198,47 +233,68 @@ function fxDays(rec, spot, now) {
    hunter would accept. The tier is the sum, in words. Moon is shown and not
    scored. The table behind this is research/2026-10-26_forecast-movement-
    evidence.md; the sheet "Why these factors" repeats it on the phone. */
-/* Rut windows from the Utah DWR mule deer and elk management plans. */
+/* Rut windows from the Utah DWR mule deer and elk management plans. The dates
+   are strong; the daytime-movement effect near the peak is moderate (no Utah
+   GPS study measures it). Mule deer peak mid-November; elk peak mid to late
+   September, early September to early October around it. */
 const FX_RUT = {
-  deer: [['11-10', '11-30', 2, 'strong', 'Mule deer rut, the Utah peak: bucks travel by day between doe groups.'], ['11-01', '11-09', 1, 'moderate', 'Mule deer pre-rut: bucks start checking doe groups and move more by day.'], ['12-01', '12-10', 1, 'moderate', 'Late rut: some bucks still cruising.']],
-  elk: [['09-10', '09-30', 2, 'strong', 'Elk rut, the Utah peak: bulls bugle, gather cows and move by day.'], ['09-01', '09-09', 1, 'moderate', 'Early rut: bulls start gathering cows.'], ['10-01', '10-12', 1, 'moderate', 'Rut tailing off: bulls still with the cows.']]
+  deer: [['11-08', '11-22', 2, 'Mule deer rut, the Utah peak: near it, bucks tend and chase does by day and move more at midday than usual. Typical for the herd; no Utah GPS study measures the daytime change.'],
+    ['11-01', '11-07', 1, 'Mule deer rut building: bucks start seeking out doe groups and move more by day. Typical for the herd, not a promise.'],
+    ['11-23', '11-30', 1, 'Mule deer rut tailing off: some bucks still seeking does; after the rut they go quiet again.']],
+  elk: [['09-12', '09-30', 2, 'Elk rut, the Utah peak: bulls bugle, gather cows and move by day. Typical for the herd; no Utah GPS study measures the daytime change.'],
+    ['09-01', '09-11', 1, 'Early elk rut: bulls start gathering cows and move more by day. Typical for the herd, not a promise.'],
+    ['10-01', '10-07', 1, 'Elk rut tailing off: bulls still with the cows, then they go quiet again.']]
 };
-/* General seasons that opened in the last three days for this species, from
-   seasons.json. The extended archery hunts run for months and are left out. */
-function fxOpeners(key, sp) {
+/* Rifle seasons that opened in the last three days for this species, from
+   seasons.json. The evidence is about rifle openers; the archery, muzzleloader
+   and draw-only hunts bring far fewer hunters and are left out, as are the
+   extended archery hunts that run for months. A season limited to named units
+   counts only when the spot is in one of them; a spot with no unit (a town, a
+   tapped point) never counts those. */
+function fxOpeners(key, sp, units) {
   const S = typeof DB !== 'undefined' && DB && DB.seasons && DB.seasons.seasons || [];
-  return S.filter(s => s.group === sp && !/ext/.test(s.id || '') && s.start && key >= s.start && key <= fxDay(new Date(Date.parse(s.start + 'T19:00:00Z') + 2 * 86400000).toISOString()));
+  const names = units || [];
+  const inUnit = list => names.some(n => list.some(u => n === u || n.startsWith(u + ',')));
+  return S.filter(s => s.group === sp && /rifle/.test(s.id || '') && !/ext/.test(s.id || '') && s.start
+    && key >= s.start && key <= fxDay(new Date(Date.parse(s.start + 'T19:00:00Z') + 2 * 86400000).toISOString())
+    && (!s.units || inUnit(s.units)) && !(s.except && inUnit(s.except)));
 }
-function fxSignal(days, i, species, now) {
+/* Each factor: a direction (-2 to +2), a confidence word, and the reason a
+   hunter would accept, worded from research/2026-10-26_forecast-movement-
+   evidence.md and no stronger than it. The tier is the sum, in words. Wind,
+   the moon and snow in the forecast are shown and not scored. */
+function fxSignal(days, i, species, now, units) {
   const d = days[i], prev = days[i - 1] || null, prev2 = days[i - 2] || null, F = [];
   const sp = species === 'elk' ? 'elk' : 'deer', who = sp === 'elk' ? 'Elk' : 'Deer';
   const push = (k, dir, conf, why) => F.push({ k, dir, conf, why });
-  const mmdd = d.key.slice(5), migration = mmdd >= '10-10' && mmdd <= '12-20';
-  for (const [a, b, w, conf, why] of FX_RUT[sp]) if (mmdd >= a && mmdd <= b) { push('Rut', w, conf, why); break; }
-  const opened = fxOpeners(d.key, sp);
-  if (opened.length) push('Opening days', -1, sp === 'elk' ? 'strong' : 'moderate', sp === 'elk'
-    ? `${opened[0].name} opened ${opened[0].start === d.key ? 'today' : fxLF.format(new Date(opened[0].start + 'T12:00:00'))}: hunters push elk off the roads and public land in the first days, about a tenth of a herd. Hunt away from the roads.`
-    : `${opened[0].name} opened ${opened[0].start === d.key ? 'today' : fxLF.format(new Date(opened[0].start + 'T12:00:00'))}: bucks move off the roads into cover in the first days. Hunt away from the roads.`);
-  if (migration && d.lo != null && d.lo <= 25) push('Hard freeze', 1, 'strong', `Low of ${d.lo}°: nights this cold are what start ${sp} moving down from summer range.`);
-  if (d.snow >= 4) push('Storm snow', 1, 'strong', `About ${Math.round(d.snow)}" of snow: snow on the high country sends ${sp} downhill, and leaves tracks. About ten inches on the ground does it.`);
-  else if (d.snow >= 1) push('Snow', 1, 'moderate', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" of snow: fresh tracks, and the start of the push toward lower country.`);
+  const mmdd = d.key.slice(5), migration = mmdd >= '10-01' && mmdd <= '12-15';
+  const here = units || (FX.spot && FX.spot.units) || [];
+  for (const [a, b, w, why] of FX_RUT[sp]) if (mmdd >= a && mmdd <= b) { push('Rut', w, 'moderate', why); break; }
+  const opened = fxOpeners(d.key, sp, here);
+  if (opened.length) {
+    const s = opened[0], when = s.start === d.key ? 'today' : fxLF.format(new Date(s.start + 'T12:00:00-07:00'));
+    push('Opening days', -1, sp === 'elk' ? 'strong' : 'moderate', sp === 'elk'
+      ? `${s.name} opened ${when}. When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting in the first days. Hunt away from the roads.`
+      : `${s.name} opened ${when}. In Wyoming, bucks moved farther from roads once the rifle season opened. Hunt away from the roads.`);
+  }
+  if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Low of ${d.lo}°: a hard freeze, night lows near 32 to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
+  if (d.snow >= 1) push('Snow in the forecast', 0, 'weak', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" forecast: fresh tracks, and a heavy, windy storm keeps animals bedded until it eases. What sends mule deer and elk downhill is snow piled up on the ground, about ten inches, which this screen cannot see yet. Shown, not scored.`);
   if (prev && d.hi != null && prev.hi != null) {
     const drop = prev.hi - d.hi;
-    if (drop >= 10) push('Cold front', 1, 'weak', `The high falls ${drop}° from ${prev.name}. Hunters swear by it; the studies behind it are on whitetails, none on mule deer or elk.`);
-    else if (d.hi - prev.hi >= 8) push('Warm-up', -1, 'weak', `${d.hi - prev.hi}° warmer than ${prev.name}: ${sp} bed earlier and move less by day.`);
+    if (drop >= 10) push('Cold front', 1, 'weak', `The high falls ${drop}° from ${prev.name}. Hunters report more daylight movement after a cold snap; we found no mule deer or elk study that measured it, so treat it as a hunch.`);
+    else if (d.hi - prev.hi >= 8) push('Warm-up', -1, 'weak', `${d.hi - prev.hi}° warmer than ${prev.name}. Hunters report animals bedding earlier on a warm-up; we found no mule deer or elk study that measured it.`);
   }
   if (prev && prev2 && prev.hi != null && prev2.hi != null && d.hi != null && prev2.hi - prev.hi >= 10 && d.pop < 30 && d.hi - prev.hi <= 5)
-    push('Clearing after the storm', 1, 'weak', 'The first calm, cold day after a storm: animals get up to feed after sitting it out. Whitetail evidence; none on mule deer or elk.');
-  const hot = sp === 'elk' ? 65 : 70;
-  if (d.hi != null && d.hi >= hot + 10) push('Heat', -2, 'moderate', `High of ${d.hi}°: ${sp} are bedded in shade by mid-morning. First light, then the evening cool-down. No study gives a number; this is a rule of thumb.`);
-  else if (d.hi != null && d.hi >= hot) push('Warm day', -1, 'moderate', `High of ${d.hi}°: daytime movement ends early. No study gives a number; ${hot}° is a rule of thumb.`);
-  if (d.snow < 1 && d.pop >= 70 && /rain|showers|thunder|snow/i.test(d.words)) push('Steady precipitation', -1, 'weak', 'Heavy weather means more time bedded, and feeding once it stops.');
+    push('Clearing after the storm', 1, 'weak', "The first calm, cold day after a storm: an elk guide's rule of thumb that animals get up to feed after sitting it out. We found no study.");
+  if (d.hi != null && d.hi >= 80) push('Heat', -2, 'moderate', `High of ${d.hi}°: on hot days animals bed in shade through the middle of the day; expect movement at first and last light only. No mule deer or elk study gives a temperature; 70° is a guide's figure.`);
+  else if (d.hi != null && d.hi >= 70) push('Warm day', -1, 'moderate', `High of ${d.hi}°: animals bed in shade through the middle of the day; first and last light. No mule deer or elk study gives a temperature; 70° is a guide's figure.`);
+  if (d.snow < 1 && d.pop >= 70 && /rain|showers|thunder|snow/i.test(d.words)) push('Steady precipitation', -1, 'weak', "Heavy weather keeps animals bedded until it eases; light rain or snow changes little. An elk guide's rule of thumb; we found no study.");
   const w = Math.max(d.wind || 0, d.gust || 0);
-  if (w >= 18) push('Wind', 0, 'contested', `Wind to ${w} mph: no clear effect on how much ${sp} move. It matters for your approach and your hearing. Shown, not scored.`);
-  if (d.moon && d.moon.name === 'Full') push('Full moon', 0, 'weak', 'A bright night. Hunters report slower mornings; a GPS study of 48 bucks found no change in movement with the moon. Shown, not scored.');
+  if (w >= 18) push('Wind', 0, 'contested', `Wind to ${w} mph: studies on deer disagree about wind and movement, so it is shown for your stalk and scent, not as a reason ${sp} will or will not move. Shown, not scored.`);
+  if (d.moon && d.moon.name === 'Full') push('Full moon', 0, 'weak', "A bright night. Hunters report slower mornings; a GPS study of 48 whitetail bucks found no effect of the moon's phase or position, and there is no mule deer or elk moon study. Shown, not scored.");
   const score = F.reduce((s, f) => s + f.dir, 0);
   const tier = score >= 3 ? 'Strong' : score >= 1 ? 'Good' : score >= -1 ? 'Fair' : 'Slow';
-  let when = 'dawn', why = `First light: ${sp} move most in the first and last hours of light, and the morning is the colder, stiller one.`;
+  let when = 'dawn', why = `First light: ${sp} feed and travel at the edges of the day and rest through the middle, and the morning is the colder, stiller one.`;
   const at = h => (d.hours || []).find(x => fxHour(x.s) === h), am = at(8), pm = at(16);
   if (am && pm) {
     if (pm.t != null && am.t != null && pm.t <= am.t - 6) { when = 'dusk'; why = `The front arrives during the day: by ${clock(new Date(pm.s))} it is ${am.t - pm.t}° colder than mid-morning.`; }
@@ -246,9 +302,9 @@ function fxSignal(days, i, species, now) {
     else if ((fxMph(am.w) || 0) >= 18 && (fxMph(pm.w) || 0) < 10) { when = 'dusk'; why = 'The wind lies down in the afternoon: a quieter stalk, and better hearing both ways.'; }
   }
   const L = d.light, t = now == null ? fxNow() : now, next = days[i + 1];
-  let label = when === 'dawn' ? 'First light' : 'Last light', window = L ? (when === 'dawn' ? 'from ' + clock(L.start) : 'until ' + clock(L.late)) : '';
-  if (i === 0 && L && t > L.late.getTime()) { when = 'next'; label = 'First light tomorrow'; window = next && next.light ? 'from ' + clock(next.light.start) : ''; why = 'Today is done. The next move is the first hour of light.'; }
-  else if (i === 0 && L && t > L.sunrise.getTime() + 2 * 3600000) { when = 'dusk'; label = 'Last light'; window = 'until ' + clock(L.late); why = 'First light has passed. Last light is the next move.'; }
+  let label = when === 'dawn' ? 'First light' : 'Last light', window = L ? (when === 'dawn' ? 'from about ' + clock(L.start) : 'until about ' + clock(L.late)) : '';
+  if (i === 0 && L && t > L.late.getTime()) { when = 'next'; label = 'First light tomorrow'; window = next && next.light ? 'from about ' + clock(next.light.start) : ''; why = 'Today is done. The next move is the first hour of light.'; }
+  else if (i === 0 && L && t > L.sunrise.getTime() + 2 * 3600000) { when = 'dusk'; label = 'Last light'; window = 'until about ' + clock(L.late); why = 'First light has passed. Last light is the next move.'; }
   return { tier, score, factors: F, best: { when, label, window, why }, who };
 }
 
@@ -284,7 +340,7 @@ function fxMoonStats(d) {
     <div class="stat"><div class="k">Moonset</div><div class="v">${M.down ? 'down all day' : fxT(M.set)}</div></div>
   </div>`;
 }
-const fxLightNote = spot => `<p class="fine">Start is 30 minutes before sunrise; waterfowl ends at sunset, upland, turkey and big game 30 minutes after; on WMAs, state land beside the Great Salt Lake and federal refuges everything ends at sunset. Computed for ${spot.kind === 'unit' ? 'the centre of ' + esc(spot.label) : esc(spot.label)} and rounded to the safe side; an estimate. The guidebook table by county is the legal one.</p>`;
+const fxLightNote = spot => `<p class="fine">Start is 30 minutes before sunrise; waterfowl ends at sunset, upland, turkey and big game 30 minutes after; on WMAs, state land beside the Great Salt Lake and federal refuges everything ends at sunset. Computed for ${spot.kind === 'unit' ? 'the centre of ' + esc(spot.label) : esc(spot.label)} and rounded to the safe side; an estimate. The guidebook table shifts a few minutes by county and is the legal one.</p>`;
 function fxFactors(sig) {
   if (!sig.factors.length) return `<p class="fine" style="padding:8px 16px 0">Nothing in this day's forecast pushes ${sig.who.toLowerCase()} either way: an ordinary day, first and last light.</p>`;
   const mark = f => f.dir > 0 ? '+' : f.dir < 0 ? '&minus;' : '~';
@@ -326,7 +382,8 @@ function vForecast() {
   const old = now - rec.at > FX_TTL;
   h += `<div class="hero"><div class="lab">${esc(spot.label)} &middot; ${esc(t.label)}${old ? ' &middot; fetched ' + esc(fxAgo(now - rec.at)) : ''}</div>
     <div class="big">${esc(s.tier)} day for ${esc(s.who.toLowerCase())}</div>
-    <div class="sub">${esc(s.best.label)}${s.best.window ? ', ' + esc(s.best.window) : ''}. ${esc((s.factors.find(f => f.dir) || {}).why || s.best.why)}</div></div>`;
+    <div class="sub">${esc(s.best.label)}${s.best.window ? ', ' + esc(s.best.window) + ' (estimate)' : ''}. ${esc((s.factors.find(f => f.dir) || {}).why || s.best.why)}</div></div>`;
+  if (FX.error && FX.error.key === 'gps') h += `<div class="warnbox">${esc(FX.error.msg)}</div>`;
   if (!navigator.onLine) h += `<div class="warnbox">No signal: this is the forecast fetched ${esc(fxAgo(now - rec.at))} ago. Sun and moon are current.</div>`;
   else if (FX.error && FX.error.key === key) h += `<div class="warnbox">Could not refresh: ${esc(FX.error.msg)}. Showing the forecast fetched ${esc(fxAgo(now - rec.at))} ago. <button class="btn ghost" data-fx="refresh" style="padding:4px 10px;font-size:12px">Try again</button></div>`;
   h += `<div class="sec-title">Today</div><div class="card">${fxStats(t)}${fxFactors(s)}<div class="acts" style="padding:10px 14px 12px"><button class="btn ghost" data-fx="day:0">Hour by hour, first and last light</button></div></div>`;
@@ -353,9 +410,9 @@ function fxSheetDay(i) {
   const s = fxSignal(days, i, FX.species), L = d.light, H = 3600000;
   let h = `<h3>${esc(d.i === 0 ? 'Today, ' + d.label : fxWF.format(d.date) + ', ' + d.label.replace(/^\w+,?\s+/, ''))}</h3>
     <p class="where">${esc(s.tier)} day for ${esc(s.who.toLowerCase())} &middot; ${esc(spot.label)}</p>${fxStats(d)}
-    <div class="sec-title" style="padding:0 16px">Best window</div><p class="fine" style="padding:4px 16px 0"><b>${esc(s.best.label)}${s.best.window ? ', ' + esc(s.best.window) : ''}.</b> ${esc(s.best.why)}</p>
+    <div class="sec-title" style="padding:0 16px">Best window</div><p class="fine" style="padding:4px 16px 0"><b>${esc(s.best.label)}${s.best.window ? ', ' + esc(s.best.window) + ' (estimate)' : ''}.</b> ${esc(s.best.why)}</p>
     <div class="sec-title" style="padding:0 16px">What moves ${esc(s.who.toLowerCase())} this day</div>${fxFactors(s)}`;
-  if (L) h += `<div class="sec-title" style="padding:0 16px">Legal light &middot; estimate</div>${fxLightStats(d)}
+  if (L) h += `<div class="sec-title" style="padding:0 16px">Legal light &middot; estimate</div>${fxLightStats(d)}${fxLightNote(spot)}
     <div class="sec-title" style="padding:0 16px">First light, hour by hour</div>${fxHours(d, L.start.getTime() - H, L.sunrise.getTime() + 3 * H)}
     <div class="sec-title" style="padding:0 16px">Last light</div>${fxHours(d, L.sunset.getTime() - 3 * H, L.late.getTime() + H)}`;
   if (d.moon) h += `<div class="sec-title" style="padding:0 16px">Moon</div>${fxMoonStats(d)}`;
@@ -367,18 +424,19 @@ function fxSheetDay(i) {
 function fxSheetWhy() {
   return `<h3>Why these factors</h3><p class="where">What the research says moves mule deer and elk, and how sure it is.</p>
     <dl class="f">
-      <dt>First and last light &middot; strong</dt><dd>Mule deer and elk move most in the first and last hours of daylight. That is the frame for every day here; no study gives it in minutes, so neither does this.</dd>
-      <dt>Rut &middot; strong</dt><dd>The Utah DWR management plans put the mule deer rut peak in mid to late November and the elk rut in mid to late September. Bucks and bulls travel by day then, whatever the weather. Scored +2 at the peak, +1 on the shoulders.</dd>
-      <dt>Opening days &middot; strong for elk, moderate for deer</dt><dd>In the first days of a general season, elk leave roads and public land (about a tenth of a herd shifts) and bucks move off roads into cover. Scored &minus;1 on the opening day and the two after it, from the season dates in this app.</dd>
-      <dt>Hard freeze and snow on the high country &middot; strong</dt><dd>Nights near 25 degrees and below, and about ten inches of snow on the ground, are what start mule deer and elk down from summer range from mid-October on. Scored +1 each from the forecast low and the forecast snowfall.</dd>
-      <dt>Heat &middot; moderate</dt><dd>Warm days send deer and elk to shade by mid-morning; the direction is well supported, the number is not. 70 degrees for deer and 65 for elk are rules of thumb. Scored &minus;1, and &minus;2 ten degrees above that.</dd>
-      <dt>Cold fronts &middot; weak</dt><dd>Hunters swear by a sharp drop in the daytime high, and by the first clear day after the storm. The studies behind it are on whitetails in the East and Midwest; there is none on mule deer or elk. Scored +1 each, not more.</dd>
-      <dt>Steady precipitation &middot; weak</dt><dd>Heavy weather means more time bedded and feeding once it stops. Scored &minus;1.</dd>
-      <dt>Wind &middot; contested</dt><dd>The research finds no clear effect of wind on how much deer and elk move. It matters for your approach and for hearing, both ways. Shown from 18 mph, not scored.</dd>
-      <dt>Moon &middot; weak to none</dt><dd>Hunters report slower mornings after a bright night. A GPS study of 48 bucks found no change in movement with the phase or position of the moon. Shown, not scored.</dd>
-      <dt>Barometric pressure &middot; contested</dt><dd>Pressure on its own predicts little; what hunters feel as "the pressure changing" is the front. Not scored, and not shown.</dd>
+      <dt>First and last light &middot; strong</dt><dd>Elk and mule deer feed and travel at the edges of the day and rest through the middle (Oregon GPS); whitetail work puts the peaks within about two hours of sunrise and sunset. That is the frame for every day here. No study gives it in minutes, so neither does this.</dd>
+      <dt>Rut &middot; dates strong, daytime effect moderate</dt><dd>The Utah DWR management plans put the mule deer rut peak in mid-November and the elk rut peak in mid to late September. Near the peak, bucks tend and chase does and bulls gather cows, and both move more by day; after the rut they go quiet. No Utah GPS study measures the daytime change. Scored +2 at the peak, +1 on the shoulders.</dd>
+      <dt>Opening days &middot; strong for elk, moderate for deer</dt><dd>When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting. In Wyoming, mule deer bucks moved farther from roads once the rifle season opened. Scored &minus;1 on a rifle opener and the two days after, for the seasons in this app that cover the spot's unit.</dd>
+      <dt>Hard freeze &middot; strong, mule deer</dt><dd>Night lows near 32 to 23 degrees are what typically start mule deer drifting off the high country (Wyoming and Montana GPS does). Scored +1 for deer from October. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>
+      <dt>Snow on the ground &middot; strong, not on this screen yet</dt><dd>Snow piling up on the summer range, about ten inches, is the main push that sends mule deer and elk down to winter range. This screen sees forecast snowfall, which the Wyoming study did not support as a predictor on its own, so snow in the forecast is shown and not scored until the gauge readings are wired in.</dd>
+      <dt>Heat &middot; moderate</dt><dd>On hot days animals bed in shade through the middle of the day, so expect movement at first and last light. No mule deer or elk study gives a temperature; 70 degrees is a guide's figure. Scored &minus;1, and &minus;2 from 80.</dd>
+      <dt>Cold front, and clearing after a storm &middot; weak</dt><dd>Hunters report more daylight movement after a cold snap and on the first calm day after a storm. We found no mule deer or elk study that measured either; a whitetail GPS study found no general pattern. Scored +1 each, as a hunch.</dd>
+      <dt>Steady precipitation &middot; weak</dt><dd>Heavy weather keeps animals bedded until it eases; light rain or snow changes little. An elk guide's rule of thumb; no study. Scored &minus;1.</dd>
+      <dt>Wind &middot; contested</dt><dd>Studies on deer disagree about wind and movement (all whitetail), so wind is shown for your stalk and scent, not as a reason animals will or will not move. Shown from 18 mph, not scored.</dd>
+      <dt>Moon &middot; weak</dt><dd>Hunters report slower mornings after a bright night. A GPS study of 48 whitetail bucks found no effect of the moon's phase or position; there is no mule deer or elk moon study. Shown, not scored.</dd>
+      <dt>Barometric pressure &middot; contested</dt><dd>Pressure travels with fronts, wind and temperature, and the studies that tested it alone found no steady effect. Not scored, not shown.</dd>
     </dl>
-    <p class="fine" style="padding:12px 16px 0">Sources: the Utah DWR mule deer and elk management plans; Rittenhouse and others, 2015, on Wyoming mule deer migration, snow and cold; Mississippi State Extension on the moon, 2025; and the whitetail weather studies, named as such. Mule deer and elk are not whitetails: most movement-forecast research, and most of the apps, are built on whitetail data. This read uses Western studies where they exist and says "weak" or "contested" where they do not. It never claims a percentage.</p>`;
+    <p class="fine" style="padding:12px 16px 0">The rut and the migration overlap in November: when both apply they are listed apart, not blended. Plan statements are herd-wide and typical; individual herds vary. Sources: the Utah DWR mule deer and elk management plans; the Utah and BYU GPS elk work on opening day (Sergeyev and others, 2022); Rodgers and others, 2021, on Wyoming mule deer and roads; Rittenhouse and others, 2015, and Anton and others, 2022, on snow depth and hard freezes; Mississippi State Extension, 2025, on the moon; whitetail GPS weather studies, named as whitetail. Mule deer and elk are not whitetails: most movement-forecast research, and most of the apps, are built on whitetail data. This read says "weak" or "contested" where the Western evidence is thin, and it never claims a percentage. The research notes behind this screen carry the links.</p>`;
 }
 
 /* --------------------------------------------------------------- events ---- */

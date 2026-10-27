@@ -36,16 +36,18 @@ const DAYS = [
   { d: '2026-11-03', hi: 58, lo: 30, sf: 'Mostly Sunny', nsf: 'Clear', w: '5 to 10 mph', dir: 'S', pop: 0, am: 32, pm: 56 },
   { d: '2026-11-04', hi: 72, lo: 35, sf: 'Sunny', nsf: 'Clear', w: '5 mph', dir: 'S', pop: 0, am: 40, pm: 70 }
 ];
-const local = (d, h) => `${d}T${String(h).padStart(2, '0')}:00:00-06:00`;
+/* NWS writes local times with the offset in force: mountain daylight time to October 31, standard time from November 1. */
+const local = (d, h) => `${d}T${String(h).padStart(2, '0')}:00:00${d >= '2026-11-01' ? '-07:00' : '-06:00'}`;
+const shift = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 86400000).toISOString().slice(0, 10);
 function nwsPeriod(day, isDay) {
   return { name: isDay ? 'Daytime' : 'Night', startTime: local(day.d, isDay ? 6 : 18), endTime: local(day.d, isDay ? 18 : 23), isDaytime: isDay,
     temperature: isDay ? day.hi : day.lo, temperatureUnit: 'F', windSpeed: day.w, windDirection: day.dir,
     shortForecast: isDay ? day.sf : day.nsf, detailedForecast: (isDay ? day.sf : day.nsf) + ', with a high near ' + day.hi + '. ' + day.dir + ' wind ' + day.w + '.',
     probabilityOfPrecipitation: { unitCode: 'wmoUnit:percent', value: day.pop } };
 }
-function nwsWeek() {
+function nwsWeek(list = DAYS) {
   const periods = [], hourly = [], gust = [], snow = [];
-  for (const day of DAYS) {
+  for (const day of list) {
     periods.push(nwsPeriod(day, true), nwsPeriod(day, false));
     for (let h = 0; h < 24; h++) {
       const t = h < 8 ? day.am : h < 16 ? day.am + Math.round((day.pm - day.am) * (h - 8) / 8) : day.pm - Math.round((day.pm - day.lo) * (h - 16) / 8);
@@ -90,7 +92,7 @@ async function app(opts = {}) {
   /* SUN is a top-level let in app.js: a global property would be shadowed, so assign the binding itself. */
   box.__sun = await import(pathToFileURL(path.join(DOCS, 'vendor', 'suncalc.js')).href);
   vm.runInContext('SUN = __sun;', box);
-  vm.runInContext(`this.T = { FX, fxSpot, fxUnitSpot, fxKey, fxDays, fxSignal, fxOpeners, fxMoon, fxLoad, fxRecord, vForecast, fxSheetDay, fxSheetWhy, sheetUnit, unitsLoad, legalLight,
+  vm.runInContext(`this.T = { FX, fxSpot, fxUnitSpot, fxKey, fxDays, fxSignal, fxOpeners, fxMoon, fxLoad, fxRecord, vForecast, fxSheetDay, fxSheetWhy, sheetUnit, unitsLoad, legalLight, vPrivacy,
     state: () => ({ DB, UNITS, HU, tab, units }), setTab: v => { tab = v; }, setStatic: v => { units.static = v; }, setNow: v => { units.now = v; } };`, box);
   const week = opts.week || nwsWeek();
   async function flush() {
@@ -101,7 +103,8 @@ async function app(opts = {}) {
         if (u.startsWith('https://api.weather.gov/')) {
           if (!online) { request.reject(new Error('offline')); continue; }
           const body = u.includes('/points/') ? week.points : u.endsWith('/forecast/hourly') ? week.hourly : u.endsWith('/forecast') ? week.forecast : week.grid;
-          if (opts.nwsFail && opts.nwsFail(u)) request.resolve({ ok: false, status: 500, json: async () => null });
+          const failed = opts.nwsFail && opts.nwsFail(u);
+          if (failed) request.resolve({ ok: false, status: typeof failed === 'number' ? failed : 500, json: async () => null });
           else request.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(body)) });
           continue;
         }
@@ -129,7 +132,6 @@ async function app(opts = {}) {
   const sw = fs.readFileSync(path.join(DOCS, 'sw.js'), 'utf8'), src = fs.readFileSync(path.join(DOCS, 'forecast.js'), 'utf8');
   const EMOJI = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{2B00}-\u{2BFF}]/u;
   ok('forecast.js carries no emoji', !EMOJI.test(src));
-  ok('forecast.js never prints a movement percentage', !/\d+%\s*(High|Moderate|Low)|movement[^.]{0,40}%/i.test(src));
   ok('sw.js is v43 and lists forecast.js exactly once', /VERSION = 'ranger-hawk-v43'/.test(sw) && (sw.match(/'\.\/forecast\.js'/g) || []).length === 1);
 
   /* 1. Offline, nothing stored: no fetch, a plain explanation. */
@@ -165,51 +167,74 @@ async function app(opts = {}) {
   const slc = S.T.legalLight(days[0].date);
   ok('the spot\'s sunrise differs from Salt Lake City\'s (not the Today card figure)', slc && Math.abs(slc.sunrise - L.sunrise) >= 60000, slc && (slc.sunrise - L.sunrise) / 60000);
   const M = days[0].moon;
-  ok('moon phase has a name, a lit fraction and times', M && /^(New|Waxing crescent|First quarter|Waxing gibbous|Full|Waning gibbous|Last quarter|Waning crescent)$/.test(M.name) && M.frac >= 0 && M.frac <= 100 && (M.rise === null || M.rise instanceof Date), JSON.stringify(M));
+  ok('moon phase has a name, a lit fraction and real rise and set times', M && /^(New|Waxing crescent|First quarter|Waxing gibbous|Full|Waning gibbous|Last quarter|Waning crescent)$/.test(M.name) && M.frac >= 0 && M.frac <= 100 && days.filter(d => d.moon && d.moon.rise && d.moon.set && !isNaN(d.moon.rise.getTime())).length >= 5, JSON.stringify(M));
 
   /* 3. The read, worked by hand from the factor table. */
   const sig = days.map((d, i) => S.T.fxSignal(days, i, 'deer', NOW));
   const names = s => s.factors.map(f => f.k + (f.dir > 0 ? '+' : f.dir < 0 ? '' : '~') + f.dir).join(' ');
-  ok('Thursday, nothing special: Fair, no factors, first light', sig[0].tier === 'Fair' && sig[0].factors.length === 0 && sig[0].best.when === 'dawn' && /^from \d/.test(sig[0].best.window), names(sig[0]) + ' ' + sig[0].best.window);
-  ok('Saturday: cold front (weak, +1), storm snow (strong, +1), hard freeze (strong, +1), wind shown not scored: Strong', sig[2].tier === 'Strong' && sig[2].score === 3 && names(sig[2]) === 'Hard freeze+1 Storm snow+1 Cold front+1 Wind~0', names(sig[2]));
+  ok('Thursday, nothing special: Fair, no factors, first light from about the start', sig[0].tier === 'Fair' && sig[0].factors.length === 0 && sig[0].best.when === 'dawn' && /^from about \d/.test(sig[0].best.window), names(sig[0]) + ' ' + sig[0].best.window);
+  ok('Saturday: hard freeze (strong, +1), snow shown not scored, cold front (weak, +1), wind shown not scored: Good', sig[2].tier === 'Good' && sig[2].score === 2 && names(sig[2]) === 'Hard freeze+1 Snow in the forecast~0 Cold front+1 Wind~0', names(sig[2]));
+  ok('snow in the forecast says the push is snow on the ground, which the screen cannot see yet', /cannot see yet/.test(sig[2].factors[1].why) && sig[2].factors[1].conf === 'weak');
+  ok('no factor prints a movement percentage; the only percent is the herd share on an opener', sig.every(s => s.factors.every(f => !/\d+%/.test(f.why) || /of a herd/.test(f.why))));
   ok('Saturday\'s front arrives by day, so the window is last light', sig[2].best.when === 'dusk' && /colder than mid-morning/.test(sig[2].best.why), sig[2].best.why);
   ok('every factor carries a confidence word and a reason', sig.every(s => s.factors.every(f => /^(strong|moderate|weak|contested)$/.test(f.conf) && f.why.length > 20)));
-  ok('the cold front says its evidence is whitetail, not mule deer or elk', /whitetails, none on mule deer or elk/.test(sig[2].factors.find(f => f.k === 'Cold front').why));
-  ok('Sunday: rut shoulder (+1), hard freeze (+1), clearing after the storm (+1): Strong', sig[3].tier === 'Strong' && names(sig[3]) === 'Rut+1 Hard freeze+1 Clearing after the storm+1', names(sig[3]));
-  ok('Monday: rut (+1) against an 11-degree warm-up (-1): Fair', sig[4].tier === 'Fair' && names(sig[4]) === 'Rut+1 Warm-up-1', names(sig[4]));
-  ok('Wednesday at 72: rut, warm-up and a warm day: Fair, and the warm day says 70 is a rule of thumb', sig[6].tier === 'Fair' && names(sig[6]) === 'Rut+1 Warm-up-1 Warm day-1' && /rule of thumb/.test(sig[6].factors[2].why), names(sig[6]));
+  ok('the cold front calls itself a hunch with no mule deer or elk study', /no mule deer or elk study that measured it, so treat it as a hunch/.test(sig[2].factors.find(f => f.k === 'Cold front').why));
+  ok('Sunday: rut shoulder (+1), hard freeze (+1), clearing after the storm (+1): Strong', sig[3].tier === 'Strong' && names(sig[3]) === 'Rut+1 Hard freeze+1 Clearing after the storm+1' && sig[3].factors[0].conf === 'moderate' && /guide's rule of thumb/.test(sig[3].factors[2].why), names(sig[3]));
+  ok('Monday: rut (+1) and a 28-degree low (+1) against an 11-degree warm-up (-1): Good', sig[4].tier === 'Good' && names(sig[4]) === 'Rut+1 Hard freeze+1 Warm-up-1', names(sig[4]));
+  ok('Wednesday at 72: rut, warm-up and a warm day: Fair, and the warm day says 70 is a guide\'s figure', sig[6].tier === 'Fair' && names(sig[6]) === 'Rut+1 Warm-up-1 Warm day-1' && /guide's figure/.test(sig[6].factors[2].why), names(sig[6]));
   const elk = days.map((d, i) => S.T.fxSignal(days, i, 'elk', NOW));
-  ok('for elk: no November rut, Saturday still Strong, Wednesday Slow at 72 (warm from 65)', elk[2].tier === 'Strong' && elk[3].factors.every(f => f.k !== 'Rut') && elk[6].tier === 'Slow' && elk[6].who === 'Elk', names(elk[6]));
+  ok('for elk: no November rut, no hard freeze (a mule deer study), Saturday Good, Wednesday Slow at 72', elk[2].tier === 'Good' && names(elk[2]) === 'Snow in the forecast~0 Cold front+1 Wind~0' && elk[3].factors.every(f => f.k !== 'Rut') && elk[6].tier === 'Slow' && elk[6].who === 'Elk', names(elk[2]) + ' | ' + names(elk[6]));
   ok('after mid-morning today, the window becomes last light', S.T.fxSignal(days, 0, 'deer', Date.parse('2026-10-29T18:00:00Z')).best.when === 'dusk');
   const dark = S.T.fxSignal(days, 0, 'deer', Date.parse('2026-10-30T04:00:00Z'));
-  ok('after dark today, the window is first light tomorrow, from tomorrow\'s start', dark.when !== 'dawn' && dark.best.label === 'First light tomorrow' && dark.best.window === 'from ' + vm.runInContext('clock', S.box)(days[1].light.start), JSON.stringify(dark.best));
+  ok('after dark today, the window is first light tomorrow, from about tomorrow\'s start', dark.best.when === 'next' && dark.best.label === 'First light tomorrow' && dark.best.window === 'from about ' + vm.runInContext('clock', S.box)(days[1].light.start), JSON.stringify(dark.best));
 
   /* 4. Opening days from seasons.json. */
   ok('the general rifle deer opener counts on the day and the two after, not the fourth', S.T.fxOpeners('2026-10-17', 'deer').some(s => s.id === 'deer-rifle') && S.T.fxOpeners('2026-10-19', 'deer').some(s => s.id === 'deer-rifle') && !S.T.fxOpeners('2026-10-20', 'deer').length, JSON.stringify(S.T.fxOpeners('2026-10-20', 'deer').map(s => s.id)));
   ok('the extended archery hunts never count as an opener', !S.T.fxOpeners('2026-09-12', 'deer').length && !S.T.fxOpeners('2026-08-15', 'elk').some(s => /ext/.test(s.id)));
+  ok('only rifle openers count: the muzzleloader and the draw-only youth hunt do not', !S.T.fxOpeners('2026-09-24', 'deer').length && !S.T.fxOpeners('2026-09-13', 'elk').length && S.T.fxOpeners('2026-10-04', 'elk').map(s => s.id).sort().join() === 'elk-early-rifle,elk-spike-rifle', JSON.stringify(S.T.fxOpeners('2026-10-04', 'elk').map(s => s.id)));
+  ok('the early rifle deer hunt counts on its twelve units only, matched by base name', S.T.fxOpeners('2026-10-08', 'deer', ['Box Elder, West']).some(s => s.id === 'deer-early-rifle') && !S.T.fxOpeners('2026-10-08', 'deer', ['Cache, East Rich']).length && !S.T.fxOpeners('2026-10-08', 'deer', []).length && !S.T.fxOpeners('2026-10-08', 'deer').length);
   const openerDay = { key: '2026-10-17', hi: 60, lo: 35, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Saturday' };
   const openerSig = S.T.fxSignal([openerDay], 0, 'deer', NOW);
-  ok('an opener scores -1 for deer (moderate) and names the hunt and the roads', openerSig.factors[0].k === 'Opening days' && openerSig.factors[0].dir === -1 && openerSig.factors[0].conf === 'moderate' && /Buck deer - any legal weapon \(rifle\) opened today/.test(openerSig.factors[0].why) && /away from the roads/.test(openerSig.factors[0].why), JSON.stringify(openerSig.factors[0]));
+  ok('an opener scores -1 for deer (moderate) and names the hunt, Wyoming and the roads', openerSig.factors[0].k === 'Opening days' && openerSig.factors[0].dir === -1 && openerSig.factors[0].conf === 'moderate' && /Buck deer - any legal weapon \(rifle\) opened today/.test(openerSig.factors[0].why) && /In Wyoming, bucks moved farther from roads/.test(openerSig.factors[0].why), JSON.stringify(openerSig.factors[0]));
   const elkOpener = S.T.fxSignal([{ ...openerDay, key: '2026-10-04' }], 0, 'elk', NOW);
   const elkOpen = elkOpener.factors.find(f => f.k === 'Opening days');
-  ok('an elk opener is strong, beside the rut shoulder', elkOpen && elkOpen.conf === 'strong' && elkOpen.dir === -1 && /tenth of a herd/.test(elkOpen.why) && elkOpener.factors[0].k === 'Rut', JSON.stringify(elkOpener.factors));
+  ok('an elk opener is strong, quotes 10 to 15% of a herd, and sits beside the rut shoulder', elkOpen && elkOpen.conf === 'strong' && elkOpen.dir === -1 && /10 to 15% of a herd/.test(elkOpen.why) && elkOpener.factors[0].k === 'Rut' && elkOpener.factors[0].conf === 'moderate', JSON.stringify(elkOpener.factors));
 
   /* 5. The screen. */
   html = S.T.vForecast();
-  ok('the hero names the spot, the tier in words and the window', /Cache, East Rich/.test(html) && /Fair day for deer/.test(html) && /First light, from \d/.test(html), html.slice(0, 600));
-  ok('seven day rows, each tapping to its day, coloured by tier', (html.match(/data-fx="day:\d"/g) || []).length === 8 && /data-fx="day:2" style="--g:var\(--elk\)"/.test(html) && /Saturday Oct 31 &middot; Strong/.test(html), html);
+  ok('the hero names the spot, the tier in words and the window as an estimate', /Cache, East Rich/.test(html) && /Fair day for deer/.test(html) && /First light, from about \d[^<]*\(estimate\)\./.test(html), html.slice(0, 600));
+  ok('seven day rows, each tapping to its day, coloured by tier', (html.match(/data-fx="day:\d"/g) || []).length === 8 && /data-fx="day:2" style="--g:var\(--brand\)"/.test(html) && /data-fx="day:3" style="--g:var\(--elk\)"/.test(html) && /Saturday Oct 31 &middot; Good/.test(html), html);
   ok('the source line names the Weather Service, the office, the grid cell and when it was issued and fetched', /National Weather Service, SLC office, grid cell near Logan, UT at 5,906 ft, issued .*; fetched/.test(html), html.slice(html.indexOf('Forecast: National')).slice(0, 300));
-  ok('legal light is labelled an estimate and points at the guidebook', /Legal light today &middot; estimate/.test(html) && /guidebook table by county is the legal one/.test(html) && /Computed for the centre of Cache, East Rich/.test(html));
+  ok('legal light is labelled an estimate and points at the guidebook, in the Today card\'s words', /Legal light today &middot; estimate/.test(html) && /guidebook table shifts a few minutes by county and is the legal one/.test(html) && /Computed for the centre of Cache, East Rich/.test(html));
   ok('the moon card says it is not scored', /Moon<\/div>/.test(html) && /not scored/.test(html));
   ok('no percentage sits beside the movement read', !/(Strong|Good|Fair|Slow)[^<]{0,20}\d+%/.test(html) && !/\d+% (High|Moderate|Low)/.test(html));
-  ok('the why sheet repeats the table with confidence words and the sources', /First and last light &middot; strong/.test(S.T.fxSheetWhy()) && /Barometric pressure &middot; contested/.test(S.T.fxSheetWhy()) && /Rittenhouse/.test(S.T.fxSheetWhy()) && /never claims a percentage/.test(S.T.fxSheetWhy()));
+  ok('the why sheet repeats the table with confidence words and the sources', /First and last light &middot; strong/.test(S.T.fxSheetWhy()) && /Rut &middot; dates strong, daytime effect moderate/.test(S.T.fxSheetWhy()) && /Hard freeze &middot; strong, mule deer/.test(S.T.fxSheetWhy()) && /Barometric pressure &middot; contested/.test(S.T.fxSheetWhy()) && /Rittenhouse/.test(S.T.fxSheetWhy()) && /48 whitetail bucks/.test(S.T.fxSheetWhy()) && /never claims a percentage/.test(S.T.fxSheetWhy()));
+  ok('the privacy page says the one time a position leaves the phone, rounded, to the weather service', /rounded to about a kilometre/.test(S.T.vPrivacy()) && /goes to the weather service and nowhere else/.test(S.T.vPrivacy()) && /to no online service but one/.test(S.T.vPrivacy()));
   const day2 = S.T.fxSheetDay(2);
-  ok('a day sheet: stats, the factors, first and last light hour by hour, the forecaster\'s words', /Saturday, Oct 31/.test(day2) && /Cold front &middot; weak/.test(day2) && /First light, hour by hour/.test(day2) && /Last light<\/div>/.test(day2) && /In the forecaster's words/.test(day2) && /Snow Showers Likely, with a high near 46/.test(day2), day2.slice(0, 400));
+  ok('a day sheet: stats, the factors, the light caveat, first and last light hour by hour, the forecaster\'s words', /Saturday, Oct 31/.test(day2) && /Cold front &middot; weak/.test(day2) && /\(estimate\)\.<\/b>/.test(day2) && /shifts a few minutes by county/.test(day2) && /First light, hour by hour/.test(day2) && /Last light<\/div>/.test(day2) && /In the forecaster's words/.test(day2) && /Snow Showers Likely, with a high near 46/.test(day2), day2.slice(0, 400));
   ok('the day sheet shows hourly rows for the dawn window', (day2.match(/<tr>/g) || []).length >= 6, (day2.match(/<tr>/g) || []).length);
   await S.click({ fxsp: 'elk' });
   ok('tapping Elk re-reads the week and saves the choice', S.T.FX.species === 'elk' && JSON.parse(S.store.get('ha.fx')).species === 'elk' && /Strong day for elk|Fair day for elk/.test(S.elements.view.innerHTML));
   await S.click({ fx: 'day:6' });
   ok('tapping a day opens its sheet', /Wednesday, Nov 4/.test(S.opened[S.opened.length - 1]) && /Slow day for elk/.test(S.opened[S.opened.length - 1]));
+
+  /* 5b. The week the clocks go back: local days, hourly rows and grid chunks across November 1. */
+  const DAYS2 = DAYS.map((d, i) => ({ ...d, d: shift('2026-10-31', i), snowIn: undefined }));
+  const week2 = nwsWeek(DAYS2);
+  week2.grid.properties.snowfallAmount.values.push({ validTime: '2026-11-03T06:00:00+00:00/PT6H', value: 3 * 25.4 });   // 23:00 MST Nov 2 to 05:00 Nov 3
+  const NOW2 = Date.parse('2026-10-31T13:00:00Z');
+  let S2 = await app({ online: true, week: week2, now: NOW2 });
+  S2.T.FX.spot = SPOT; S2.T.setTab('forecast'); S2.T.vForecast(); await S2.flush();
+  const days2 = S2.T.fxDays(S2.T.fxRecord(key), SPOT, NOW2);
+  ok('seven local days across the daylight-saving change, 24 hourly rows each', days2.map(d => d.key).join() === '2026-10-31,2026-11-01,2026-11-02,2026-11-03,2026-11-04,2026-11-05,2026-11-06' && days2.every(d => d.hours.length === 24), days2.map(d => d.key + ':' + d.hours.length).join(' '));
+  ok('a grid chunk that starts at 23:00 standard time is dated by its midpoint, the next day', days2[3].snow === 3 && days2[2].snow === 0, JSON.stringify(days2.map(d => d.snow)));
+  ok('the light and moon are computed for every day of that week', days2.every(d => d.light && d.moon && (d.moon.rise || d.moon.set)));
+  /* SunCalc's getMoonTimes scans the UTC day, which starts at 6 pm in Utah, so an evening rise lands on the next day's label and some local days show none (2026-10-26 at the Cache unit's centre, 10-25 at Salt Lake City). The local-day scan must find them, and agree with SunCalc to the minute on the times it does give. */
+  const moonAt = (y, m, d, lat, lon) => vm.runInContext('fxMoonTimes', S2.box)(new S2.box.Date(y, m - 1, d), lat, lon);
+  const cache26 = moonAt(2026, 10, 26, 41.804, -111.169), cache25 = moonAt(2026, 10, 25, 41.804, -111.169), slc25 = moonAt(2026, 10, 25, 40.761, -111.891);
+  const hm = v => v ? v.toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' }) : null;
+  ok('moonrise is found on the local days SunCalc leaves empty, and matches its times', cache26.rise && cache25.rise && hm(cache25.rise) === '5:56 PM' && /^6:2[78] PM$/.test(hm(cache26.rise)) && slc25.rise && /^6:0[01] PM$/.test(hm(slc25.rise)), JSON.stringify([hm(cache25.rise), hm(cache26.rise), hm(slc25.rise)]));
+  ok('moonset agrees with SunCalc to the minute where SunCalc finds it', hm(cache26.set) === '8:36 AM' && hm(cache25.set) === '7:19 AM', JSON.stringify([hm(cache26.set), hm(cache25.set)]));
 
   /* 6. The stored week survives a lost signal, and the age is said. */
   const stored = Object.fromEntries(S.store);
@@ -227,6 +252,16 @@ async function app(opts = {}) {
   html = S.T.vForecast();
   ok('a 500 from the forecast is retried once, and the stored week stays up with a try-again', calls === 2 && /Could not refresh: weather service answered 500/.test(html) && /data-fx="refresh"/.test(html) && (html.match(/data-fx="day:\d"/g) || []).length === 8, calls + ' ' + html.slice(0, 400));
   ok('the grid URLs were reused, so points was not fetched again', !S.fetched.some(u => u.includes('/points/')));
+  let gone = 0;
+  S = await app({ online: true, storage: stored, now: NOW + 5 * 3600000, nwsFail: u => u.endsWith('/forecast') && gone++ === 0 ? 404 : false });
+  S.T.setTab('forecast');
+  S.T.vForecast(); await S.flush();
+  html = S.T.vForecast();
+  ok('a stored grid URL that answers 404 is looked up again through points, and the week loads', S.fetched.filter(u => u.includes('/points/')).length === 1 && !/Could not refresh/.test(html) && /Fair day for (deer|elk)/.test(html) && !/fetched 5 h/.test(html), html.slice(0, 300));
+  S = await app({ online: false, storage: stored, now: NOW + 5 * 3600000, gpsFail: true });
+  S.T.setTab('forecast');
+  await S.click({ fx: 'gps' });
+  ok('a refused GPS fix is said even when a stored week is up', /No GPS fix: denied/.test(S.elements.view.innerHTML) && (S.elements.view.innerHTML.match(/data-fx="day:\d"/g) || []).length === 8);
 
   /* 8. Spots: GPS, a unit, an access point, the town. */
   S = await app({ online: false });
@@ -249,7 +284,7 @@ async function app(opts = {}) {
   ok('unit shapes and hunt lists load for the unit sheet', !!unit && !!st.HU, unit && unit.n);
   if (unit) {
     const spot = S.T.fxUnitSpot(unit);
-    ok('a unit\'s weather spot sits inside its box and carries its name', spot.lat >= unit.bb[1] && spot.lat <= unit.bb[3] && spot.lon >= unit.bb[0] && spot.lon <= unit.bb[2] && spot.label === unit.n && spot.kind === 'unit', JSON.stringify(spot));
+    ok('a unit\'s weather spot sits inside its box and carries its name, for the opener check too', spot.lat >= unit.bb[1] && spot.lat <= unit.bb[3] && spot.lon >= unit.bb[0] && spot.lon <= unit.bb[2] && spot.label === unit.n && spot.kind === 'unit' && spot.units[0] === unit.n, JSON.stringify(spot));
     const sheet = S.T.sheetUnit(unit.id);
     ok('the unit sheet offers the forecast in the app', sheet.includes(`data-fx="unit:${unit.id}"`) && /7-day hunt forecast for this unit/.test(sheet));
     S.T.setStatic(true);
