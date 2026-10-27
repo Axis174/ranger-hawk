@@ -132,7 +132,7 @@ async function app(opts = {}) {
   const sw = fs.readFileSync(path.join(DOCS, 'sw.js'), 'utf8'), src = fs.readFileSync(path.join(DOCS, 'forecast.js'), 'utf8');
   const EMOJI = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{2B00}-\u{2BFF}]/u;
   ok('forecast.js carries no emoji', !EMOJI.test(src));
-  ok('sw.js is v43 and lists forecast.js exactly once', /VERSION = 'ranger-hawk-v43'/.test(sw) && (sw.match(/'\.\/forecast\.js'/g) || []).length === 1);
+  ok('sw.js is v44 and lists forecast.js exactly once', /VERSION = 'ranger-hawk-v44'/.test(sw) && (sw.match(/'\.\/forecast\.js'/g) || []).length === 1);
 
   /* 1. Offline, nothing stored: no fetch, a plain explanation. */
   let S = await app({ online: false });

@@ -9,11 +9,11 @@
    Clock-only child processes test the Denver edition boundary from six device
    time zones. No source, fixture, page, or data file is written by this suite. */
 'use strict';
-const fs = require('fs'), path = require('path'), vm = require('vm');
+const fs = require('fs'), path = require('path');
+const { phone } = require('./unit_vm.js');
 const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..'), DOCS = path.join(ROOT, 'docs');
 const read = f => JSON.parse(fs.readFileSync(path.join(DOCS, 'data/ut', f), 'utf8'));
-const INDEX = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8');
 const HU = read('hunt_units_2026.json'), HT = read('hunt_table_2026.json');
 const GEO = read('units_geo.json').units, SEASONS = read('seasons.json'), ODDS = read('draw_odds.json');
 const LIST_ROWS = Object.values(HU.hunts).flat(), TABLE = new Map(HT.hunts.map(r => [r.code, r]));
@@ -32,100 +32,8 @@ function ok(name, condition, detail) {
   fail++; console.log('  FAIL ' + name + (detail == null ? '' : '\n       ' + String(detail)));
 }
 function eq(name, actual, expected) { ok(name, same(actual, expected), (JSON.stringify(actual) + ' expected ' + JSON.stringify(expected)).slice(0, 1600)); }
+const descriptionPrinted = (row, html) => typeof row.description === 'string' && !!row.description.trim() && html.includes(esc(row.description));
 
-/* Every fetch waits until all of index.html's scripts have loaded. This catches
-   a startup hook placed before units.js, or a loader that never opens its deep
-   link when data arrive. Returned JSON is cloned, as a real fetch would be. */
-function phone(search = '', opts = {}) {
-  let searchReads = 0, searchValue = search, storageBlocked = false, mapEnabled = false;
-  const storageCalls = [], fetched = [], pending = [], opened = [], listeners = {}, windowListeners = {}, timers = [];
-  const store = new Map(Object.entries(opts.storage || { 'ha.draw': JSON.stringify({ res: 'x', pts: { 'Limited entry and once-in-a-lifetime|Elk': 37 } }) }));
-  const element = id => {
-    let html = '';
-    return { id, hidden: id === 'sheet', style: {}, dataset: {}, textContent: '', scrollTop: 0,
-      classList: { toggle() {}, add() {}, remove() {} },
-      setAttribute() {}, addEventListener() {}, focus() {}, setSelectionRange() {}, querySelectorAll() { return []; },
-      get innerHTML() { return html; }, set innerHTML(value) { html = String(value); if (id === 'sheetin') opened.push(html); } };
-  };
-  const elements = Object.fromEntries(['view', 'tabs', 'title', 'homesel', 'offline', 'sheet', 'sheetin', 'map', 'mapstate'].map(id => [id, element(id)]));
-  const location = { href: 'https://rangerhawk.com/' + search, reload() {} };
-  Object.defineProperty(location, 'search', { get() {
-    /* Fishing owns a separate one-time parameter read at real app startup. */
-    if (new Error().stack.includes('hUnitParam')) searchReads++;
-    return searchValue;
-  } });
-  let currentTime = Date.parse('2026-10-15T18:00:00Z');
-  class TestDate extends Date { constructor(...a) { super(...(a.length ? a : [currentTime])); } static now() { return currentTime; } }
-  const box = {
-    console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl,
-    URL, URLSearchParams, encodeURIComponent, decodeURIComponent, location,
-    setTimeout(fn, ms) { timers.push({ fn, ms }); return timers.length; }, clearTimeout() {},
-    setInterval() { return 0; }, clearInterval() {},
-    document: { referrer: '', body: { classList: { toggle() {} } },
-      getElementById(id) { return id === 'map' || id === 'mapstate' ? (mapEnabled ? elements[id] : null) : elements[id] || null; },
-      addEventListener(type, fn) { (listeners[type] ||= []).push(fn); }, querySelectorAll() { return []; },
-      createElement() { return element('created'); }, head: { appendChild() {} } },
-    window: { scrollTo() {}, addEventListener(type, fn) { (windowListeners[type] ||= []).push(fn); } },
-    navigator: { onLine: false, geolocation: { getCurrentPosition(success) {
-      const p = box.gps || { lat: 41.7, lon: -111.6 }; success({ coords: { latitude: p.lat, longitude: p.lon, accuracy: 8 } });
-    } } },
-    localStorage: Object.fromEntries(['getItem', 'setItem', 'removeItem'].map(method => [method, (key, value) => {
-      storageCalls.push([method, key]); if (storageBlocked) throw new Error('unit renderer accessed localStorage');
-      if (method === 'getItem') return store.get(key) || null;
-      if (method === 'setItem') store.set(key, String(value)); else store.delete(key);
-    }])),
-    fetch(url) { fetched.push(String(url)); return new Promise((resolve, reject) => pending.push({ url: String(url), resolve, reject })); },
-    Image: class { set src(v) {} }, gps: null,
-  };
-  vm.createContext(box);
-  const scripts = [...INDEX.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].map(m => m[1]);
-  for (const file of scripts) {
-    if (/^(?:https?:)?\/\//.test(file)) continue;
-    new vm.Script(fs.readFileSync(path.join(DOCS, file), 'utf8'), { filename: file,
-      importModuleDynamically: () => Promise.reject(new Error('SunCalc is outside the unit test')) }).runInContext(box);
-  }
-  vm.runInContext(`this.T = {
-    sheetUnit, hEdition, unitLink, hUnitParam, unitsOpenLink, unitsLoad, fLoadHunts,
-    fGeneralRows, fTableHunts, fResults, fParse, fRun, vFind, whereAmI, unitsAt, initMap,
-    state: () => ({ HU, HT, UNITS, ODDS, DB, units, draw, tab }),
-    mode: (stat, now) => { units.static = stat; units.now = now; },
-    drawState: (res, pts) => { draw.res = res; draw.pts = pts; },
-    clearHuntData: () => { HU = null; HT = null; ODDS = null; },
-    tab: value => { tab = value; },
-    mapSetup: () => { loadMapLibs = async () => {}; demSource = () => ({ sharedDemProtocolUrl: 'test-dem', contourProtocolUrl: () => 'test-contours' });
-      huntLayers = () => []; drawLegend = () => {}; refreshMapBar = () => {}; }
-  };`, box);
-  async function flush() {
-    for (let turn = 0, idle = 0; turn < 80 && idle < 3; turn++) {
-      const batch = pending.splice(0); idle = batch.length ? 0 : idle + 1;
-      for (const request of batch) {
-        const rel = request.url.replace(/^\.\//, ''), file = path.resolve(DOCS, rel);
-        if (!file.startsWith(DOCS + path.sep) || !fs.existsSync(file) || (opts.missing && opts.missing.has(path.basename(file)))) {
-          request.resolve({ ok: false, status: 404, json: async () => null }); continue;
-        }
-        try {
-          const value = JSON.parse(fs.readFileSync(file, 'utf8'));
-          request.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(value)) });
-        } catch (e) { request.reject(e); }
-      }
-      await tick();
-    }
-    if (pending.length) throw new Error('app fetches did not settle');
-  }
-  async function loadUnits() { const promise = box.T.unitsLoad(); await flush(); await promise; await flush(); }
-  async function click(dataset) {
-    const target = { dataset, closest(selector) {
-      return Object.keys(dataset).some(key => selector.includes('[data-' + key.replace(/[A-Z]/g, c => '-' + c.toLowerCase()) + ']')) ? this : null;
-    } };
-    const promises = (listeners.click || []).map(fn => fn({ target, preventDefault() {}, stopPropagation() {} })).filter(v => v && v.then);
-    await flush(); await Promise.all(promises); await flush();
-  }
-  return { box, T: box.T, scripts, elements, opened, fetched, storageCalls, flush, loadUnits, click,
-    reads: () => searchReads, search: value => { searchValue = value; },
-    advance: ms => { currentTime += ms; },
-    blockStorage: () => { storageBlocked = true; storageCalls.length = 0; },
-    enableMap: () => { mapEnabled = true; } };
-}
 
 const expectedHunts = id => HT.hunts.filter(h => h.boundary_ids.includes(id) && h.list_type &&
   LIST_ROWS.some(r => r.boundary_id === id && r.species === h.species && r.type === h.list_type &&
@@ -163,7 +71,7 @@ async function renderChecks() {
     htmlById.set(id, html); const plain = text(html), wanted = expectedHunts(id);
     ok('sheet renders: ' + polygon.n, !!html);
     ok('polygon header uses the boundary spelling: ' + polygon.n, html.includes('<h3>' + esc(polygon.n) + '</h3>'));
-    for (const description of new Set(entries.map(r => r.description))) ok('escaped verbatim description: ' + polygon.n, html.includes(esc(description)));
+    for (const row of entries) ok('non-empty escaped verbatim description: ' + polygon.n, descriptionPrinted(row, html));
     for (const r of entries) ok('list type is represented: ' + polygon.n + ' / ' + r.type, html.includes(esc(r.type)));
     ok('no empty card: ' + polygon.n, !/<div class="card">\s*<\/div>/.test(html));
     for (const r of entries) if (!p.T.fGeneralRows(r.species, r, null).length && !p.T.fTableHunts(r).length)
@@ -255,10 +163,42 @@ async function renderChecks() {
   for (const u of GEO.filter(u => !ELIGIBLE.includes(u.id))) eq('no link for a polygon without hunts: ' + u.n, p.T.unitLink(u.id), '');
   p.T.mode(true, new Date('2026-10-15T18:00:00Z'));
   ok('static links keep their destination without app interaction data', p.T.unitLink(wasatch.id).includes('/?unit=' + HU.slugs[wasatch.n]) && !/data-unit/.test(p.T.unitLink(wasatch.id)));
+  p.T.link(slug => '/hunting/units/' + slug + '/');
+  for (const id of ELIGIBLE) {
+    const html = p.T.sheetUnit(id), links = [...html.matchAll(/<a href="([^"]+)">Open unit<\/a>/g)];
+    ok('static link hook routes every sibling to its page: ' + id, links.every(m => /^\/hunting\/units\/[^/]+\/$/.test(m[1])));
+  }
+  p.T.mode(false, new Date('2026-10-15T18:00:00Z'));
+  ok('app links ignore the static hook and keep their event target', p.T.unitLink(wasatch.id).includes('/?unit=' + HU.slugs[wasatch.n]) && p.T.unitLink(wasatch.id).includes('data-unit="' + wasatch.id + '"'));
+  p.T.link(null); p.T.mode(true, new Date('2026-10-15T18:00:00Z'));
   eq('live and static unit rendering never touches localStorage', p.storageCalls, []);
   p.T.clearHuntData();
   let withoutLists; try { withoutLists = p.T.unitLink(wasatch.id); } catch (e) { withoutLists = 'threw: ' + e.message; }
   eq('unit shapes loaded but hunt lists missing: the unit link is empty and does not throw', withoutLists, '');
+}
+
+async function blankDescriptionChecks() {
+  const p = phone(); await p.flush(); await p.loadUnits();
+  const state = p.T.state(), entries = Object.values(state.HU.hunts).flat(), row = entries.find(r => r.boundary_id === ELIGIBLE[0]);
+  const saved = row.description;
+  const fallback = "UDWR's " + state.DB.config.hunt_year + ' hunt list gives no boundary description for this entry. Read the boundary in the Utah Hunt Planner.';
+  for (const blank of [undefined, '', '   ']) {
+    row.description = blank;
+    for (const stat of [false, true]) {
+      p.T.mode(stat, new Date('2026-10-15T18:00:00Z'));
+      const html = p.T.sheetUnit(row.boundary_id);
+      ok('blank description fails the verbatim assertion: ' + String(blank) + ' / ' + stat, !descriptionPrinted(row, html));
+      eq('blank description has the prescribed warning once: ' + String(blank) + ' / ' + stat, html.split(fallback).length - 1, 1);
+      ok('blank description never prints an empty paragraph: ' + String(blank) + ' / ' + stat, !/<p class="fine"[^>]*>\s*<\/p>/.test(html));
+    }
+  }
+  const sibling = entries.find(r => r !== row && r.boundary_id === row.boundary_id);
+  if (sibling) {
+    const otherSaved = sibling.description; sibling.description = undefined;
+    eq('several blank rows still produce one warning', p.T.sheetUnit(row.boundary_id).split(fallback).length - 1, 1);
+    sibling.description = otherSaved;
+  }
+  row.description = saved;
 }
 
 function dayAfter(iso) { return new Date(Date.parse(iso + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10); }
@@ -340,6 +280,46 @@ function interior(unit) {
   }
   throw new Error('no interior sample for ' + unit.n);
 }
+
+async function gpsLoadingChecks() {
+  const cache = GEO.find(u => u.n === 'Cache'), point = interior(cache);
+  for (const action of ['keep', 'other sheet', 'close', 'GPS error', 'twice', 'shapes pending']) {
+    const p = phone(); await p.flush();
+    p.T.setData({ HU: null, HT: null, UNITS: action === 'shapes pending' ? null : GEO, ODDS: null, config: read('config.json'), seasons: SEASONS });
+    const fetch = p.box.fetch; let release, gpsCalls = 0;
+    p.box.fetch = url => /hunt_units_/.test(url) ? new Promise(resolve => { release = () => fetch(url).then(resolve); }) : fetch(url);
+    p.box.navigator.geolocation.getCurrentPosition = (success, error) => {
+      gpsCalls++;
+      if (action === 'GPS error') error({ message: 'test refused' });
+      else success({ coords: { latitude: point[1] + (gpsCalls > 1 ? 0.0001 : 0), longitude: point[0], accuracy: 8 } });
+    };
+    p.T.whereAmI();
+    eq('Where am I requests GPS before list/shape fetches settle: ' + action, gpsCalls, 1);
+    await p.flush();
+    let html = p.opened[p.opened.length - 1] || '';
+    if (action === 'GPS error') ok('GPS error is shown while lists remain pending', html.includes('No GPS fix: test refused'));
+    else {
+      ok('pending hunt lists still show coordinates and unit names: ' + action, html.includes(point[1].toFixed(5)) && html.includes('Cache'));
+      ok('pending hunt lists show no Open unit link: ' + action, !html.includes('Open unit'));
+    }
+    if (action === 'other sheet') p.T.openSheet('<h3>A different sheet</h3>');
+    if (action === 'close') p.T.closeSheet();
+    if (action === 'twice') { p.T.whereAmI(); await p.flush(); }
+    const before = p.opened.length;
+    ok('a hunt-list fetch is actually held: ' + action, typeof release === 'function');
+    release(); await p.flush();
+    const shouldRefresh = ['keep', 'twice', 'shapes pending'].includes(action);
+    eq('list arrival renders only the still-current successful result: ' + action, p.opened.length - before, shouldRefresh ? 1 : 0);
+    html = p.opened[p.opened.length - 1] || '';
+    if (shouldRefresh) ok('list arrival fills links into the current result: ' + action, html.includes('Open unit'));
+    if (action === 'twice') ok('only the second GPS result gains links', html.includes((point[1] + 0.0001).toFixed(5)));
+    if (action === 'other sheet') ok('late lists preserve a different sheet', html.includes('A different sheet'));
+    if (action === 'close') ok('late lists leave the sheet closed', p.elements.sheet.hidden);
+  }
+  const ready = phone(); await ready.flush(); await ready.loadUnits(); ready.box.gps = { lon: point[0], lat: point[1] };
+  ready.T.whereAmI(); await ready.flush();
+  eq('already-available links do not cause a redundant GPS rerender', ready.opened.length, 2);
+}
 async function entryChecks() {
   const p = phone(); await p.flush(); await p.loadUnits(); const cache = GEO.find(u => u.n === 'Cache'), point = interior(cache);
   p.box.gps = { lon: point[0], lat: point[1] };
@@ -356,13 +336,20 @@ async function entryChecks() {
     ok('Where am I preserves the name without a link for every excluded polygon: ' + u.n,
       html.includes(esc(u.n)) && !html.includes('data-unit="' + u.id + '"'));
   }
-  const callbacks = {}, popups = [], sources = {};
+  const callbacks = {}, popups = [], popupObjects = [], sources = {};
   class FakeMap {
+    constructor() { this.removed = false; }
     addControl() {} on(kind, layer, fn) { (callbacks[kind] ||= []).push(typeof layer === 'function' ? layer : fn); }
-    getStyle() { return {}; } addSource(name, value) { sources[name] = value; } addLayer() {} getLayer() { return null; }
-    queryRenderedFeatures() { return []; } getCanvas() { return { style: {} }; } remove() {}
+    getStyle() { return this.removed ? null : {}; } addSource(name, value) { sources[name] = value; } addLayer() {} getLayer() { return null; }
+    queryRenderedFeatures() { return []; } getCanvas() { return { style: {} }; }
+    remove() { this.removed = true; for (const popup of popupObjects) if (popup.map === this) popup.remove(); }
   }
-  class FakePopup { setLngLat() { return this; } setHTML(html) { popups.push(html); return this; } addTo() { return this; } }
+  class FakePopup {
+    constructor() { this.open = false; popupObjects.push(this); }
+    setLngLat() { return this; } setHTML(html) { popups.push(html); this.html = html; return this; }
+    addTo(map) { this.map = map; this.open = true; return this; }
+    isOpen() { return this.open; } remove() { this.open = false; return this; } close() { return this.remove(); }
+  }
   p.box.pmtiles = { Protocol: class { constructor() { this.tile = () => {}; } } };
   p.box.maplibregl = { Map: FakeMap, Popup: FakePopup, addProtocol() {}, NavigationControl: class {}, GeolocateControl: class {}, ScaleControl: class {} };
   p.enableMap(); p.T.mapSetup(); p.T.tab('map'); await p.T.initMap();
@@ -379,11 +366,26 @@ async function entryChecks() {
       html.includes(esc(u.n)) && !html.includes('data-unit="' + u.id + '"'));
   }
   if (click) {
-    p.T.clearHuntData(); const before = popups.length;
-    const pendingClick = click({ point: { x: 0, y: 0 }, lngLat: { lng: point[0], lat: point[1] } });
-    await p.click({ tab: 'today' }); await pendingClick;
-    eq('leaving the map during a deferred hunt fetch opens no stale popup', popups.length, before);
-    eq('navigation away from a pending map click keeps the selected screen', p.T.state().tab, 'today');
+    p.T.setData({ HU: null, HT: null, UNITS: null, ODDS: null, config: read('config.json'), seasons: SEASONS });
+    const beforeShapes = popups.length;
+    const missingShapesClick = click({ point: { x: 0, y: 0 }, lngLat: { lng: point[0], lat: point[1] } });
+    eq('a tap with no shapes keeps waiting for the existing full loader', popups.length, beforeShapes);
+    await p.flush(); await missingShapesClick;
+    eq('a tap with no shapes opens one popup once the loader settles', popups.length - beforeShapes, 1);
+    ok('that late popup includes the loaded unit links', popups[popups.length - 1].includes('Open unit'));
+    for (const action of ['keep', 'close', 'leave']) {
+      p.T.clearHuntData(); const before = popups.length;
+      await click({ point: { x: 0, y: 0 }, lngLat: { lng: point[0], lat: point[1] } });
+      eq('loaded shapes show a popup before hunt lists settle: ' + action, popups.length - before, 1);
+      ok('immediate popup has names without Open unit: ' + action, popups[before].includes('Cache') && !popups[before].includes('Open unit'));
+      const popup = popupObjects[popupObjects.length - 1];
+      if (action === 'close') popup.close();
+      if (action === 'leave') await p.click({ tab: 'today' }); else await p.flush();
+      eq('late lists update an open popup once, and no closed/removed popup: ' + action, popups.length - before, action === 'keep' ? 2 : 1);
+      if (action === 'keep') ok('late popup HTML contains unit links', popups[popups.length - 1].includes('Open unit'));
+      if (action !== 'keep') ok('popup is closed after close/map removal: ' + action, !popup.isOpen());
+      if (action === 'leave') eq('navigation away from a pending map click keeps the selected screen', p.T.state().tab, 'today');
+    }
   }
   const find = phone(); await find.flush(); await find.loadUnits(); find.T.fRun('elk on Wasatch Mtns'); await find.flush();
   const finder = find.T.vFind(); ok('finder rows expose an Open unit link', /data-unit="222"/.test(finder) && /Open unit/.test(finder));
@@ -394,7 +396,7 @@ async function entryChecks() {
 (async () => {
   if (process.argv.includes('--clock-only')) await clockChecks();
   else {
-    await renderChecks(); await clockChecks(); await linkChecks(); await entryChecks();
+    await renderChecks(); await blankDescriptionChecks(); await clockChecks(); await linkChecks(); await gpsLoadingChecks(); await entryChecks();
     for (const zone of ['America/Denver', 'UTC', 'America/Los_Angeles', 'Pacific/Honolulu', 'Asia/Kathmandu', 'Pacific/Auckland']) {
       const child = spawnSync(process.execPath, [__filename, '--clock-only'], { env: { ...process.env, TZ: zone }, encoding: 'utf8' });
       ok('Denver edition boundary is independent of device time zone: ' + zone, child.status === 0, child.stdout + child.stderr);

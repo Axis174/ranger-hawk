@@ -1,9 +1,9 @@
 /* Ranger Hawk - one hunt sheet per polygon with a hunt-list entry.
    Loaded after finder.js. The same renderer is ready for a stopped-clock VM;
-   no page builder or per-unit pages are part of this packet. */
+   the static page builder uses the same sheet without app interactions. */
 'use strict';
 
-const units = { static: false, now: null };
+const units = { static: false, now: null, link: null };
 const H_SPECIES = ['Deer', 'Elk', 'Pronghorn', 'Moose', 'Bison', 'Desert Bighorn Sheep', 'Rocky Mountain Bighorn Sheep', 'Mountain Goat'];
 let unitPromise = null, unitParamRead = false, unitParam = null, unitParamOpened = false;
 
@@ -16,7 +16,8 @@ function hUnit(id) {
 function unitLink(id) {
   const u = hUnit(id), rows = hUnitRows(id);
   const slug = u && HU && HU.slugs && Object.prototype.hasOwnProperty.call(HU.slugs, u.n) ? HU.slugs[u.n] : null;
-  return slug && rows.length ? `<a href="/?unit=${esc(slug)}"${units.static ? '' : ` data-unit="${u.id}"`}>Open unit</a>` : '';
+  const href = slug && units.static && typeof units.link === 'function' ? units.link(slug) : '/?unit=' + slug;
+  return slug && rows.length ? `<a href="${esc(href)}"${units.static ? '' : ` data-unit="${u.id}"`}>Open unit</a>` : '';
 }
 function hUnitParam() {
   if (units.static) return null;
@@ -84,7 +85,9 @@ function sheetUnit(boundaryId) {
   html += `<h3>${esc(u.n)}</h3><p class="where">${species.map(esc).join(' &middot; ')}</p>`;
   // The week's weather, light and moon for the centre of this unit; the app only, the static page has no forecast script.
   if (!units.static && typeof vForecast === 'function') html += `<div class="acts"><button class="btn ghost" data-fx="unit:${u.id}">7-day hunt forecast for this unit</button></div>`;
-  html += [...new Set(rows.map(r => r.description))].map(text => `<p class="fine" style="padding:0 16px">${esc(text)}</p>`).join('');
+  const descriptions = [...new Set(rows.map(r => r.description))];
+  html += descriptions.filter(text => typeof text === 'string' && text.trim()).map(text => `<p class="fine" style="padding:0 16px">${esc(text)}</p>`).join('');
+  if (descriptions.some(text => typeof text !== 'string' || !text.trim())) html += `<p class="fine">UDWR's ${esc(year)} hunt list gives no boundary description for this entry. Read the boundary in the Utah Hunt Planner.</p>`;
   const base = u.n.split(',')[0];
   const others = (UNITS || []).filter(other => other.id !== u.id && other.n.startsWith(base))
     .sort((a, b) => a.n.localeCompare(b.n, 'en-US'));

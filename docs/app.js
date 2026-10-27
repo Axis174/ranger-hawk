@@ -179,19 +179,21 @@ function miles(aLat, aLon, bLat, bLon) {
 async function whereAmI() {
   openSheet('<h3>Where am I</h3><p class="where">Getting a GPS fix. This works with no cell signal.</p>');
   if (!navigator.geolocation) { openSheet('<h3>Where am I</h3><p class="where">This phone is not sharing location with the app.</p>'); return; }
-  if (!UNITS) {
+  const shapes = UNITS ? Promise.resolve() : (async () => {
     try {
       const r = await fetch('data/' + STATE + '/units_geo.json');
       const j = await r.json();
-      UNITS = j && j.units ? j.units : null;
-    } catch (e) { UNITS = null; }
-  }
-  if (typeof unitsLoad === 'function') await unitsLoad();
-  navigator.geolocation.getCurrentPosition(pos => {
+      if (j && j.units) UNITS = j.units;   // only on success: another loader may have set UNITS meanwhile
+    } catch (e) { /* no shapes: the result names no hunt boundaries */ }
+  })();
+  const loading = typeof unitsLoad === 'function' ? unitsLoad() : Promise.resolve();
+  let refreshLinks = null;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    await shapes;
     const lat = pos.coords.latitude, lon = pos.coords.longitude;
     const hits = UNITS ? unitsAt(lon, lat) : null;
     const near = DB.birds.map(p => ({ p, mi: miles(lat, lon, p.lat, p.lon) })).sort((a, b) => a.mi - b.mi).slice(0, 4);
-    openSheet(`<h3>Where am I</h3>
+    const showResult = () => openSheet(`<h3>Where am I</h3>
       <p class="where mono">${lat.toFixed(5)}, ${lon.toFixed(5)} &middot; within ${Math.round(pos.coords.accuracy)} m</p>
       <div class="acts"><button class="btn ghost" data-copy="${lat.toFixed(5)}, ${lon.toFixed(5)}">Copy coordinates</button>${typeof vForecast === 'function' ? `<button class="btn ghost" data-fx="at:${lat.toFixed(4)},${lon.toFixed(4)}" data-fxlabel="Where I am${hits && hits.length ? ': ' + esc(hits[0].n) : ''}">7-day forecast here</button>` : ''}</div>
       <dl class="f"><dt>Big game hunt boundaries here</dt><dd>${
@@ -201,10 +203,19 @@ async function whereAmI() {
       <dt>Closest access points</dt><dd>${near.map(x => `${esc(x.p.name)} &middot; ${x.mi.toFixed(1)} mi`).join('<br>')}</dd></dl>
       <div class="warnbox" style="margin:14px 16px 0">Boundaries are simplified to about 200 m, and one spot can sit inside
       several overlapping hunts. Near an edge, trust the Utah Hunt Planner and your permit, not this.</div>`);
+    const linked = new Set((hits || []).filter(u => typeof unitLink === 'function' && unitLink(u.id)).map(u => u.id));
+    showResult();
+    const resultRevision = sheetRevision;
+    refreshLinks = () => {
+      if (sheetRevision !== resultRevision || $('sheet').hidden) return;
+      if (!(hits || []).some(u => !linked.has(u.id) && typeof unitLink === 'function' && unitLink(u.id))) return;
+      showResult();
+    };
   }, err => {
     openSheet(`<h3>Where am I</h3><p class="where">No GPS fix: ${esc(err.message || 'location was refused')}.
       Allow location for this app in the phone settings and try again.</p>`);
   }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+  loading.then(() => { if (refreshLinks) refreshLinks(); });
 }
 
 /* ------------------------------------------------------------- forecast ---- */
@@ -560,10 +571,14 @@ async function initMap() {
     MAP.on('click', async e => {
       const map = MAP;
       if (!map || map.queryRenderedFeatures(e.point, { layers: ['pts'] }).length) return;
-      if (typeof unitsLoad === 'function') await unitsLoad();
+      const loading = typeof unitsLoad === 'function' ? unitsLoad() : Promise.resolve();
+      if (!UNITS) await loading;
       if (MAP !== map || !map.getStyle()) return;
       const hit = MAP.queryRenderedFeatures(e.point, { layers: ['dwr-fill', 'wia-fill'].filter(id => MAP.getLayer(id)) })[0];
-      const un = UNITS ? unitsAt(e.lngLat.lng, e.lngLat.lat).map(u => esc(u.n) + (typeof unitLink === 'function' && unitLink(u.id) ? ' ' + unitLink(u.id) : '')) : [];
+      const unitsHere = UNITS ? unitsAt(e.lngLat.lng, e.lngLat.lat) : [];
+      const unitNames = () => unitsHere.map(u => esc(u.n) + (typeof unitLink === 'function' && unitLink(u.id) ? ' ' + unitLink(u.id) : ''));
+      const un = unitNames();
+      const linked = new Set(unitsHere.filter(u => typeof unitLink === 'function' && unitLink(u.id)).map(u => u.id));
       const lf = landOn ? MAP.queryRenderedFeatures(e.point, { layers: ['land-fill', 'land-private'].filter(id => MAP.getLayer(id)) })[0] : null;
       const lc = lf ? LAND.find(l => l[0] === lf.properties.c) : null;
       const rd = roadsOn ? MAP.queryRenderedFeatures([[e.point.x - 9, e.point.y - 9], [e.point.x + 9, e.point.y + 9]], { layers: ROAD_LINES.filter(id => MAP.getLayer(id)) })[0] : null;
@@ -588,11 +603,17 @@ async function initMap() {
         ? 'wia:' + String(pr[Object.keys(pr).find(k => k.endsWith('WIA_Properties.PropertyID'))] || '').replace(/[{}]/g, '').toLowerCase()
         : 'dwr:' + pr.id);
       const ac = acId && typeof acFor === 'function' ? acFor(acId) : null;
-      new maplibregl.Popup({ maxWidth: '270px' }).setLngLat(e.lngLat).setHTML(rdHtml +
+      const popupHTML = names => rdHtml +
         (nm ? `<b>${esc(nm)}</b><br>${hit.layer.id === 'wia-fill' ? 'Walk-In Access property' : esc(pr.type_ || 'DWR property')}<br>` : '') +
         (ac ? acBlock(ac) : '') +
         (lc ? `<span class="own"><i style="background:${lc[2]}"></i><b>${esc(lc[1])}</b>${lf.properties.name ? ' &middot; ' + esc(lf.properties.name) : ''}</span>${LAND_NOTE[lc[0]] ? `<br><span style="font-size:11.5px">${LAND_NOTE[lc[0]]}</span>` : ''}<br>` : '') +
-        (un.length ? `<span class="mono" style="font-size:11px">Hunt units: ${un.join(' &middot; ')}</span>` : '')).addTo(MAP);
+        (names.length ? `<span class="mono" style="font-size:11px">Hunt units: ${names.join(' &middot; ')}</span>` : '');
+      const popup = new maplibregl.Popup({ maxWidth: '270px' }).setLngLat(e.lngLat).setHTML(popupHTML(un)).addTo(map);
+      loading.then(() => {
+        if (MAP !== map || !map.getStyle() || !popup.isOpen()) return;
+        if (!unitsHere.some(u => !linked.has(u.id) && typeof unitLink === 'function' && unitLink(u.id))) return;
+        popup.setHTML(popupHTML(unitNames()));
+      });
     });
     MAP.on('mouseenter', 'pts', () => { MAP.getCanvas().style.cursor = 'pointer'; });
     MAP.on('mouseleave', 'pts', () => { MAP.getCanvas().style.cursor = ''; });
@@ -883,12 +904,14 @@ function vContacts() {
 }
 
 /* ---------------------------------------------------------------- sheet --- */
+let sheetRevision = 0;
 function openSheet(html) {
+  sheetRevision++;
   $('sheetin').innerHTML = '<div class="grab"></div>' + html;
   $('sheet').hidden = false;
   $('sheetin').scrollTop = 0;
 }
-function closeSheet() { $('sheet').hidden = true; }
+function closeSheet() { sheetRevision++; $('sheet').hidden = true; }
 
 function sheetPoint(p) {
   const d = (p.drive || {});

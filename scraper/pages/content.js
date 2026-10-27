@@ -38,6 +38,12 @@ const HOME = {
 
 const HUNTING = {
   path: '/hunting/',
+  unitIndex: {
+    path: '/hunting/units/',
+    label: 'Every hunt unit, A to Z',
+    title: 'Every Utah big game hunt unit, A to Z | Ranger Hawk',
+    description: "Utah DWR's big game hunt boundary units, A to Z. Each unit on a {hunt_year} hunt list has a page with its boundary description, seasons and hunts.",
+  },
   title: 'Utah hunting seasons, units, draw odds, access | Ranger Hawk',
   description: 'Utah bird, turkey and general deer and elk seasons with what is open today, the hunts where you want to go, draw odds for your points, offline maps.',
   h1: 'Utah hunting, in one free app',

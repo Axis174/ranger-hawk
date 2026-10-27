@@ -9,6 +9,7 @@
 const fs = require('fs'), path = require('path');
 const C = require('./pages/content.js');
 const B = require('./build_pages.js');
+const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..'), DOCS = path.join(ROOT, 'docs');
 const SITE = C.SITE;
@@ -34,7 +35,7 @@ function ok(name, cond, detail) {
 const short = s => { s = String(s); return s.length > 140 ? s.slice(0, 137) + '...' : s; };
 
 /* ---------------------------------------------------------------- build twice */
-let counts, site, fishing, generated, builtDate, built = {};
+let counts, site, fishing, hunting, generated, unitGenerated, builtDate, built = {};
 try {
   const first = B.build({ date: BUILD_DATE });
   counts = first.counts;
@@ -49,12 +50,14 @@ try {
   site = B.loadSite();
   fishing = B.loadFishing(BUILD_DATE);
   generated = first.fishing;
+  hunting = B.loadUnits(BUILD_DATE);
+  unitGenerated = first.hunting;
 } catch (e) {
   console.log('  FAIL the build did not run: ' + e.message);
   console.log('0 passed, 1 failed');
   process.exit(1);
 }
-const fill = s => String(s).replace(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, k) => String(counts[k]));
+const fill = s => String(s).replace(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, k) => String(k === 'hunt_year' ? hunting.config.hunt_year : counts[k]));
 const refresh = B.refreshDate(), refreshHuman = B.humanDate(refresh);
 
 /* ------------------------------------------------------------------ helpers */
@@ -122,6 +125,12 @@ const COMMUNITY_PAGES = R.community.members.filter(m => !TWIN_IDS.has(m.id))
   .map(m => ({ kind: 'community', id: 'community:' + m.id, entry: m, path: '/fishing/community/' + m.id + '/', page: R.community.page }));
 const FISH_PAGES = WATER_PAGES.concat(COMMUNITY_PAGES);
 const FISH_FILES = ['fishing/waters/index.html'].concat(FISH_PAGES.map(p => fileOf(p.path)));
+const UNIT_ROWS = Object.values(hunting.HU.hunts).flat();
+const UNIT_PAGES = hunting.UNITS.filter(u => UNIT_ROWS.some(r => r.boundary_id === u.id))
+  .map(u => ({ id: u.id, name: u.n, slug: hunting.HU.slugs[u.n], path: '/hunting/units/' + hunting.HU.slugs[u.n] + '/' }));
+const UNIT_FILES = ['hunting/units/index.html'].concat(UNIT_PAGES.map(p => fileOf(p.path)));
+const INDEXES = [C.FISHING.waterIndex, C.HUNTING.unitIndex];
+const DETAIL_FILES = FISH_FILES.concat(UNIT_FILES);
 /* The statewide table a page shows is the app's: fishing.js drops the 'community' row (the community rules
    speak for it) and the 'kokanee' row (folded into the trout row, "Trout, kokanee salmon and Arctic grayling"). */
 const DROPPED_ROWS = R.statewide.limits.filter(l => l.row === 'community' || l.row === 'kokanee');
@@ -197,6 +206,42 @@ const wordingHits = text => [...text.matchAll(WORDS)].filter(m => !(m[1].toLower
 /* What a page says about the clock outside UDWR's words: the visible text, with the quoted UDWR strings removed. */
 const TEMPORAL = /\b(now|today|days left|tomorrow|Last day today)\b/gi;
 const temporalHits = (html, quotes) => plain(withoutQuotedRules(html, quotes)).match(TEMPORAL) || [];
+
+/* Only source fields in the unit sheet's actual output positions are exempt.
+   General-season sentences, metadata, the index, Sources and footer stay swept. */
+function withoutUnitQuotes(html, loader = hunting) {
+  const rows = Object.values(loader.HU.hunts).flat();
+  const descriptions = new Set(rows.filter(r => typeof r.description === 'string' && r.description.trim()).map(r => esc(r.description)));
+  const headings = new Set(rows.flatMap(r => [esc(r.type), esc(r.type) + ' &middot; ' + esc(r.species)]));
+  const drawn = new Map(loader.HT.hunts.map(h => [esc(h.code + (h.marks || []).join('')) + ' &middot; ' + esc(h.name), h]));
+  const general = new Map(), fallback = new Map();
+  for (const r of rows) {
+    const gr = loader.generalRows(r);
+    for (const g of gr) general.set(esc(g.t), esc(r.unit));
+    if (!gr.length && !loader.tableHunts(r).length) fallback.set(esc(r.unit), esc(r.season));
+  }
+  return html.replace(/(<p class="fine" style="padding:0 16px[^\"]*">)([^<]*)(<\/p>)/g,
+    (_, start, body, end) => start + (descriptions.has(body) ? ' ' : body) + end)
+    .replace(/(<div class="sec-title" style="padding:0 16px">)([^<]*)(<\/div>)/g,
+      (_, start, body, end) => start + (headings.has(body) ? ' ' : body) + end)
+    .replace(/(<div class="row"[^>]*><span class="pill"><\/span><span><span class="t">)([^<]*)(<\/span><span class="s">)([\s\S]*?)(<\/span><\/span><span class="v">)/g,
+      (_, start, title, middle, detail, end) => {
+        const hunt = drawn.get(title);
+        if (hunt) {
+          title = ' &middot; ';
+          const kind = esc(hunt.hunt_type || '');
+          if (kind && detail.startsWith(kind)) detail = ' ' + detail.slice(kind.length);
+          detail = detail.split(esc(hunt.code + (hunt.marks || []).join(''))).join(' ');
+        } else if (fallback.has(title) && detail === fallback.get(title)) {
+          title = detail = ' ';
+        } else if (general.has(title)) {
+          const unit = general.get(title);
+          if (unit && title.endsWith(unit)) title = title.slice(0, -unit.length) + ' ';
+        }
+        return start + title + middle + detail + end;
+      });
+}
+const unitTemporalHits = (html, loader) => plain(withoutUnitQuotes(html, loader)).match(TEMPORAL) || [];
 
 /* ------------------------------------- UDWR quotes versus Ranger Hawk claims */
 {
@@ -577,7 +622,7 @@ for (const p of ALL_PAGES) {
 
 /* ---------------------------- every internal link and file reference resolves */
 {
-  const pages = ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)), FISH_FILES);
+  const pages = ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)), DETAIL_FILES);
   const knownIds = new Set(R.waters.map(w => w.id).concat(R.community.members.map(m => 'community:' + m.id)));
   const bad = [];
   for (const f of pages) {
@@ -599,7 +644,7 @@ for (const p of ALL_PAGES) {
 {
   const x = read('sitemap.xml');
   const rows = [...x.matchAll(/<url><loc>([^<]+)<\/loc>(<lastmod>([^<]+)<\/lastmod>)?<\/url>/g)].map(m => ({ loc: m[1], lastmod: m[3] || null }));
-  const want = ['/'].concat(STATIC.map(d => d.c.path), ['/fishing/waters/'], generated.pages.map(p => p.path)).map(p => SITE + p);
+  const want = ['/'].concat(STATIC.map(d => d.c.path), INDEXES.map(i => i.path), generated.pages.map(p => p.path), unitGenerated.pages.map(p => p.path)).map(p => SITE + p);
   ok('sitemap: lists exactly the built pages, home first', JSON.stringify(rows.map(r => r.loc)) === JSON.stringify(want), rows.map(r => r.loc).join(' '));
   ok('sitemap: a valid urlset', x.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') && x.trimEnd().endsWith('</urlset>') && (x.match(/<url>/g) || []).length === rows.length);
   ok('sitemap: no lastmod anywhere (the daily footer date is not a significant update)', !/lastmod/.test(x) && rows.every(r => r.lastmod === null));
@@ -616,12 +661,15 @@ for (const p of ALL_PAGES) {
   ok('llms.txt: sections are Pages, Sources, Optional', JSON.stringify(heads) === JSON.stringify(['Pages', 'Sources', 'Optional']), heads.join(','));
   const pagesSec = (t.match(/## Pages\n\n([\s\S]*?)\n\n## Sources/) || [])[1] || '';
   const pageLines = pagesSec.split('\n');
-  ok('llms.txt: each page is "- [label](absolute url): its description"', pageLines.length === STATIC.length + 1 && STATIC.every((d, i) => {
+  ok('llms.txt: each page is "- [label](absolute url): its description"', pageLines.length === STATIC.length + INDEXES.length && STATIC.every((d, i) => {
     const m = pageLines[i].match(/^- \[([^\]]+)\]\((https:\/\/[^)]+)\): (.+)$/);
     return !!m && m[2] === SITE + d.c.path && m[3] === DESC({ c: d.c });
   }), pagesSec);
   ok('llms.txt: the index is the only additional fishing page under Pages', pageLines.filter(line => line.includes(SITE + '/fishing/waters/')).length === 1 && pageLines.some(line => line.includes('- [Every water, A to Z](' + SITE + '/fishing/waters/): ')) && !/\/fishing\/(?:waters|community)\/[a-z0-9-]+\//.test(pagesSec));
   ok('llms.txt: the index line carries the index description', pageLines.includes('- [' + C.FISHING.waterIndex.label + '](' + SITE + C.FISHING.waterIndex.path + '): ' + C.FISHING.waterIndex.description));
+  ok('llms.txt: exactly one additional hunting line, the unit index with its field-built description',
+    pageLines.includes('- [' + C.HUNTING.unitIndex.label + '](' + SITE + C.HUNTING.unitIndex.path + '): ' + fill(C.HUNTING.unitIndex.description)) &&
+    pageLines.filter(line => line.includes(SITE + '/hunting/units/')).length === 1 && !/\/hunting\/units\/[a-z0-9-]+\//.test(pagesSec));
   const indexLine = pageLines.find(line => line.startsWith('- [' + C.FISHING.waterIndex.label + '](')) || '', indexLineText = indexLine.slice(indexLine.indexOf('): ') + 3);
   ok('llms.txt: the description on the index line is 160 characters or fewer', indexLine !== '' && indexLineText.length <= 160, indexLineText.length);
   ok('llms.txt: Sources lists every source', C.SOURCES.every(s => t.includes('- [' + s.label + '](' + s.url + ')')));
@@ -700,7 +748,7 @@ for (const p of ALL_PAGES) {
   let fine = true;
   try { B.checkCounts(counts); } catch (e) { fine = false; }
   ok('the build goes ahead on the data counts', fine);
-  ok('content.js uses only placeholders with a count', [...JSON.stringify(C).matchAll(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g)].every(m => m[1] in counts));
+  ok('content.js uses only placeholders with a count or the configured hunt year', [...JSON.stringify(C).matchAll(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g)].every(m => m[1] in counts || m[1] === 'hunt_year'));
 }
 
 /* ------------------------------------- the disclaimer is the money screen's sentence */
@@ -708,7 +756,7 @@ for (const p of ALL_PAGES) {
   const siteSrc = fs.readFileSync(path.join(DOCS, 'site.js'), 'utf8');
   ok('DISCLAIMER occurs verbatim in docs/site.js', siteSrc.includes(C.DISCLAIMER));
   ok('DISCLAIMER occurs verbatim in vMoney() output', site.money.includes(C.DISCLAIMER));
-  ok('every built page carries the DISCLAIMER verbatim (as HTML text)', ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)), FISH_FILES).every(f => read(f).includes(esc(C.DISCLAIMER))));
+  ok('every built page carries the DISCLAIMER verbatim (as HTML text)', ['index.html', '404.html'].concat(STATIC.map(d => fileOf(d.c.path)), DETAIL_FILES).every(f => read(f).includes(esc(C.DISCLAIMER))));
 }
 
 /* ------------------------------------------------------------- wording sweep */
@@ -719,6 +767,7 @@ for (const p of ALL_PAGES) {
   walk(C, '');
   ['index.html', '404.html', 'sitemap.xml', 'llms.txt', 'manifest.webmanifest'].concat(STATIC.map(d => fileOf(d.c.path))).forEach(f => sources.push([f, read(f)]));
   FISH_FILES.forEach(f => sources.push([f, withoutQuotedRules(read(f))]));
+  UNIT_FILES.forEach(f => sources.push([f, withoutUnitQuotes(read(f))]));
   for (const { text, field, id } of RULE_FIELDS) {
     const words = [...text.matchAll(WORDS)].map(m => m[1]);
     if (!words.length) continue;
@@ -741,6 +790,160 @@ for (const p of ALL_PAGES) {
   for (const [key, files] of seen) console.log('  wording: ' + key + '   [' + files.length + ' place' + (files.length === 1 ? '' : 's') + ': ' + [...new Set(files)].slice(0, 3).join(', ') + (new Set(files).size > 3 ? ', ...' : '') + ']');
   ok('wording sweep: no "official", "verified", "licensed", "endorsed", "certified" or "guarantee" outside the disclaimer\'s own negation', bad.length === 0, bad.join('; '));
   ok('wording sweep: the negation itself is in the disclaimer', C.DISCLAIMER.includes(NEGATION));
+}
+
+/* -------------------------------------------------- static hunt-unit pages */
+{
+  const year = hunting.config.hunt_year, pulled = /\bpulled (\d{4}-\d{2}-\d{2})\b/.exec(hunting.HU._source)[1];
+  const oddsYear = Object.keys(hunting.ODDS.years).sort().pop();
+  ok('unit pages: data-selected polygons and no others', JSON.stringify(unitGenerated.pages.map(p => p.path).sort()) === JSON.stringify(UNIT_PAGES.map(p => p.path).sort()));
+  ok('unit renderer: noon Denver on the explicit Utah build date', hunting.now === B.denverNoon(BUILD_DATE));
+  let longTitles = 0, longDescriptions = 0;
+  for (const p of UNIT_PAGES) {
+    const f = fileOf(p.path), html = read(f), rows = UNIT_ROWS.filter(r => r.boundary_id === p.id), n = p.name + ': ';
+    const species = hunting.species.filter(s => rows.some(r => r.species === s)).join(', ');
+    const hunts = hunting.HT.hunts.filter(h => h.boundary_ids.includes(p.id) && h.list_type &&
+      rows.some(r => r.species === h.species && r.type === h.list_type && !/^(?:General Season|Antlerless)/.test(r.type)));
+    const lead = `${p.name}, a Utah big game hunt unit: ${species}. Utah DWR's boundary description for each ${year} hunt list that names this unit, with the unit's ${year} seasons and hunts as Ranger Hawk reads them from UDWR's hunt lists, the ${year} Big Game Field Regulations and the ${year} Big Game Application Guidebook, as of noon, ${longDate(BUILD_DATE)}.`;
+    let title = `${p.name} hunt unit, Utah: boundary and ${year} hunts | Ranger Hawk`;
+    if (title.length > 70) title = `${p.name} hunt unit: boundary and ${year} hunts | Ranger Hawk`;
+    let description = `Utah DWR's ${year} boundary description for the ${p.name} hunt unit (${species}), with its seasons and hunts from UDWR's lists and guidebooks.`;
+    if (description.length > 160) description = description.replace(` (${species})`, '');
+    if (title.length > 70) longTitles++;
+    if (description.length > 160) longDescriptions++;
+    ok(n + 'one polygon-name h1 and exact field-built lead with all species', (html.match(/<h1>/g) || []).length === 1 && html.includes('<h1>' + esc(p.name) + '</h1>') && html.includes('<p class="lead">' + esc(lead) + '</p>'));
+    ok(n + 'the app static sheet is unchanged immediately after the lead', html.includes(esc(lead) + '</p>\n' + hunting.render(p.id)));
+    for (const r of rows) {
+      ok(n + 'description is escaped and verbatim', typeof r.description === 'string' && r.description.trim() !== '' && html.includes(esc(r.description)));
+      ok(n + 'each list type is escaped and verbatim', html.includes(esc(r.type)));
+    }
+    for (const h of hunts) ok(n + 'each printed hunt code, marks and name are escaped and verbatim: ' + h.code,
+      html.includes(esc(h.code + (h.marks || []).join(''))) && html.includes(esc(h.name)));
+    ok(n + 'field-built title and fallback without truncation', html.includes('<title>' + esc(title) + '</title>'));
+    ok(n + 'field-built description and fallback without truncation', JSON.stringify(metaContent(html, 'name', 'description')) === JSON.stringify([description]));
+    ok(n + 'canonical and og:url are the absolute page with trailing slash', JSON.stringify(linkHrefs(html, 'canonical')) === JSON.stringify([SITE + p.path]) && metaContent(html, 'property', 'og:url')[0] === SITE + p.path);
+    ok(n + 'Open Graph uses page metadata and the hubs image', metaContent(html, 'property', 'og:title')[0] === title && metaContent(html, 'property', 'og:description')[0] === description && metaContent(html, 'property', 'og:image')[0] === metaContent(read('hunting/index.html'), 'property', 'og:image')[0]);
+    const ld = ldBlocks(html).map(x => JSON.parse(x));
+    ok(n + 'only BreadcrumbList Home > Hunting > Every hunt unit > name', ld.length === 1 && ld[0]['@type'] === 'BreadcrumbList' &&
+      JSON.stringify(ld[0].itemListElement.map(x => [x.name, x.item])) === JSON.stringify([
+        ['Home', SITE + '/'], ['Hunting', SITE + '/hunting/'], ['Every hunt unit', SITE + '/hunting/units/'], [p.name, SITE + p.path]]));
+    const sources = [...html.matchAll(/<p class="fine">(Source:[\s\S]*?)<\/p>/g)].map(m => m[1]);
+    ok(n + 'exact four field-built Sources with the correct dates', sources.length === 4 &&
+      plain(sources[0]) === `Source: Utah DWR's ${year} hunt boundary lists, pulled ${longDate(pulled)}.` &&
+      plain(sources[1]) === `Source: ${hunting.HT._edition.title}, reissued ${longDate(hunting.HT._edition.reissued)}.` &&
+      plain(sources[2]) === `Source: Utah DWR ${year} Big Game Field Regulations Guidebook (general seasons).` &&
+      plain(sources[3]) === `Source: Utah DWR big game draw results, ${oddsYear}.`);
+    ok(n + 'edition PDF linked once with no page anchor; no invented source links', sources.filter(s => /<a\b/.test(s)).length === 1 &&
+      (html.match(new RegExp('href="' + hunting.HT._edition.pdf.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"', 'g')) || []).length === 1 &&
+      !html.includes(esc(hunting.HT._edition.pdf) + '#'));
+    ok(n + 'app button follows Sources and targets this known slug', html.includes('href="/?unit=' + p.slug + '">Open this unit in Ranger Hawk</a>') && html.lastIndexOf('Source:') < html.lastIndexOf('Open this unit in Ranger Hawk'));
+    ok(n + 'shared header/footer, disclaimer, styles and no placeholders', html.includes('href="../../../styles.css"') && html.includes('href="../../../page.css"') &&
+      html.includes('<a class="brand" href="../../../">') && html.includes(esc(C.DISCLAIMER)) && html.includes('<p>Sources last checked ' + refreshHuman + '.</p>') && balanced(html) === '' && !/\{[A-Za-z_]\w*\}/.test(html));
+    const siblingLinks = [...html.matchAll(/<a href="([^"]+)"[^>]*>Open unit<\/a>/g)].map(m => m[1]);
+    ok(n + 'every sibling Open unit link goes to a built static unit page', siblingLinks.every(href => UNIT_PAGES.some(x => x.path === href) && exists(fileForUrl(href))));
+  }
+  console.log('  unit pages: ' + UNIT_PAGES.length + ' pages; ' + longTitles + ' titles over 70 and ' + longDescriptions + ' descriptions over 160 after fallback (untruncated)');
+  for (const f of UNIT_FILES) {
+    const html = read(f);
+    ok(f + ': no relative-clock words outside printed agency fields', unitTemporalHits(html).length === 0, unitTemporalHits(html).join(', '));
+    ok(f + ': no wording claims outside printed agency fields', wordingHits(withoutUnitQuotes(html)).length === 0);
+    ok(f + ': no buttons, app data targets or executable scripts', !/<button\b|\bdata-(?:unit|draw|fw|fp)\b|<script[^>]*\bsrc\s*=/i.test(html) &&
+      (html.match(/<script\b[^>]*>/g) || []).every(t => t === '<script type="application/ld+json">'));
+    ok(f + ': internal links resolve, and app-unit links have known slugs', [...html.matchAll(/<a\b[^>]*href="([^"]+)"/g)].every(m => {
+      const u = new URL(unesc(m[1]), SITE + '/' + f.replace(/index.html$/, ''));
+      return u.origin !== SITE || (exists(fileForUrl(u.href)) && (!u.searchParams.has('unit') || Object.values(hunting.HU.slugs).includes(u.searchParams.get('unit'))));
+    }));
+  }
+  const index = read('hunting/units/index.html'), body = index.match(/<main>([\s\S]*?)<\/main>/)[1];
+  const items = [...body.matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => m[1]);
+  const sorted = [...hunting.UNITS].sort((a, b) => a.n.localeCompare(b.n, 'en-US'));
+  ok('unit index: exactly one entry per polygon in en-US A-Z order', JSON.stringify(items.map(x => plain(x).split(' — ')[0])) === JSON.stringify(sorted.map(u => u.n)));
+  ok('unit index: correct letter headings', JSON.stringify([...body.matchAll(/<h2>([^<]+)<\/h2>/g)].map(m => m[1])) === JSON.stringify([...new Set(sorted.map(u => u.n[0].toLocaleUpperCase('en-US')))]));
+  ok('unit index: every eligible unit linked once with ordered species; the others named alone', sorted.every((u, i) => {
+    const page = UNIT_PAGES.find(p => p.id === u.id), species = hunting.species.filter(s => UNIT_ROWS.some(r => r.boundary_id === u.id && r.species === s)).join(', ');
+    return page ? items[i] === `<a href="${page.path}">${esc(u.n)}</a> &mdash; ${esc(species)}` : items[i] === esc(u.n);
+  }));
+  ok('unit index: polygons with no list row get no generated page', hunting.UNITS.filter(u => !UNIT_PAGES.some(p => p.id === u.id)).every(u => !unitGenerated.pages.some(p => p.id === u.id)));
+  ok('unit index: exact heading, metadata and field-built lead', index.includes('<h1>Every hunt unit, A to Z</h1>') && index.includes('<title>' + C.HUNTING.unitIndex.title + '</title>') &&
+    metaContent(index, 'name', 'description')[0] === fill(C.HUNTING.unitIndex.description) &&
+    index.includes(esc(`Every polygon in Utah DWR's big game hunt boundary layer, A to Z, with the species each unit is listed for. A unit with no link is a polygon that none of the ${year} hunt lists Ranger Hawk reads names.`)));
+  ok('unit index: hunting hub links its index, fishing links only its own', read('hunting/index.html').includes('href="/hunting/units/"') && !read('hunting/index.html').includes('href="/fishing/waters/"') && !read('fishing/index.html').includes('href="/hunting/units/"'));
+
+  /* Invalid eligibility must fail loudly, including empty renderer output. */
+  for (const kind of ['rows without slug', 'slug without rows']) {
+    const fixture = B.loadUnits(BUILD_DATE), first = UNIT_PAGES[0];
+    if (kind === 'rows without slug') delete fixture.HU.slugs[first.name];
+    else for (const rows of Object.values(fixture.HU.hunts)) for (let i = rows.length - 1; i >= 0; i--) if (rows[i].boundary_id === first.id) rows.splice(i, 1);
+    let stopped = false; try { B.unitPages(fixture); } catch (e) { stopped = e instanceof B.BuildError; }
+    ok('unit build rejects ' + kind, stopped);
+  }
+
+  /* A real build, with a temporarily injected missing description. Original
+     committed JSON bytes and every generated page are restored in finally. */
+  const fixturePath = path.join(DOCS, 'data/ut', `hunt_units_${year}.json`), original = fs.readFileSync(fixturePath);
+  try {
+    const fixture = JSON.parse(original), row = Object.values(fixture.hunts).flat()[0], id = row.boundary_id;
+    row.description = '';
+    fs.writeFileSync(fixturePath, JSON.stringify(fixture));
+    B.build({ date: BUILD_DATE });
+    const p = UNIT_PAGES.find(p => p.id === id), html = read(fileOf(p.path)), loader = B.loadUnits(BUILD_DATE);
+    const says = `UDWR's ${year} hunt list gives no boundary description for this entry. Read the boundary in the Utah Hunt Planner.`;
+    ok('blank description: real built page carries the exact warning once and passes both sweeps', html.split(esc(says)).length === 2 &&
+      wordingHits(withoutUnitQuotes(html, loader)).length === 0 && unitTemporalHits(html, loader).length === 0);
+    row.description = 'Synthetic official and licensed boundary, now and today, with <unit> & land.';
+    fs.writeFileSync(fixturePath, JSON.stringify(fixture));
+    B.build({ date: BUILD_DATE });
+    const quotedPage = read(fileOf(p.path)), quotedLoader = B.loadUnits(BUILD_DATE);
+    ok('unit sweep: real page with a synthetic agency description passes', quotedPage.includes(esc(row.description)) &&
+      wordingHits(withoutUnitQuotes(quotedPage, quotedLoader)).length === 0 && unitTemporalHits(quotedPage, quotedLoader).length === 0);
+    for (const tag of ['<p class="lead">', '<title>', '<li>']) {
+      const close = tag.startsWith('<p') ? '</p>' : tag === '<title>' ? '</title>' : '</li>';
+      const injected = tag + esc(row.description) + close + quotedPage;
+      ok('unit sweep: the same words in ' + tag + ' still fail', wordingHits(withoutUnitQuotes(injected, quotedLoader)).length === 2 && unitTemporalHits(injected, quotedLoader).length === 2);
+    }
+  } finally { fs.writeFileSync(fixturePath, original); B.build({ date: BUILD_DATE }); }
+  ok('injected descriptions restore all original build bytes', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
+
+  const unitRoot = path.join(DOCS, 'hunting/units');
+  const emptyDir = fs.mkdtempSync(path.join(unitRoot, 'packet6-stale-empty-'));
+  const keptDir = fs.mkdtempSync(path.join(unitRoot, 'packet6-stale-kept-'));
+  const outside = path.join(DOCS, 'hunting', 'packet6-prune-guard-' + process.pid + '.txt');
+  try {
+    fs.writeFileSync(path.join(emptyDir, 'index.html'), 'stale generated page');
+    fs.writeFileSync(path.join(keptDir, 'index.html'), 'stale generated page');
+    fs.writeFileSync(path.join(keptDir, 'keep.txt'), 'other content');
+    fs.writeFileSync(outside, 'outside the unit generator');
+    B.build({ date: BUILD_DATE });
+    ok('unit prune: removes stale index and its empty directory', !fs.existsSync(emptyDir));
+    ok('unit prune: preserves other files in a stale unit directory', !fs.existsSync(path.join(keptDir, 'index.html')) && fs.readFileSync(path.join(keptDir, 'keep.txt'), 'utf8') === 'other content');
+    ok('unit prune: leaves the rest of hunting untouched', fs.readFileSync(outside, 'utf8') === 'outside the unit generator');
+  } finally {
+    if (fs.existsSync(emptyDir)) fs.rmSync(emptyDir, { recursive: true });
+    fs.rmSync(keptDir, { recursive: true });
+    fs.unlinkSync(outside);
+  }
+
+  const expires = hunting.edition().expires, before = new Date(expires + 'T12:00:00Z');
+  before.setUTCDate(before.getUTCDate() - 1);
+  try {
+    for (const [date, banner] of [[before.toISOString().slice(0, 10), false], [expires, true]]) {
+      const output = B.build({ date }), says = `These are the ${year} hunts. The ${year + 1} guidebooks have not been read into Ranger Hawk yet.`;
+      ok('unit edition ' + date + ': banner on every page exactly when due', output.hunting.pages.every(p => read(fileOf(p.path)).includes(esc(says)) === banner));
+      ok('unit edition ' + date + ': every unit page and index pass both sweeps', ['hunting/units/index.html'].concat(output.hunting.pages.map(p => fileOf(p.path))).every(f =>
+        wordingHits(withoutUnitQuotes(read(f))).length === 0 && unitTemporalHits(read(f)).length === 0));
+    }
+    console.log('  unit edition boundary from data: ' + before.toISOString().slice(0, 10) + ' / ' + expires);
+  } finally { B.build({ date: BUILD_DATE }); }
+
+  const hashes = [];
+  for (const zone of ['America/Denver', 'Pacific/Auckland']) {
+    const script = `const B=require('./scraper/build_pages.js'),fs=require('fs'),crypto=require('crypto');const r=B.build({date:${JSON.stringify(BUILD_DATE)}}),h=crypto.createHash('sha256');for(const p of r.hunting.pages){const s=fs.readFileSync('docs'+p.path+'index.html','utf8');h.update(s.match(/<main>([\\s\\S]*?)<\\/main>/)[1]);}process.stdout.write(h.digest('hex'));`;
+    const child = spawnSync(process.execPath, ['-e', script], { cwd: ROOT, env: Object.assign({}, process.env, { TZ: zone }), encoding: 'utf8' });
+    ok('unit page build succeeds under ' + zone, child.status === 0, child.stderr);
+    hashes.push(child.stdout);
+  }
+  ok('all unit-page main HTML is identical under Denver and Auckland', hashes[0].length === 64 && hashes[0] === hashes[1], hashes.join(' / '));
+  ok('time-zone builds restore every current-date byte', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
 }
 
 console.log(`${pass} passed, ${fail} failed`);

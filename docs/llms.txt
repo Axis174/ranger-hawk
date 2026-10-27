@@ -18,6 +18,7 @@ Ranger Hawk is an independent app. It is not part of, or endorsed by, the Utah D
 - [Privacy](https://rangerhawk.com/privacy/): What Ranger Hawk keeps on your phone, what leaves it, and whether visits are counted.
 - [How Ranger Hawk makes money](https://rangerhawk.com/how-ranger-hawk-makes-money/): How Ranger Hawk may earn money, how paid links are marked, and what always stays free: the rules.
 - [Every water, A to Z](https://rangerhawk.com/fishing/waters/): Utah's fishing waters A to Z: every guidebook entry and community fishing water, with its county and a link to its rules where it has any.
+- [Every hunt unit, A to Z](https://rangerhawk.com/hunting/units/): Utah DWR's big game hunt boundary units, A to Z. Each unit on a 2026 hunt list has a page with its boundary description, seasons and hunts.
 
 ## Sources
 

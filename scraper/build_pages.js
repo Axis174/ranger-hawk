@@ -6,19 +6,21 @@
    Reads  scraper/pages/content.js   every sentence the pages say (one source)
           docs/data/ut/*.json        the counts and the data refresh date
           docs/state.js + site.js    the Privacy and Money screens, loaded the way the browser loads them
+          docs/app.js + finder.js + units.js (after state.js), the app's unit sheets
    Writes docs/hunting/index.html, docs/fishing/index.html, docs/privacy/index.html,
           docs/how-ranger-hawk-makes-money/index.html, docs/404.html, docs/sitemap.xml,
           docs/llms.txt (and docs/about/index.html if content.js ever exports ABOUT)
    Edits  two marked regions of docs/index.html (seo, shell) and three keys of
           docs/manifest.webmanifest (description, lang, categories).
 
-   Same inputs and Utah build date, same bytes. Water pages use noon America/Denver;
+   Same inputs and Utah build date, same bytes. Water and unit pages use noon America/Denver;
    --date=YYYY-MM-DD fixes that date for a repeatable build. A count that is not a whole
    number above zero stops the build (see checkCounts), and so does a {placeholder} left
    in any output. Run before the tests; refresh.yml does. */
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const C = require('./pages/content.js');
+const { phone } = require('./unit_vm.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const DOCS = path.join(ROOT, 'docs');
@@ -118,6 +120,47 @@ function loadFishing(date = new Date()) {
   } catch (e) {
     throw new BuildError('loading the real docs/fishing.js static renderer failed: ' + e.message);
   }
+}
+
+/* A separate VM runs the same app scripts and browser stubs as test_units.
+   Startup fetches never settle: only the committed objects assigned here can
+   reach the renderer. This keeps build() synchronous and entirely offline. */
+function loadUnits(date = new Date()) {
+  const iso = utahDate(date), noon = denverNoon(iso);
+  try {
+    const config = readJson('config.json'), seasons = readJson('seasons.json');
+    const HU = readJson(`hunt_units_${config.hunt_year}.json`), HT = readJson(`hunt_table_${config.hunt_year}.json`);
+    const UNITS = readJson('units_geo.json').units, ODDS = readJson('draw_odds.json');
+    const p = phone('', { docs: DOCS, now: noon, storage: {}, serveFetches: false,
+      scripts: ['state.js', 'app.js', 'finder.js', 'units.js'] });
+    p.T.setData({ HU, HT, UNITS, ODDS, config, seasons });
+    p.T.mode(true, noon);
+    p.T.link(slug => '/hunting/units/' + slug + '/');
+    return { HU, HT, UNITS, ODDS, config, seasons, date: iso, now: noon,
+      species: Array.from(p.T.species), render: id => p.T.sheetUnit(id),
+      edition: () => p.T.hEdition(), generalRows: row => p.T.fGeneralRows(row.species, row, null),
+      tableHunts: row => p.T.fTableHunts(row) };
+  } catch (e) {
+    throw new BuildError('loading the real unit renderer failed: ' + e.message);
+  }
+}
+
+function unitPages(hunting) {
+  const rows = Object.values(hunting.HU.hunts).flat(), slugs = new Set();
+  const index = hunting.UNITS.map(u => {
+    const entries = rows.filter(r => r.boundary_id === u.id);
+    const slug = Object.prototype.hasOwnProperty.call(hunting.HU.slugs, u.n) && hunting.HU.slugs[u.n];
+    if (!!entries.length !== !!slug) throw new BuildError('hunt rows and slug disagree for ' + u.n);
+    if (slug && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slugs.has(slug)))
+      throw new BuildError('invalid or duplicate unit slug for ' + u.n);
+    if (slug) slugs.add(slug);
+    return { id: u.id, name: u.n, slug: slug || null, rows: entries,
+      species: hunting.species.filter(s => entries.some(r => r.species === s)),
+      path: slug ? '/hunting/units/' + slug + '/' : null };
+  }).sort((a, b) => a.name.localeCompare(b.name, 'en-US'));
+  if (rows.some(r => !hunting.UNITS.some(u => u.id === r.boundary_id)))
+    throw new BuildError('a hunt-list row has no unit polygon');
+  return { pages: index.filter(p => p.path), index };
 }
 
 /* Pages use the rule id, never a place id. The Burraston twin's community entry
@@ -294,14 +337,21 @@ function staticHead(t, rel) {
 function build(options = {}) {
   const counts = computeCounts();
   checkCounts(counts);
+  const hunting = loadUnits(options.date === undefined ? new Date() : options.date);
+  const fields = Object.assign({ hunt_year: hunting.config.hunt_year }, counts);
   const fill = s => String(s).replace(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, k) => {
-    if (!Object.prototype.hasOwnProperty.call(counts, k)) throw new BuildError(`content.js uses ${m} and build_pages.js has no count of that name`);
-    return String(counts[k]);
+    if (!Object.prototype.hasOwnProperty.call(fields, k)) throw new BuildError(`content.js uses ${m} and build_pages.js has no field of that name`);
+    return String(fields[k]);
   });
   const iso = refreshDate(), human = humanDate(iso);
   const site = loadSite();
   const fishing = loadFishing(options.date === undefined ? new Date() : options.date);
   const waterDefs = fishingPages(fishing);
+  const unitDefs = unitPages(hunting);
+  const indexes = [
+    { key: 'fishing', hub: C.FISHING, c: C.FISHING.waterIndex, label: 'Every water', items: waterDefs.index },
+    { key: 'hunting', hub: C.HUNTING, c: C.HUNTING.unitIndex, label: 'Every hunt unit', items: unitDefs.index },
+  ];
   const defs = pageDefs();
   const out = {};   // absolute path -> text
 
@@ -346,12 +396,13 @@ ${footer(rel, here)}
     let main;
     if (d.kind === 'article') {
       const c = d.c;
+      const index = c.waterIndex || c.unitIndex;
       const faq = (c.faq || []).map(f => ({ q: fill(f.q), a: fill(f.a) }));
       if (faq.length) ld.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
       main = `<div class="wrap page">
 <h1>${esc(fill(c.h1))}</h1>
 <p class="lead">${esc(fill(c.lead))}</p>
-${c.waterIndex ? `<p><a href="${esc(c.waterIndex.path)}">${esc(c.waterIndex.label)}</a></p>\n` : ''}${(c.sections || []).map(s => `<section>
+${index ? `<p><a href="${esc(index.path)}">${esc(index.label)}</a></p>\n` : ''}${(c.sections || []).map(s => `<section>
 <h2>${esc(fill(s.h2))}</h2>
 ${s.p.map(p => `<p>${esc(fill(p))}</p>`).join('\n')}
 </section>`).join('\n')}
@@ -377,10 +428,10 @@ ${site[d.embed]}
   }
 
   /* ---- one page per water, from the app's static sheet without rewriting it */
-  const waterCrumbs = p => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+  const indexCrumbs = (index, p) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
-    { '@type': 'ListItem', position: 2, name: 'Fishing', item: SITE + C.FISHING.path },
-    { '@type': 'ListItem', position: 3, name: 'Every water', item: SITE + C.FISHING.waterIndex.path },
+    { '@type': 'ListItem', position: 2, name: index.key === 'fishing' ? 'Fishing' : 'Hunting', item: SITE + index.hub.path },
+    { '@type': 'ListItem', position: 3, name: index.label, item: SITE + index.c.path },
     ...(p ? [{ '@type': 'ListItem', position: 4, name: p.name, item: SITE + p.path }] : []),
   ] });
   const longDate = value => {
@@ -413,15 +464,46 @@ ${guidebookSource}
 ${p.changes.map(sourceChange).join('\n')}
 <p class="cta"><a class="btn" href="/?water=${esc(p.id)}">Open this water in Ranger Hawk</a></p>
 </div>`;
-    out[fileOf(p.path)] = doc(staticHead({ title, description, canonical: SITE + p.path, ld: [waterCrumbs(p)] }, rel), rel, main, 'fishing');
+    out[fileOf(p.path)] = doc(staticHead({ title, description, canonical: SITE + p.path, ld: [indexCrumbs(indexes[0], p)] }, rel), rel, main, 'fishing');
+  }
+
+  /* ---- each eligible hunt polygon, with its unchanged static unit sheet */
+  const huntYear = hunting.config.hunt_year;
+  const pulled = /\bpulled (\d{4}-\d{2}-\d{2})\b/.exec(hunting.HU._source || '');
+  if (!pulled) throw new BuildError('the hunt boundary lists record no pull date');
+  const huntEdition = hunting.HT._edition, oddsYear = Object.keys(hunting.ODDS.years).sort().pop();
+  for (const p of unitDefs.pages) {
+    const species = p.species.join(', '), rel = '../../../';
+    let title = `${p.name} hunt unit, Utah: boundary and ${huntYear} hunts | Ranger Hawk`;
+    if (title.length > 70) title = title.replace(', Utah', '');
+    let description = `Utah DWR's ${huntYear} boundary description for the ${p.name} hunt unit (${species}), with its seasons and hunts from UDWR's lists and guidebooks.`;
+    if (description.length > 160) description = description.replace(` (${species})`, '');
+    const lead = `${p.name}, a Utah big game hunt unit: ${species}. Utah DWR's boundary description for each ${huntYear} hunt list that names this unit, with the unit's ${huntYear} seasons and hunts as Ranger Hawk reads them from UDWR's hunt lists, the ${huntYear} Big Game Field Regulations and the ${huntYear} Big Game Application Guidebook, as of noon, ${longDate(hunting.date)}.`;
+    const sheet = hunting.render(p.id);
+    if (!sheet) throw new BuildError('the unit renderer returned no sheet for ' + p.name);
+    const main = `<div class="wrap page embed">
+<h1>${esc(p.name)}</h1>
+<p class="lead">${esc(lead)}</p>
+${sheet}
+<section>
+<h2>Sources</h2>
+<p class="fine">Source: Utah DWR's ${esc(huntYear)} hunt boundary lists, pulled ${esc(longDate(pulled[1]))}.</p>
+<p class="fine">Source: <a href="${esc(huntEdition.pdf)}" rel="noopener">${esc(huntEdition.title)}, reissued ${esc(longDate(huntEdition.reissued))}.</a></p>
+<p class="fine">Source: Utah DWR ${esc(huntYear)} Big Game Field Regulations Guidebook (general seasons).</p>
+<p class="fine">Source: Utah DWR big game draw results, ${esc(oddsYear)}.</p>
+</section>
+<p class="cta"><a class="btn" href="/?unit=${esc(p.slug)}">Open this unit in Ranger Hawk</a></p>
+</div>`;
+    out[fileOf(p.path)] = doc(staticHead({ title, description, canonical: SITE + p.path,
+      ld: [indexCrumbs(indexes[1], p)] }, rel), rel, main, 'hunting');
   }
 
   /* ---- every guidebook entry and community member, including pointers and
      inactive notice-only waters. Letter headings keep the long list readable. */
-  {
-    const c = C.FISHING.waterIndex, rel = '../../';
+  for (const index of indexes) {
+    const c = index.c, rel = '../../';
     let list = '', letter = '';
-    for (const item of waterDefs.index) {
+    for (const item of index.items) {
       const first = item.name.slice(0, 1).toLocaleUpperCase('en-US');
       if (first !== letter) {
         if (letter) list += '</ul>\n</section>\n';
@@ -430,11 +512,13 @@ ${p.changes.map(sourceChange).join('\n')}
       }
       /* A pointer says where the guidebook sends it, and the stretch when UDWR names one. */
       const see = item.kind === 'pointer' ? ` &mdash; see ${esc(item.targetName)}${item.targetReach ? ', ' + esc(item.targetReach) : ''}` : '';
-      list += `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)} &mdash; ${esc(countyText(item.counties))}${see}</li>\n`;
+      const detail = index.key === 'fishing' ? countyText(item.counties) : item.species.join(', ');
+      list += `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)}${detail ? ' &mdash; ' + esc(detail) : ''}${see}</li>\n`;
     }
     if (letter) list += '</ul>\n</section>\n';
-    const main = `<div class="wrap page">\n<h1>${esc(c.label)}</h1>\n${list}</div>`;
-    out[fileOf(c.path)] = doc(staticHead({ title: c.title, description: c.description, canonical: SITE + c.path, ld: [waterCrumbs()] }, rel), rel, main, 'fishing');
+    const lead = index.key === 'hunting' ? `<p class="lead">${esc(`Every polygon in Utah DWR's big game hunt boundary layer, A to Z, with the species each unit is listed for. A unit with no link is a polygon that none of the ${huntYear} hunt lists Ranger Hawk reads names.`)}</p>\n` : '';
+    const main = `<div class="wrap page">\n<h1>${esc(c.label)}</h1>\n${lead}${list}</div>`;
+    out[fileOf(c.path)] = doc(staticHead({ title: c.title, description: fill(c.description), canonical: SITE + c.path, ld: [indexCrumbs(index)] }, rel), rel, main, index.key);
   }
 
   /* ---- 404: served at any path, so every URL is root-absolute */
@@ -454,7 +538,7 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
   /* ---- sitemap.xml: no lastmod. The only thing that changes daily is the footer date, which is not a
      significant update to a page, so the sitemap does not claim one. */
   {
-    const entries = ['/'].concat(defs.map(d => d.c.path), [C.FISHING.waterIndex.path], waterDefs.pages.map(p => p.path));
+    const entries = ['/'].concat(defs.map(d => d.c.path), indexes.map(i => i.c.path), waterDefs.pages.map(p => p.path), unitDefs.pages.map(p => p.path));
     out[path.join(DOCS, 'sitemap.xml')] = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.map(e => `  <url><loc>${SITE}${e}</loc></url>`).join('\n')}
@@ -476,7 +560,7 @@ ${C.DISCLAIMER}
 ## Pages
 
 ${defs.map(d => `- [${d.label}](${SITE}${d.c.path}): ${desc(d)}`).join('\n')}
-- [${C.FISHING.waterIndex.label}](${SITE}${C.FISHING.waterIndex.path}): ${C.FISHING.waterIndex.description}
+${indexes.map(i => `- [${i.c.label}](${SITE}${i.c.path}): ${fill(i.c.description)}`).join('\n')}
 
 ## Sources
 
@@ -554,11 +638,20 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
       if (!fs.readdirSync(path.dirname(f)).length) fs.rmdirSync(path.dirname(f));
     }
   }
+  const unitRoot = path.join(DOCS, 'hunting', 'units');
+  if (fs.existsSync(unitRoot)) for (const dir of fs.readdirSync(unitRoot, { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    const f = path.join(unitRoot, dir.name, 'index.html');
+    if (!Object.prototype.hasOwnProperty.call(out, f) && fs.existsSync(f)) {
+      fs.unlinkSync(f);
+      if (!fs.readdirSync(path.dirname(f)).length) fs.rmdirSync(path.dirname(f));
+    }
+  }
   for (const f of Object.keys(out)) {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, out[f].endsWith('\n') || f.endsWith('.webmanifest') ? out[f] : out[f] + '\n');
   }
-  return { counts, iso, date: fishing.date, fishing: waterDefs, files: Object.keys(out).map(f => path.relative(ROOT, f)).sort() };
+  return { counts, iso, date: fishing.date, fishing: waterDefs, hunting: unitDefs, files: Object.keys(out).map(f => path.relative(ROOT, f)).sort() };
 }
 
 function replaceRegion(html, start, end, inner) {
@@ -567,7 +660,7 @@ function replaceRegion(html, start, end, inner) {
   return html.slice(0, a + start.length) + '\n' + inner + '\n' + html.slice(b);
 }
 
-module.exports = { build, loadSite, loadFishing, fishingPages, utahDate, denverNoon, computeCounts, checkCounts, refreshDate, humanDate, BuildError };
+module.exports = { build, loadSite, loadFishing, fishingPages, loadUnits, unitPages, utahDate, denverNoon, computeCounts, checkCounts, refreshDate, humanDate, BuildError };
 
 if (require.main === module) {
   try {

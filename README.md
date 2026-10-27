@@ -110,6 +110,8 @@ what is open right now, the five closest places to the town selected in the
 header, the Great Salt Lake level, and what is coming. **Where am I** reads the
 phone's GPS and names the big game hunt boundaries you are standing in plus the
 closest access points; it works with no signal once the app has been opened online.
+It asks for the GPS fix first and shows the unit names while the hunt lists load;
+the open result fills in the unit links when those lists arrive.
 
 **Access** — all 107 bird access points, searchable, sorted by real road drive
 time from the selected town (88 have a routed time; the other 19 show straight-line
@@ -132,6 +134,11 @@ UDWR's 2026 hunt-type unit lists (`docs/data/ut/hunt_units_2026.json`, from UDWR
 ArcGIS services) and to the draw results, and asks a question when something is
 missing. Sub-unit hunts are marked as maybes. No signal needed; no AI service -
 a keyword reader, so it says exactly why it answered what it did.
+
+**Unit sheet** — open a unit from a map popup, Where am I, a finder row or
+`?unit=<slug>`. One sheet per polygon shows each hunt list's boundary description,
+the species and list types, the unit's general seasons or guidebook hunts and dates,
+and the resident and nonresident draw figures. It never works out a merged season.
 
 **Trip plan** (Today) — where you are going, back-by time, contact, vehicle,
 party; sent as an ordinary text from the phone; pin the truck; bearing and
@@ -251,6 +258,10 @@ the lead selects the year by editing `config.json`'s `hunt_year`.
 The hunt-number table is parsed by hand-run `python3 scraper/build_hunt_table.py`
 and committed after a diff; the nightly never writes it or infers dates for
 multiseason or Dedicated Hunter rows whose guidebook entries give no span.
+`node scraper/test_units.js` checks the real unit renderer, finder rows, deep links,
+GPS and map entry points and edition dates under six clocks; it runs in the nightly.
+Its list, row and polygon counts and its named-unit checks are pinned on purpose: a
+UDWR list change stops the nightly until a human has read the change and re-pinned.
 
 ### Anchor towns and drive times
 
@@ -575,6 +586,20 @@ the app says.
   UDWR's words wherever a page quotes them (rule text, rule bullets, community notes, the
   limits table, UDWR's notices and its list of changes) and still sweeps every sentence
   Ranger Hawk writes.
+- **A page for every hunt unit (since v44)**: `docs/hunting/units/<slug>/` for each
+  polygon named by a hunt list, with the A-to-Z index at `docs/hunting/units/`.
+  `scraper/build_pages.js` runs `docs/units.js`, the app's own renderer, in static mode
+  at noon America/Denver on the Utah build date. The boundary descriptions and the
+  guidebook's hunt headings are UDWR's words; the general-season sentences and draw
+  figures are the app's own, as on the phone; there are no app controls or relative
+  clock wording. The 12 polygons that no hunt list names are listed in the
+  index without a page. Each page opens its sheet in the app through `/?unit=<slug>`; sibling links
+  go to the sibling's static page. The sweep exempts only agency fields where the
+  sheet prints them and still checks the lead, metadata, Sources, index, general-season
+  sentences and footer. `scraper/test_units.js` uses the shared browser stubs that
+  load the renderer for the builder; `scraper/compare_unit_sheets.js <saved-main-dir>`
+  separately checks all eligible sheets in app mode at two clocks against saved main
+  sources, without a nightly-changing hash fixture.
 - **`docs/robots.txt`** is written by hand. Every crawler is allowed, AI search and
   answer engines and model-training crawlers included; only `/maps/` (the offline map
   files) is closed. Decision 2026-10-09: allow training too, because the rules are free
@@ -592,8 +617,10 @@ the app says.
 - **Offline**: the hub and policy pages and `page.css` are in the service worker's SHELL,
   so once the app has been opened online they open with no signal too. (Without that, a
   page never opened would get `index.html` at its own address, and the app's relative
-  script paths would not load.) The per-water pages are not in SHELL (205 pages, 2.5 MB);
-  with no signal, open the water inside the app instead.
+  script paths would not load.) The per-water pages are not in SHELL (205 pages, 2.5 MB).
+  The unit pages and their index are also outside SHELL (141 pages, about 1.4 MB: 140
+  unit pages and one index); the count and the bytes move with the data. With no
+  signal, open the water or unit inside the app instead.
 - **Wording**: Ranger Hawk is not the state. Never "official", "verified", "licensed",
   "certified" or "endorsed" except in the disclaimer's own negation, and never a claim
   that a hunt or a catch is legal. Every page carries the money screen's disclaimer
