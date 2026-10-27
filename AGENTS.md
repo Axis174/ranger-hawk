@@ -1,0 +1,2 @@
+# Codex instructions for Ranger Hawk
+Read CLAUDE.md in this folder first; it governs Codex too. Universal rules: ~/.codex/AGENTS.md. Chris works on this project: nothing below Opus 5.5 / Sonnet 5.5 class. Never commit, push or deploy; Pete does. Packets arrive in ../codex-packets/; every task ends with what was built, where, what was not verified, and a HANDOFF_FOR_CHRIS_<topic>_<date>.md beside the packet.
