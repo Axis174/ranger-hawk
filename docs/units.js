@@ -82,6 +82,8 @@ function sheetUnit(boundaryId) {
   const species = H_SPECIES.filter(s => rows.some(r => r.species === s));
   let html = !edition.current ? `<div class="warnbox fbad" style="margin:12px 16px 0">These are the ${esc(year)} hunts. The ${esc(year + 1)} guidebooks have not been read into Ranger Hawk yet.</div>` : '';
   html += `<h3>${esc(u.n)}</h3><p class="where">${species.map(esc).join(' &middot; ')}</p>`;
+  // The week's weather, light and moon for the centre of this unit; the app only, the static page has no forecast script.
+  if (!units.static && typeof vForecast === 'function') html += `<div class="acts"><button class="btn ghost" data-fx="unit:${u.id}">7-day hunt forecast for this unit</button></div>`;
   html += [...new Set(rows.map(r => r.description))].map(text => `<p class="fine" style="padding:0 16px">${esc(text)}</p>`).join('');
   const base = u.n.split(',')[0];
   const others = (UNITS || []).filter(other => other.id !== u.id && other.n.startsWith(base))

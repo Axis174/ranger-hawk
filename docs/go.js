@@ -33,6 +33,8 @@ const GO_DEST = [
     keys: ['fishing', 'fish', 'trout', 'kokanee', 'tiger muskie', 'fishing rules'], weak: ['water', 'waters', 'lake', 'reservoir', 'limit', 'limits'] },
   { id: 'access', title: 'Places to go', sub: 'Access points by drive from your town', tab: 'access',
     keys: ['where can i go', 'access points', 'walk in access', 'walk-in access', 'wia', 'wma'], weak: ['access', 'place', 'places', 'park', 'parking'] },
+  { id: 'forecast', title: 'Hunt forecast', sub: 'Seven days of weather, light and moon, and what moves deer and elk', tab: 'forecast',
+    keys: ['forecast', 'hunt forecast', 'weather', 'weather forecast', 'legal light', 'shooting light', 'sunrise', 'sunset', 'moon', 'moonrise', 'moon phase'], weak: ['wind', 'snow', 'rain', 'temperature', 'cold front', 'front', 'storm', 'rut'] },
   { id: 'map', title: 'Map', sub: 'Offline map, land ownership, roads', tab: 'map',
     keys: ['map', 'offline map', 'ownership', 'land ownership'], weak: ['land', 'boundary', 'boundaries', 'roads', 'gps'] },
   { id: 'cams', title: 'Trail cameras', sub: 'Your camera log, all on this phone', tab: 'cams',

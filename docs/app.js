@@ -98,10 +98,10 @@ function drive(p) {
    end rounds down. It is an estimate - the guidebook table is the legal one. */
 const SLC = { lat: 40.7608, lon: -111.8910 };
 const clock = d => d.toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' });
-function legalLight(day) {
+function legalLight(day, lat = SLC.lat, lon = SLC.lon) {
   if (!SUN) return null;
   const noon = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12);
-  const t = SUN.getTimes(noon, SLC.lat, SLC.lon);
+  const t = SUN.getTimes(noon, lat, lon);
   if (!t || !t.sunrise || isNaN(t.sunrise) || isNaN(t.sunset)) return null;
   const up = ms => new Date(Math.ceil(ms / 60000) * 60000);
   const dn = ms => new Date(Math.floor(ms / 60000) * 60000);
@@ -193,7 +193,7 @@ async function whereAmI() {
     const near = DB.birds.map(p => ({ p, mi: miles(lat, lon, p.lat, p.lon) })).sort((a, b) => a.mi - b.mi).slice(0, 4);
     openSheet(`<h3>Where am I</h3>
       <p class="where mono">${lat.toFixed(5)}, ${lon.toFixed(5)} &middot; within ${Math.round(pos.coords.accuracy)} m</p>
-      <div class="acts"><button class="btn ghost" data-copy="${lat.toFixed(5)}, ${lon.toFixed(5)}">Copy coordinates</button></div>
+      <div class="acts"><button class="btn ghost" data-copy="${lat.toFixed(5)}, ${lon.toFixed(5)}">Copy coordinates</button>${typeof vForecast === 'function' ? `<button class="btn ghost" data-fx="at:${lat.toFixed(4)},${lon.toFixed(4)}" data-fxlabel="Where I am${hits && hits.length ? ': ' + esc(hits[0].n) : ''}">7-day forecast here</button>` : ''}</div>
       <dl class="f"><dt>Big game hunt boundaries here</dt><dd>${
         hits == null ? 'Unit shapes are not on this phone yet. Open the app once with a signal.'
         : hits.length ? hits.map(u => esc(u.n) + (typeof unitLink === 'function' && unitLink(u.id) ? ' ' + unitLink(u.id) : '')).join('<br>')
@@ -613,7 +613,7 @@ function vToday() {
       <div class="big">${n === 0 ? 'Today' : n + ' day' + (n === 1 ? '' : 's')}</div>
       <div class="sub">${esc(next.d.title)} &middot; ${fmt(d0(next.d.date))}</div></div>`;
   }
-  h += `<div class="acts" style="padding:12px 0 0"><button class="btn ghost" data-where="1">Where am I &middot; hunt unit from GPS</button><button class="btn ghost" data-gofind="1">Find a hunt</button></div>`;
+  h += `<div class="acts" style="padding:12px 0 0"><button class="btn ghost" data-where="1">Where am I &middot; hunt unit from GPS</button><button class="btn ghost" data-gofind="1">Find a hunt</button>${typeof vForecast === 'function' ? '<button class="btn ghost" data-fx="open">Hunt forecast &middot; 7 days</button>' : ''}</div>`;
   h += (typeof cardTrip === 'function' ? cardTrip() : '');
   h += cardLight();
   h += `<div class="sec-title">Open right now</div><div class="card">`;
@@ -906,6 +906,7 @@ function sheetPoint(p) {
     <div class="acts">
       <a class="btn" href="https://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=d">Directions</a>
       <button class="btn ghost" data-copy="${p.lat}, ${p.lon}">Copy coordinates</button>
+      ${typeof vForecast === 'function' ? `<button class="btn ghost" data-fx="at:${p.lat},${p.lon}" data-fxlabel="${esc(p.name)}">7-day forecast</button>` : ''}
     </div>
     ${typeof roadSlot === 'function' ? roadSlot(p) : ''}
     <dl class="f">
@@ -947,7 +948,8 @@ const TABS = [
   ['cams', 'Cams', '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.2"/>'],
   ['seasons', 'Hunt', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
   ['remind', 'Remind', '<path d="M18 8a6 6 0 1 0-12 0c0 7-2 8-2 8h16s-2-1-2-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/>'],
-  ['contacts', 'Contacts', '<path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><circle cx="11" cy="11" r="2.5"/><path d="M7.5 17c.8-1.7 2-2.5 3.5-2.5s2.7.8 3.5 2.5"/>']
+  ['contacts', 'Contacts', '<path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><circle cx="11" cy="11" r="2.5"/><path d="M7.5 17c.8-1.7 2-2.5 3.5-2.5s2.7.8 3.5 2.5"/>'],
+  ['forecast', 'Forecast', '<path d="M7 17a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.5A3.5 3.5 0 0 1 17 17z"/><path d="M9 20l-1 2M13 20l-1 2"/>']
 ];
 function renderChrome() {
   const on = anchorId();
@@ -969,7 +971,7 @@ function renderChrome() {
     + (hidden ? `<button data-go="1"${onBar.every(([k]) => k !== tab) ? ' aria-current="page"' : ''}>
       <span style="position:relative"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>${n && GO_BAR.indexOf('remind') < 0 ? `<span class="badge">${n}</span>` : ''}</span>
       <span>Menu</span></button>` : '');
-  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts', towns: 'Home towns', privacy: 'Privacy', money: 'How Ranger Hawk makes money' }[tab];
+  const ttl = { today: 'Today', map: 'Map', cams: 'Trail cameras', access: 'Access', fish: 'Fishing', seasons: 'Hunt', remind: 'Reminders', contacts: 'Contacts', towns: 'Home towns', privacy: 'Privacy', money: 'How Ranger Hawk makes money', forecast: 'Hunt forecast' }[tab];
   if (tab === 'today') $('title').innerHTML = '<img src="icons/rangerhawk-wordmark.svg" alt="Ranger Hawk">'; else $('title').textContent = ttl;
 }
 function render() {
@@ -977,7 +979,7 @@ function render() {
   renderChrome();
   if (MAP && tab !== 'map') { try { MAP.remove(); } catch (e) { /* already gone */ } MAP = null; }
   if (tab === 'map' && MAP) { renderChrome(); return; }
-  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts, privacy: (typeof vPrivacy === 'function' ? vPrivacy : () => '<p class="empty">This page did not load.</p>'), money: (typeof vMoney === 'function' ? vMoney : () => '<p class="empty">This page did not load.</p>'), towns: (typeof vTowns === 'function' ? vTowns : () => '<p class="empty">This page did not load.</p>') }[tab];
+  const v = { today: vToday, map: vMap, cams: (typeof vCams === 'function' ? vCams : () => '<p class="empty">Camera log did not load.</p>'), access: vAccess, fish: (typeof vFish === 'function' ? vFish : () => '<p class="empty">Fishing did not load.</p>'), seasons: vSeasons, remind: vReminders, contacts: vContacts, privacy: (typeof vPrivacy === 'function' ? vPrivacy : () => '<p class="empty">This page did not load.</p>'), money: (typeof vMoney === 'function' ? vMoney : () => '<p class="empty">This page did not load.</p>'), towns: (typeof vTowns === 'function' ? vTowns : () => '<p class="empty">This page did not load.</p>'), forecast: (typeof vForecast === 'function' ? vForecast : () => '<p class="empty">The forecast screen did not load.</p>') }[tab];
   $('view').innerHTML = v();
   document.body.classList.toggle('on-map', tab === 'map');
   if (tab === 'map') initMap();

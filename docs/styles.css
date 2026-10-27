@@ -151,6 +151,7 @@ footer.legal{padding:26px 16px 10px;font-size:11.5px;color:var(--faint);line-hei
 
 .fine{font-size:11.5px;line-height:1.5;color:var(--muted);padding:10px 14px 12px;margin:0}
 .card>.stats{margin-top:0;border-top:0}
+.stats.fxs{grid-template-columns:repeat(3,1fr)}
 
 /* map */
 .on-map main{padding:0}
@@ -175,7 +176,7 @@ header.bar{background:#2C2C2C;border-bottom:3px solid #1D95CA}
 .homesel{border-color:#555}
 .homesel button{background:#3a3a3a;color:#cfcfcf;border-right-color:#555}
 .homesel button[aria-pressed="true"]{background:#1D95CA;color:#fff}
-.hero{background:#2C2C2C;border-left:4px solid #E98728}
+.hero{background:#2C2C2C;border-left:4px solid #E98728;color:#E7EBE3} /* light text in both themes: the dark palette's --ground is near black */
 .badge{background:#E98728}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--ground);color:var(--muted);border-radius:14px;padding:5px 11px;font-size:11.5px;font-weight:600;cursor:pointer}

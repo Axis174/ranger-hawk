@@ -110,6 +110,7 @@ jobs:
           node scraper/test_contacts.js
           node scraper/fishing/test_fishing.js
           node scraper/test_pages.js
+          node scraper/test_forecast.js
           python3 -m unittest scraper.test_access_contacts
 
       - name: Commit refreshed data
