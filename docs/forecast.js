@@ -289,11 +289,16 @@ function fxOpeners(key, sp, units) {
     && key >= s.start && key <= fxDay(new Date(Date.parse(s.start + 'T19:00:00Z') + 2 * 86400000).toISOString())
     && (!s.units || inUnit(s.units)) && !(s.except && inUnit(s.except)));
 }
-/* Snow on the ground: the nearest SNOTEL gauge within 25 miles of the spot with a
-   reading in the last three days, from data/ut/snow.json (the nightly refresh).
-   Null when there is none: four gauges cover four circles of Utah, so most spots
-   see no snow factor. The threshold, ten inches, is the evidence file's
-   (Rittenhouse 2015: onset modelled near 10 in). */
+/* Snow on the ground: the nearest SNOTEL gauge within 25 miles of the spot that
+   was read in the last three days and shows ten inches or more, from
+   data/ut/snow.json (the nightly refresh). A nearer, lower gauge with no snow
+   does not hide it: the Kamas unit's centre sits 9 miles from Smith and
+   Morehouse (7,640 ft) and 13 from Trial Lake (9,970 ft), and snow at Trial
+   Lake is what pushes animals down toward Kamas; the sentence says the gauge's
+   elevation and distance so the hunter can place it. Null when no gauge in
+   range qualifies: four gauges cover four circles of Utah, so most spots see
+   no snow factor. The threshold is the evidence file's (Rittenhouse 2015:
+   onset modelled near 10 in). */
 const FX_SNOW_MILES = 25, FX_SNOW_DAYS = 3, FX_SNOW_IN = 10;
 function fxGauge(spot, now) {
   const list = typeof DB !== 'undefined' && DB && DB.snow && Array.isArray(DB.snow.stations) ? DB.snow.stations : [];
@@ -303,7 +308,7 @@ function fxGauge(spot, now) {
   for (const g of list) {
     if (!g || !isFinite(g.lat) || !isFinite(g.lon) || !isFinite(g.depth_in) || !/^\d{4}-\d{2}-\d{2}$/.test(String(g.date || ''))) continue;
     const age = (Date.parse(today + 'T12:00:00Z') - Date.parse(g.date + 'T12:00:00Z')) / 86400000;
-    if (!isFinite(age) || age > FX_SNOW_DAYS) continue;
+    if (!isFinite(age) || age > FX_SNOW_DAYS || g.depth_in < FX_SNOW_IN) continue;
     const dist = miles(spot.lat, spot.lon, g.lat, g.lon);
     if (dist > FX_SNOW_MILES) continue;
     if (!best || dist < best.dist) best = { g, dist };
@@ -331,7 +336,7 @@ function fxSignal(days, i, species, now, units, spot) {
   }
   if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Low of ${d.lo}°: a hard freeze, night lows near 32 to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
   const near = migration ? fxGauge(place, now) : null;
-  if (near && near.g.depth_in >= FX_SNOW_IN) push('Snow on the ground', 1, 'strong', `About ${Math.round(near.g.depth_in)} inches of snow on the ground at ${near.g.name} (${isFinite(near.g.elev_ft) ? Number(near.g.elev_ft).toLocaleString('en-US') + ' ft, ' : ''}${Math.max(1, Math.round(near.dist))} miles away): snow this deep is what sends mule deer and elk down from summer range.`);
+  if (near) push('Snow on the ground', 1, 'strong', `About ${Math.round(near.g.depth_in)} inches of snow on the ground at ${near.g.name} (${isFinite(near.g.elev_ft) ? Number(near.g.elev_ft).toLocaleString('en-US') + ' ft, ' : ''}${Math.max(1, Math.round(near.dist))} miles away): snow this deep is what sends mule deer and elk down from summer range.`);
   if (d.snow >= 1) push('Snow in the forecast', 0, 'weak', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" forecast: fresh tracks, and a heavy, windy storm keeps animals bedded until it eases. What sends mule deer and elk downhill is snow piled up on the ground, about ten inches, which this screen reads from the nearest SNOTEL gauge when one is within 25 miles. Shown, not scored.`);
   if (prev && d.hi != null && prev.hi != null) {
     const drop = prev.hi - d.hi;

@@ -328,7 +328,10 @@ async function app(opts = {}) {
   ok('no gauge file at all scores nothing', await noSnow([]));
   W = await snowWeek([gauge({ lat: 41.9, depth_in: 20 }), gauge({ name: 'Near Gauge', depth_in: 11, elev_ft: 8200 })]);
   wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW);
-  ok('with two gauges in range the nearer one is named', /at Near Gauge \(8,200 ft, 8 miles away\)/.test(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground').why));
+  ok('with two deep gauges in range the nearer one is named', /at Near Gauge \(8,200 ft, 8 miles away\)/.test(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground').why));
+  W = await snowWeek([gauge({ name: 'Low Gauge', lat: 41.82, elev_ft: 7000, depth_in: 0 }), gauge({ name: 'High Gauge', lat: 41.93, elev_ft: 9900, depth_in: 14 })]);   // 6 miles with no snow, 13 miles with snow
+  wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW);
+  ok('a nearer, lower gauge with no snow does not hide the deep one farther off: the valley spot is told the snow is up there', /About 14 inches of snow on the ground at High Gauge \(9,900 ft, 13 miles away\)/.test((W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground') || {}).why || ''), JSON.stringify(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors));
   const july = { key: '2026-07-15', hi: 80, lo: 45, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Wednesday' };
   W = await snowWeek([gauge({ depth_in: 30, date: '2026-07-14' })]);
   ok('deep snow in July is left-over snowpack, not a push: nothing outside October to mid-December', !W.T.fxSignal([july], 0, 'deer', Date.parse('2026-07-15T13:00:00Z'), undefined, SPOT).factors.some(f => f.k === 'Snow on the ground'));
