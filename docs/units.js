@@ -5,6 +5,7 @@
 
 const units = { static: false, now: null, link: null };
 const H_SPECIES = ['Deer', 'Elk', 'Pronghorn', 'Moose', 'Bison', 'Desert Bighorn Sheep', 'Rocky Mountain Bighorn Sheep', 'Mountain Goat'];
+const H_FX_WORDS = '7-day hunt forecast for this unit';   // the forecast button in the app and the link on a static unit page: one wording
 let unitPromise = null, unitParamRead = false, unitParam = null, unitParamOpened = false;
 
 function hUnitRows(id) {
@@ -30,6 +31,7 @@ function hUnitParam() {
 }
 function unitsOpenLink() {
   if (units.static || unitParamOpened || typeof HU === 'undefined' || !HU || !HU.slugs) return false;
+  if (typeof fxUnitParam === 'function' && fxUnitParam()) return false;   // ?fx= as well: the forecast screen wins and no sheet opens
   const slug = hUnitParam();
   if (!slug) return false;
   const name = Object.keys(HU.slugs).find(n => HU.slugs[n] === slug);
@@ -46,7 +48,7 @@ function unitsLoad() {
   if (unitPromise) return unitPromise;
   unitPromise = Promise.all([fLoadHunts(), loadOdds()]).then(() => {
     const ready = !!(HU && HT && UNITS && ODDS && DB.seasons && DB.config);
-    if (ready) unitsOpenLink();
+    if (ready) { if (typeof fxOpenLink === 'function') fxOpenLink(); unitsOpenLink(); }
     return ready;
   }).catch(() => false).finally(() => { unitPromise = null; });
   return unitPromise;
@@ -83,8 +85,13 @@ function sheetUnit(boundaryId) {
   const species = H_SPECIES.filter(s => rows.some(r => r.species === s));
   let html = !edition.current ? `<div class="warnbox fbad" style="margin:12px 16px 0">These are the ${esc(year)} hunts. The ${esc(year + 1)} guidebooks have not been read into Ranger Hawk yet.</div>` : '';
   html += `<h3>${esc(u.n)}</h3><p class="where">${species.map(esc).join(' &middot; ')}</p>`;
-  // The week's weather, light and moon for the centre of this unit; the app only, the static page has no forecast script.
-  if (!units.static && typeof vForecast === 'function') html += `<div class="acts"><button class="btn ghost" data-fx="unit:${u.id}">7-day hunt forecast for this unit</button></div>`;
+  // The week's weather, light and moon for the centre of this unit: a button in the app; on a static
+  // unit page, a link that opens the app on the forecast screen with this unit as the spot (?fx=).
+  if (!units.static && typeof vForecast === 'function') html += `<div class="acts"><button class="btn ghost" data-fx="unit:${u.id}">${H_FX_WORDS}</button></div>`;
+  else if (units.static) {
+    const fxSlug = typeof HU !== 'undefined' && HU && HU.slugs && Object.prototype.hasOwnProperty.call(HU.slugs, u.n) ? HU.slugs[u.n] : null;
+    if (fxSlug) html += `<div class="acts"><a class="btn ghost" href="/?fx=${esc(fxSlug)}">${H_FX_WORDS}</a></div>`;
+  }
   const descriptions = [...new Set(rows.map(r => r.description))];
   html += descriptions.filter(text => typeof text === 'string' && text.trim()).map(text => `<p class="fine" style="padding:0 16px">${esc(text)}</p>`).join('');
   if (descriptions.some(text => typeof text !== 'string' || !text.trim())) html += `<p class="fine">UDWR's ${esc(year)} hunt list gives no boundary description for this entry. Read the boundary in the Utah Hunt Planner.</p>`;

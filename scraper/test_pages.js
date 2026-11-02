@@ -798,6 +798,10 @@ for (const p of ALL_PAGES) {
   const oddsYear = Object.keys(hunting.ODDS.years).sort().pop();
   ok('unit pages: data-selected polygons and no others', JSON.stringify(unitGenerated.pages.map(p => p.path).sort()) === JSON.stringify(UNIT_PAGES.map(p => p.path).sort()));
   ok('unit renderer: noon Denver on the explicit Utah build date', hunting.now === B.denverNoon(BUILD_DATE));
+  /* The forecast link's words come from one place, docs/units.js, which the app button uses too. */
+  const unitsSrc = fs.readFileSync(path.join(DOCS, 'units.js'), 'utf8'), fxWordsMatch = /const H_FX_WORDS = '([^']+)';/.exec(unitsSrc);
+  const FX_WORDS = fxWordsMatch ? fxWordsMatch[1] : '';
+  ok('units.js names the forecast wording once and uses it for both the app button and the static link', !!FX_WORDS && (unitsSrc.match(/\$\{H_FX_WORDS\}/g) || []).length === 2 && /data-fx="unit:\$\{u\.id\}">\$\{H_FX_WORDS\}<\/button>/.test(unitsSrc), FX_WORDS);
   let longTitles = 0, longDescriptions = 0;
   for (const p of UNIT_PAGES) {
     const f = fileOf(p.path), html = read(f), rows = UNIT_ROWS.filter(r => r.boundary_id === p.id), n = p.name + ': ';
@@ -837,6 +841,8 @@ for (const p of ALL_PAGES) {
       (html.match(new RegExp('href="' + hunting.HT._edition.pdf.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"', 'g')) || []).length === 1 &&
       !html.includes(esc(hunting.HT._edition.pdf) + '#'));
     ok(n + 'app button follows Sources and targets this known slug', html.includes('href="/?unit=' + p.slug + '">Open this unit in Ranger Hawk</a>') && html.lastIndexOf('Source:') < html.lastIndexOf('Open this unit in Ranger Hawk'));
+    const fxLink = '<a class="btn ghost" href="/?fx=' + p.slug + '">' + FX_WORDS + '</a>';
+    ok(n + 'forecast deep link with this slug exactly once, under the species line, in the sheet button\'s words', html.split(fxLink).length === 2 && (html.match(/\?fx=/g) || []).length === 1 && html.indexOf(fxLink) > html.indexOf('<p class="where">') && html.indexOf(fxLink) < html.indexOf('Source:'), html.slice(html.indexOf('<p class="where">'), html.indexOf('<p class="where">') + 400));
     ok(n + 'shared header/footer, disclaimer, styles and no placeholders', html.includes('href="../../../styles.css"') && html.includes('href="../../../page.css"') &&
       html.includes('<a class="brand" href="../../../">') && html.includes(esc(C.DISCLAIMER)) && html.includes('<p>Sources last checked ' + refreshHuman + '.</p>') && balanced(html) === '' && !/\{[A-Za-z_]\w*\}/.test(html));
     const siblingLinks = [...html.matchAll(/<a href="([^"]+)"[^>]*>Open unit<\/a>/g)].map(m => m[1]);

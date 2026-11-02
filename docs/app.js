@@ -1092,7 +1092,7 @@ load().then(ok => {
   if (!ok) return;
   render(); net();
   if (typeof fWaterParam === 'function' && fWaterParam()) fishLoad();
-  if (typeof hUnitParam === 'function' && hUnitParam()) unitsLoad();
+  if ((typeof hUnitParam === 'function' && hUnitParam()) || (typeof fxUnitParam === 'function' && fxUnitParam())) unitsLoad();
   import('./vendor/suncalc.js').then(m => { SUN = m; if (tab === 'today') render(); }).catch(() => { /* no legal-light card */ });
 });
 /* Register the worker, and when a new one takes over, reload once so the

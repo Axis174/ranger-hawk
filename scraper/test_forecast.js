@@ -19,12 +19,15 @@ const INDEX = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8');
 const SPOT = { lat: 41.74, lon: -111.83, label: 'Cache, East Rich', kind: 'unit', id: 1 };
 const NOW = Date.parse('2026-10-29T13:00:00Z');   // 7:00 am MDT, Thursday
 
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, finished = false;
 function ok(name, cond, detail) {
   if (cond) { pass++; return; }
   fail++; console.log('  FAIL ' + name + (detail ? '\n       got ' + String(detail).slice(0, 400) : ''));
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
+/* An await that never settles (a fetch nobody answered) drains the event loop and Node exits 0
+   in silence, which the nightly would read as green. Say so and fail instead. */
+process.on('beforeExit', () => { if (!finished) { console.log('  ERROR test_forecast ended before its last check: an await never settled (' + pass + ' passed so far)'); process.exit(1); } });
 
 /* ------------------------------------------------------- the NWS week ---- */
 const DAYS = [
@@ -67,7 +70,7 @@ function nwsWeek(list = DAYS) {
 
 /* ------------------------------------------------------------ harness ---- */
 async function app(opts = {}) {
-  const store = new Map(Object.entries(opts.storage || {})), fetched = [], pending = [], opened = [], listeners = {};
+  const store = new Map(Object.entries(opts.storage || {})), fetched = [], pending = [], opened = [], pixels = [], listeners = {};
   let renders = 0, currentTime = opts.now || NOW, online = !!opts.online;
   const element = id => { let html = ''; return { id, hidden: id === 'sheet', style: {}, dataset: {}, textContent: '', scrollTop: 0, classList: { toggle() {}, add() {}, remove() {} },
     setAttribute() {}, addEventListener() {}, focus() {}, setSelectionRange() {}, querySelectorAll() { return []; },
@@ -76,7 +79,7 @@ async function app(opts = {}) {
   class TestDate extends Date { constructor(...a) { super(...(a.length ? a : [currentTime])); } static now() { return currentTime; } }
   const box = {
     console, Date: TestDate, Math, JSON, Object, Array, String, Number, RegExp, Promise, Set, Map, Intl, Error, isFinite, parseInt, parseFloat,
-    URL, URLSearchParams, encodeURIComponent, decodeURIComponent, location: { href: 'https://rangerhawk.com/', search: '', reload() {} },
+    URL, URLSearchParams, encodeURIComponent, decodeURIComponent, location: { href: 'https://rangerhawk.com/', search: opts.search || '', reload() {} },
     setTimeout(fn) { return 0; }, clearTimeout() {}, setInterval() { return 0; }, clearInterval() {},
     document: { referrer: '', body: { classList: { toggle() {} } }, getElementById(id) { return elements[id] || null; },
       addEventListener(type, fn) { (listeners[type] ||= []).push(fn); }, querySelectorAll() { return []; }, createElement() { return element('created'); }, head: { appendChild() {} } },
@@ -84,15 +87,19 @@ async function app(opts = {}) {
     navigator: { get onLine() { return online; }, geolocation: { getCurrentPosition(success, failure) { if (opts.gpsFail) failure({ message: 'denied' }); else success({ coords: { latitude: 41.7, longitude: -111.6, accuracy: 8 } }); } } },
     localStorage: { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) },
     fetch(url) { fetched.push(String(url)); return new Promise((resolve, reject) => pending.push({ url: String(url), resolve, reject })); },
-    Image: class { set src(v) {} }
+    Image: class { set src(v) { pixels.push(String(v)); } }   // the visitor-count and event pixels: recorded, never sent
   };
   vm.createContext(box);
   const scripts = [...INDEX.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].map(m => m[1]);
-  for (const file of scripts) new vm.Script(fs.readFileSync(path.join(DOCS, file), 'utf8'), { filename: file, importModuleDynamically: () => Promise.reject(new Error('no dynamic import in the test')) }).runInContext(box);
+  for (const file of scripts) {
+    let code = fs.readFileSync(path.join(DOCS, file), 'utf8');
+    if (file === 'site.js' && opts.counter !== undefined) code = code.replace(/const COUNTER_CODE = '[^']*';/, 'const COUNTER_CODE = ' + JSON.stringify(opts.counter) + ';');
+    new vm.Script(code, { filename: file, importModuleDynamically: () => Promise.reject(new Error('no dynamic import in the test')) }).runInContext(box);
+  }
   /* SUN is a top-level let in app.js: a global property would be shadowed, so assign the binding itself. */
   box.__sun = await import(pathToFileURL(path.join(DOCS, 'vendor', 'suncalc.js')).href);
   vm.runInContext('SUN = __sun;', box);
-  vm.runInContext(`this.T = { FX, fxSpot, fxUnitSpot, fxKey, fxDays, fxSignal, fxOpeners, fxMoon, fxLoad, fxRecord, vForecast, fxSheetDay, fxSheetWhy, sheetUnit, unitsLoad, legalLight, vPrivacy,
+  vm.runInContext(`this.T = { FX, fxSpot, fxUnitSpot, fxKey, fxDays, fxSignal, fxOpeners, fxMoon, fxLoad, fxRecord, vForecast, fxSheetDay, fxSheetWhy, sheetUnit, unitsLoad, legalLight, vPrivacy, fxUnitParam, fxOpenLink, fxGauge,
     state: () => ({ DB, UNITS, HU, tab, units }), setTab: v => { tab = v; }, setStatic: v => { units.static = v; }, setNow: v => { units.now = v; } };`, box);
   const week = opts.week || nwsWeek();
   async function flush() {
@@ -108,6 +115,7 @@ async function app(opts = {}) {
           else request.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(body)) });
           continue;
         }
+        if (opts.snow && /\/snow\.json$/.test(u)) { request.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(opts.snow)) }); continue; }
         const file = path.resolve(DOCS, u.replace(/^\.\//, ''));
         if (!file.startsWith(DOCS + path.sep) || !fs.existsSync(file)) { request.resolve({ ok: false, status: 404, json: async () => null }); continue; }
         try { const value = JSON.parse(fs.readFileSync(file, 'utf8')); request.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(value)) }); }
@@ -123,7 +131,7 @@ async function app(opts = {}) {
     await flush();
   }
   await flush();   // app.js boot: the data files
-  return { box, T: box.T, store, fetched, opened, elements, flush, click, week, scripts,
+  return { box, T: box.T, store, fetched, opened, pixels, elements, flush, click, week, scripts,
     renders: () => renders, setOnline: v => { online = v; }, setTime: t => { currentTime = t; } };
 }
 
@@ -174,7 +182,7 @@ async function app(opts = {}) {
   const names = s => s.factors.map(f => f.k + (f.dir > 0 ? '+' : f.dir < 0 ? '' : '~') + f.dir).join(' ');
   ok('Thursday, nothing special: Fair, no factors, first light from about the start', sig[0].tier === 'Fair' && sig[0].factors.length === 0 && sig[0].best.when === 'dawn' && /^from about \d/.test(sig[0].best.window), names(sig[0]) + ' ' + sig[0].best.window);
   ok('Saturday: hard freeze (strong, +1), snow shown not scored, cold front (weak, +1), wind shown not scored: Good', sig[2].tier === 'Good' && sig[2].score === 2 && names(sig[2]) === 'Hard freeze+1 Snow in the forecast~0 Cold front+1 Wind~0', names(sig[2]));
-  ok('snow in the forecast says the push is snow on the ground, which the screen cannot see yet', /cannot see yet/.test(sig[2].factors[1].why) && sig[2].factors[1].conf === 'weak');
+  ok('snow in the forecast says the push is snow on the ground, read from the nearest gauge within 25 miles', /reads from the nearest SNOTEL gauge when one is within 25 miles/.test(sig[2].factors[1].why) && sig[2].factors[1].conf === 'weak');
   ok('no factor prints a movement percentage; the only percent is the herd share on an opener', sig.every(s => s.factors.every(f => !/\d+%/.test(f.why) || /of a herd/.test(f.why))));
   ok('Saturday\'s front arrives by day, so the window is last light', sig[2].best.when === 'dusk' && /colder than mid-morning/.test(sig[2].best.why), sig[2].best.why);
   ok('every factor carries a confidence word and a reason', sig.every(s => s.factors.every(f => /^(strong|moderate|weak|contested)$/.test(f.conf) && f.why.length > 20)));
@@ -298,6 +306,74 @@ async function app(opts = {}) {
   ok('the Today screen offers the forecast', /data-fx="open">Hunt forecast/.test(vm.runInContext('vToday()', S.box)));
   ok('the Menu lists it', vm.runInContext("GO_DEST.some(d => d.id === 'forecast' && d.tab === 'forecast' && d.keys.includes('weather'))", S.box));
 
+  /* 9. Snow on the ground, from a fixture gauge 8 miles north of the spot (41.856 against 41.74). */
+  const gauge = (over = {}) => ({ station: '999:UT:SNTL', name: 'Test Gauge', where: 'above the spot', elev_ft: 9100, lat: 41.856, lon: -111.83, depth_in: 12, depth_in_7d_ago: 0, date: '2026-10-28', water_in: 2, water_in_7d_ago: 0, ...over });
+  const snowWeek = async st => { const A = await app({ online: true, snow: { _source: 'test', checked: 'test', stations: st } }); A.T.FX.spot = SPOT; A.T.setTab('forecast'); A.T.vForecast(); await A.flush(); return A; };
+  let W = await snowWeek([gauge()]);
+  let wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW), ws = W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT);
+  const snowF = ws.factors.find(f => f.k === 'Snow on the ground');
+  ok('a gauge 8 miles off at 12 inches scores +1 strong and names the gauge, its elevation and the distance', snowF && snowF.dir === 1 && snowF.conf === 'strong' && snowF.why === 'About 12 inches of snow on the ground at Test Gauge (9,100 ft, 8 miles away): snow this deep is what sends mule deer and elk down from summer range.', JSON.stringify(snowF));
+  ok('Thursday becomes Good on the snow alone and the hero leads with it', ws.tier === 'Good' && ws.score === 1 && /About 12 inches of snow on the ground at Test Gauge/.test(W.T.vForecast()), ws.tier + ' ' + ws.score);
+  ok('the same for elk', W.T.fxSignal(wd, 0, 'elk', NOW, undefined, SPOT).factors.some(f => f.k === 'Snow on the ground' && f.dir === 1 && f.conf === 'strong'));
+  ok('with no spot passed, the screen\'s spot is used', W.T.fxSignal(wd, 0, 'deer', NOW).factors.some(f => f.k === 'Snow on the ground'));
+  const sat = W.T.fxSignal(wd, 2, 'deer', NOW, undefined, SPOT);
+  ok('Saturday: the gauge sits between the hard freeze and the forecast snow, and the day is Strong', names(sat) === 'Hard freeze+1 Snow on the ground+1 Snow in the forecast~0 Cold front+1 Wind~0' && sat.tier === 'Strong', names(sat));
+  ok('the day sheet carries it too', /Snow on the ground &middot; strong/.test(W.T.fxSheetDay(0)));
+  ok('the Why sheet states the gauge rule: 25 miles, three days, ten inches, both species', /Snow on the ground &middot; strong<\/dt>/.test(W.T.fxSheetWhy()) && /within 25 miles, read in the last three days, shows ten inches or more/.test(W.T.fxSheetWhy()) && !/not on this screen yet/.test(W.T.fxSheetWhy()));
+  const noSnow = async st => { const A = await snowWeek(st); const d = A.T.fxDays(A.T.fxRecord(key), SPOT, NOW); return !A.T.fxSignal(d, 0, 'deer', NOW, undefined, SPOT).factors.some(f => f.k === 'Snow on the ground') && !A.T.fxSignal(d, 2, 'deer', NOW, undefined, SPOT).factors.some(f => f.k === 'Snow on the ground'); };
+  ok('the same gauge at 6 inches scores nothing', await noSnow([gauge({ depth_in: 6 })]));
+  ok('a gauge 40 miles off scores nothing', await noSnow([gauge({ lat: 42.32 })]));
+  ok('a reading five days old scores nothing', await noSnow([gauge({ date: '2026-10-24' })]));
+  ok('a gauge with no coordinates scores nothing', await noSnow([gauge({ lat: undefined, lon: undefined })]));
+  ok('no gauge file at all scores nothing', await noSnow([]));
+  W = await snowWeek([gauge({ lat: 41.9, depth_in: 20 }), gauge({ name: 'Near Gauge', depth_in: 11, elev_ft: 8200 })]);
+  wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW);
+  ok('with two gauges in range the nearer one is named', /at Near Gauge \(8,200 ft, 8 miles away\)/.test(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground').why));
+  const july = { key: '2026-07-15', hi: 80, lo: 45, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Wednesday' };
+  W = await snowWeek([gauge({ depth_in: 30, date: '2026-07-14' })]);
+  ok('deep snow in July is left-over snowpack, not a push: nothing outside October to mid-December', !W.T.fxSignal([july], 0, 'deer', Date.parse('2026-07-15T13:00:00Z'), undefined, SPOT).factors.some(f => f.k === 'Snow on the ground'));
+  ok('the shipped snow.json gauges all carry lat, lon and an elevation', (() => { const j = JSON.parse(fs.readFileSync(path.join(DOCS, 'data', 'ut', 'snow.json'), 'utf8')); return j.stations.length >= 1 && j.stations.every(g => isFinite(g.lat) && isFinite(g.lon) && g.elev_ft > 0); })());
+
+  /* 10. The deep link from a static unit page: ?fx=<slug>. */
+  S = await app({ online: false });
+  const loadingUnits = S.T.unitsLoad(); await S.flush(); await loadingUnits; await S.flush();
+  const slugs = S.T.state().HU.slugs, cacheSlug = slugs['Cache, East Rich'], cacheUnit = (S.T.state().UNITS || []).find(u => u.n === 'Cache, East Rich');
+  ok('the Cache, East Rich unit has a slug', !!cacheSlug && !!cacheUnit, cacheSlug);
+  let D = await app({ online: false, search: '?fx=' + cacheSlug });
+  ok('?fx= opens the forecast tab with the unit as the spot once the shapes load, and opens no sheet', D.T.state().tab === 'forecast' && D.T.FX.spot && D.T.FX.spot.kind === 'unit' && D.T.FX.spot.id === cacheUnit.id && D.T.FX.spot.label === 'Cache, East Rich' && D.opened.length === 0, JSON.stringify([D.T.state().tab, D.T.FX.spot, D.opened.length]));
+  ok('it loaded the unit shapes to do it', D.fetched.some(u => /units_geo\.json/.test(u)));
+  D = await app({ online: false, search: '?fx=no-such-unit' });
+  ok('an unknown slug opens the tab on the last spot', D.T.state().tab === 'forecast' && D.T.FX.spot === null && D.T.fxSpot().kind === 'town' && D.opened.length === 0, JSON.stringify([D.T.state().tab, D.T.FX.spot]));
+  D = await app({ online: false, search: '?unit=' + cacheSlug + '&fx=' + cacheSlug });
+  ok('?unit= with ?fx=: the tab wins and the sheet is not opened', D.T.state().tab === 'forecast' && D.T.FX.spot && D.T.FX.spot.id === cacheUnit.id && D.opened.length === 0, JSON.stringify([D.T.state().tab, D.opened.length]));
+  D = await app({ online: false, search: '?unit=' + cacheSlug });
+  ok('?unit= alone still opens the sheet, not the tab', D.T.state().tab !== 'forecast' && D.opened.length === 1 && /Cache, East Rich/.test(D.opened[0]), JSON.stringify([D.T.state().tab, D.opened.length]));
+  D = await app({ online: false });
+  const loadingD = D.T.unitsLoad(); await D.flush(); await loadingD; await D.flush();
+  D.box.location.search = '?fx=' + cacheSlug;
+  D.T.setStatic(true);
+  ok('static mode never reads it', D.T.fxUnitParam() === null && D.T.fxOpenLink() === false && D.T.state().tab !== 'forecast');
+  D.T.setStatic(false);
+  ok('the static sheet renderer links the static unit page to the deep link in the button\'s own words', (() => { D.T.setStatic(true); const h = D.T.sheetUnit(cacheUnit.id); D.T.setStatic(false); return h.includes('<a class="btn ghost" href="/?fx=' + cacheSlug + '">7-day hunt forecast for this unit</a>') && !h.includes('data-fx='); })());
+
+  /* 11. The events: by name alone, once per app open, through the counter's switch. */
+  const E = await app({ online: true });
+  E.T.FX.spot = SPOT; E.T.setTab('forecast'); E.T.vForecast(); await E.flush();
+  await E.click({ fxsp: 'elk' }); await E.click({ fxsp: 'elk' }); await E.click({ fxsp: 'deer' }); await E.click({ fx: 'why' }); await E.click({ fx: 'why' });
+  const ev = E.pixels.filter(u => /[?&]e=true/.test(u)).map(u => new URL(u));
+  ok('a species tap sends exactly one forecast-species-elk pixel per app open; deer and why likewise', ev.map(u => u.searchParams.get('p')).sort().join() === '/event/forecast-species-deer,/event/forecast-species-elk,/event/forecast-why', E.pixels.join(' '));
+  ok('each event goes to the site code with e=true and nothing but p, e and rnd', ev.length === 3 && ev.every(u => u.origin === 'https://rangerhawk.goatcounter.com' && u.pathname === '/count' && [...u.searchParams.keys()].sort().join() === 'e,p,rnd'), ev.map(u => u.href).join(' '));
+  ok('no coordinates, spot or unit name in any pixel', E.pixels.length > 0 && E.pixels.every(u => !/41\.7|111\.8|Cache|East|spot|lat|lon/i.test(decodeURIComponent(u))), E.pixels.join(' '));
+  const E2 = await app({ online: false });
+  E2.T.FX.spot = SPOT; E2.T.setTab('forecast');
+  await E2.click({ fxsp: 'elk' }); await E2.click({ fx: 'why' });
+  ok('offline: no event pixel', E2.pixels.length === 0, E2.pixels.join(' '));
+  const E3 = await app({ online: true, counter: '' });
+  E3.T.FX.spot = SPOT; E3.T.setTab('forecast'); E3.T.vForecast(); await E3.flush();
+  await E3.click({ fxsp: 'elk' }); await E3.click({ fx: 'why' });
+  ok('COUNTER_CODE empty: no pixel at all', E3.pixels.length === 0, E3.pixels.join(' '));
+
+  finished = true;
   console.log(`test_forecast: ${pass} pass, ${fail} fail`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.log('  ERROR ' + (e && e.stack || e)); process.exit(1); });

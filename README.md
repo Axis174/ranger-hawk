@@ -140,6 +140,30 @@ a keyword reader, so it says exactly why it answered what it did.
 the species and list types, the unit's general seasons or guidebook hunts and dates,
 and the resident and nonresident draw figures. It never works out a merged season.
 
+**Hunt forecast** (since v43; snow on the ground, the deep link and the events since v45) —
+seven days of weather for one spot in the National Weather Service's own words
+(api.weather.gov, no key), with sun and moon computed on the phone (SunCalc), legal light
+as an estimate, and a movement read for mule deer or elk. The read is Ranger Hawk's own:
+each factor the research supports is named with a direction, a confidence word (strong,
+moderate, weak, contested) and the reason a hunter would accept; the day's tier is the sum
+in words (Strong, Good, Fair, Slow) and never a percentage. The table behind it is
+`research/2026-10-26_forecast-movement-evidence.md`; the source and money decisions are in
+`research/2026-10-26_forecast-data-sources.md` and `research/2026-10-26_forecast-money.md`.
+Spots: where the hunter stands (rounded to about a kilometre before it goes to the weather
+service), a hunt unit (the centre of its largest ring), an access point, or the home town;
+the last three weeks fetched stay in localStorage, so the screen works with no signal and
+says when it was fetched. Snow on the ground comes from the four SNOTEL gauges in
+`data/ut/snow.json` (their lat, lon and elevation from the NWCC stations call, cached in
+`scraper/sources.py`): a gauge within 25 miles of the spot, read in the last three days and
+showing ten inches or more, scores +1 strong from October to mid-December and names the
+gauge, its elevation and its distance; elsewhere the factor is silent. `?fx=<unit-slug>`
+opens the app on this screen with that unit as the spot; every static unit page links to
+it in the same words as the sheet's button (`H_FX_WORDS` in docs/units.js), and with
+`?unit=` as well the screen wins and no sheet opens. Three event names,
+`forecast-species-deer`, `forecast-species-elk` and `forecast-why`, go to GoatCounter by
+name alone through the same switch as the screen count and are named on the Privacy page.
+Tests: `node scraper/test_forecast.js` (a synthetic week and a fixture gauge, offline).
+
 **Trip plan** (Today) — where you are going, back-by time, contact, vehicle,
 party; sent as an ordinary text from the phone; pin the truck; bearing and
 distance back to it; a Search-and-Rescue read-out of the exact spot; a red

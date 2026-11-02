@@ -142,9 +142,13 @@ LAKE_REFERENCE = {
 # NRCS SNOTEL snow gauges (public domain, keyless). Snow depth tells you whether
 # the high country is still reachable: Trial Lake sits beside the Mirror Lake
 # Highway, which is the ptarmigan access road and closes for winter.
+# lat, lon and elev_ft are the agency's own, from the AWDB stations call, checked by hand against a
+# second NRCS service on 2026-11-01 (codex-packets/2026-11-01_PACKET-7_stop-1-gauge-coordinates.md).
+# refresh.py asks the same call every night and overwrites these when it answers; when it does not,
+# these keep the gauges where they were. The hunt forecast scores snow on the ground from them.
 SNOTEL = {
-    "828:UT:SNTL": {"name": "Trial Lake", "where": "Uintas, Mirror Lake Hwy", "elev_ft": 9970},
-    "763:UT:SNTL": {"name": "Smith and Morehouse", "where": "Upper Weber, west Uintas", "elev_ft": 7600},
-    "820:UT:SNTL": {"name": "Timpanogos Divide", "where": "Wasatch above Heber", "elev_ft": 8140},
-    "452:UT:SNTL": {"name": "Donkey Reservoir", "where": "Boulder Mountain above Torrey", "elev_ft": 9800},
+    "828:UT:SNTL": {"name": "Trial Lake", "where": "Uintas, Mirror Lake Hwy", "elev_ft": 9970, "lat": 40.67800, "lon": -110.94873},
+    "763:UT:SNTL": {"name": "Smith and Morehouse", "where": "Upper Weber, west Uintas", "elev_ft": 7640, "lat": 40.78931, "lon": -111.09192},
+    "820:UT:SNTL": {"name": "Timpanogos Divide", "where": "Wasatch above Heber", "elev_ft": 8180, "lat": 40.42817, "lon": -111.61633},
+    "452:UT:SNTL": {"name": "Donkey Reservoir", "where": "Boulder Mountain above Torrey", "elev_ft": 9800, "lat": 38.20840, "lon": -111.47412},
 }

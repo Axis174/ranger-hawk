@@ -13,9 +13,14 @@
    with when it was fetched. Nothing about the hunter leaves the phone except
    the coordinates the weather service needs to pick its grid cell.
 
+   Snow on the ground comes from the four SNOTEL gauges in data/ut/snow.json
+   (DB.snow, refreshed nightly) when one is within 25 miles of the spot. A
+   static unit page opens this screen with ?fx=<unit-slug>. Two taps, the
+   species and "Why these factors", are counted by name alone (site.js).
+
    Loaded after units.js; shares app.js globals ($, esc, clock, SUN, UNITS, DB,
    tab, render, openSheet, closeSheet, legalLight, anchorById, anchorId,
-   unitsAt, hUnit, unitLink). */
+   unitsAt, hUnit, unitLink, miles, units, HU). */
 'use strict';
 
 const FX = { spot: null, species: 'deer', cache: {}, loading: null, error: null };
@@ -80,6 +85,31 @@ function fxLocate() {
     fxSetSpot({ lat, lon, label: here.length ? 'Where I am: ' + here[0].n : 'Where I am', kind: 'gps', units: here.map(u => u.n) });
   }, err => { FX.loading = null; FX.error = { key: 'gps', msg: 'No GPS fix: ' + (err.message || 'location was refused') + '.' }; render(); },
   { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 });
+}
+/* ?fx=<unit-slug> opens the app on this screen with that unit as the spot: the
+   static unit pages link here. Read once, after the unit shapes and slugs are
+   on the phone (unitsLoad calls fxOpenLink), never in a static renderer. An
+   unknown slug opens the screen on the last spot. With ?unit= as well, this
+   screen wins and units.js opens no sheet. */
+let fxParamRead = false, fxParam = null, fxParamOpened = false;
+function fxUnitParam() {
+  if (typeof units !== 'undefined' && units.static) return null;
+  if (!fxParamRead) {
+    fxParamRead = true;
+    try { fxParam = new URLSearchParams(location.search).get('fx'); } catch (e) { /* no location */ }
+  }
+  return fxParam;
+}
+function fxOpenLink() {
+  if (fxParamOpened || (typeof units !== 'undefined' && units.static)) return false;
+  const slug = fxUnitParam();
+  if (!slug || typeof HU === 'undefined' || !HU || !HU.slugs || !UNITS) return false;
+  fxParamOpened = true;
+  const name = Object.keys(HU.slugs).find(n => HU.slugs[n] === slug);
+  const u = name && UNITS.find(x => x.n === name);
+  if (u) fxSetSpot(fxUnitSpot(u));
+  else { tab = 'forecast'; render(); }
+  return true;
 }
 
 /* --------------------------------------------------------------- storage ---- */
@@ -259,12 +289,34 @@ function fxOpeners(key, sp, units) {
     && key >= s.start && key <= fxDay(new Date(Date.parse(s.start + 'T19:00:00Z') + 2 * 86400000).toISOString())
     && (!s.units || inUnit(s.units)) && !(s.except && inUnit(s.except)));
 }
+/* Snow on the ground: the nearest SNOTEL gauge within 25 miles of the spot with a
+   reading in the last three days, from data/ut/snow.json (the nightly refresh).
+   Null when there is none: four gauges cover four circles of Utah, so most spots
+   see no snow factor. The threshold, ten inches, is the evidence file's
+   (Rittenhouse 2015: onset modelled near 10 in). */
+const FX_SNOW_MILES = 25, FX_SNOW_DAYS = 3, FX_SNOW_IN = 10;
+function fxGauge(spot, now) {
+  const list = typeof DB !== 'undefined' && DB && DB.snow && Array.isArray(DB.snow.stations) ? DB.snow.stations : [];
+  if (!spot || !isFinite(spot.lat) || !isFinite(spot.lon) || typeof miles !== 'function') return null;
+  const today = fxDay(new Date(now == null ? fxNow() : now).toISOString());
+  let best = null;
+  for (const g of list) {
+    if (!g || !isFinite(g.lat) || !isFinite(g.lon) || !isFinite(g.depth_in) || !/^\d{4}-\d{2}-\d{2}$/.test(String(g.date || ''))) continue;
+    const age = (Date.parse(today + 'T12:00:00Z') - Date.parse(g.date + 'T12:00:00Z')) / 86400000;
+    if (!isFinite(age) || age > FX_SNOW_DAYS) continue;
+    const dist = miles(spot.lat, spot.lon, g.lat, g.lon);
+    if (dist > FX_SNOW_MILES) continue;
+    if (!best || dist < best.dist) best = { g, dist };
+  }
+  return best;
+}
 /* Each factor: a direction (-2 to +2), a confidence word, and the reason a
    hunter would accept, worded from research/2026-10-26_forecast-movement-
    evidence.md and no stronger than it. The tier is the sum, in words. Wind,
-   the moon and snow in the forecast are shown and not scored. */
-function fxSignal(days, i, species, now, units) {
-  const d = days[i], prev = days[i - 1] || null, prev2 = days[i - 2] || null, F = [];
+   the moon and snow in the forecast are shown and not scored. The spot is for
+   the gauge distance; it falls back to the screen's spot. */
+function fxSignal(days, i, species, now, units, spot) {
+  const d = days[i], prev = days[i - 1] || null, prev2 = days[i - 2] || null, F = [], place = spot || fxSpot();
   const sp = species === 'elk' ? 'elk' : 'deer', who = sp === 'elk' ? 'Elk' : 'Deer';
   const push = (k, dir, conf, why) => F.push({ k, dir, conf, why });
   const mmdd = d.key.slice(5), migration = mmdd >= '10-01' && mmdd <= '12-15';
@@ -278,7 +330,9 @@ function fxSignal(days, i, species, now, units) {
       : `${s.name} opened ${when}. In Wyoming, bucks moved farther from roads once the rifle season opened. Hunt away from the roads.`);
   }
   if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Low of ${d.lo}°: a hard freeze, night lows near 32 to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
-  if (d.snow >= 1) push('Snow in the forecast', 0, 'weak', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" forecast: fresh tracks, and a heavy, windy storm keeps animals bedded until it eases. What sends mule deer and elk downhill is snow piled up on the ground, about ten inches, which this screen cannot see yet. Shown, not scored.`);
+  const near = migration ? fxGauge(place, now) : null;
+  if (near && near.g.depth_in >= FX_SNOW_IN) push('Snow on the ground', 1, 'strong', `About ${Math.round(near.g.depth_in)} inches of snow on the ground at ${near.g.name} (${isFinite(near.g.elev_ft) ? Number(near.g.elev_ft).toLocaleString('en-US') + ' ft, ' : ''}${Math.max(1, Math.round(near.dist))} miles away): snow this deep is what sends mule deer and elk down from summer range.`);
+  if (d.snow >= 1) push('Snow in the forecast', 0, 'weak', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" forecast: fresh tracks, and a heavy, windy storm keeps animals bedded until it eases. What sends mule deer and elk downhill is snow piled up on the ground, about ten inches, which this screen reads from the nearest SNOTEL gauge when one is within 25 miles. Shown, not scored.`);
   if (prev && d.hi != null && prev.hi != null) {
     const drop = prev.hi - d.hi;
     if (drop >= 10) push('Cold front', 1, 'weak', `The high falls ${drop}° from ${prev.name}. Hunters report more daylight movement after a cold snap; we found no mule deer or elk study that measured it, so treat it as a hunch.`);
@@ -376,7 +430,7 @@ function vForecast() {
       : 'Fetching the week.';
     return h + `<div class="sec-title">${esc(spot.label)}</div><div class="card"><p class="empty">${msg}</p></div>`;
   }
-  const days = fxDays(rec, spot, now), sigs = days.map((d, i) => fxSignal(days, i, FX.species, now));
+  const days = fxDays(rec, spot, now), sigs = days.map((d, i) => fxSignal(days, i, FX.species, now, undefined, spot));
   const t = days[0], s = sigs[0];
   if (!t) return h + `<div class="card"><p class="empty">The saved forecast has run out. ${navigator.onLine ? 'Fetching a new one.' : 'It refreshes when the phone finds signal.'}</p></div>`;
   const old = now - rec.at > FX_TTL;
@@ -407,7 +461,7 @@ function fxSheetDay(i) {
   if (!rec) return '';
   const days = fxDays(rec, spot), d = days[i];
   if (!d) return '';
-  const s = fxSignal(days, i, FX.species), L = d.light, H = 3600000;
+  const s = fxSignal(days, i, FX.species, undefined, undefined, spot), L = d.light, H = 3600000;
   let h = `<h3>${esc(d.i === 0 ? 'Today, ' + d.label : fxWF.format(d.date) + ', ' + d.label.replace(/^\w+,?\s+/, ''))}</h3>
     <p class="where">${esc(s.tier)} day for ${esc(s.who.toLowerCase())} &middot; ${esc(spot.label)}</p>${fxStats(d)}
     <div class="sec-title" style="padding:0 16px">Best window</div><p class="fine" style="padding:4px 16px 0"><b>${esc(s.best.label)}${s.best.window ? ', ' + esc(s.best.window) + ' (estimate)' : ''}.</b> ${esc(s.best.why)}</p>
@@ -428,7 +482,7 @@ function fxSheetWhy() {
       <dt>Rut &middot; dates strong, daytime effect moderate</dt><dd>The Utah DWR management plans put the mule deer rut peak in mid-November and the elk rut peak in mid to late September. Near the peak, bucks tend and chase does and bulls gather cows, and both move more by day; after the rut they go quiet. No Utah GPS study measures the daytime change. Scored +2 at the peak, +1 on the shoulders.</dd>
       <dt>Opening days &middot; strong for elk, moderate for deer</dt><dd>When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting. In Wyoming, mule deer bucks moved farther from roads once the rifle season opened. Scored &minus;1 on a rifle opener and the two days after, for the seasons in this app that cover the spot's unit.</dd>
       <dt>Hard freeze &middot; strong, mule deer</dt><dd>Night lows near 32 to 23 degrees are what typically start mule deer drifting off the high country (Wyoming and Montana GPS does). Scored +1 for deer from October. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>
-      <dt>Snow on the ground &middot; strong, not on this screen yet</dt><dd>Snow piling up on the summer range, about ten inches, is the main push that sends mule deer and elk down to winter range. This screen sees forecast snowfall, which the Wyoming study did not support as a predictor on its own, so snow in the forecast is shown and not scored until the gauge readings are wired in.</dd>
+      <dt>Snow on the ground &middot; strong</dt><dd>Snow piling up on the summer range, about ten inches, is the main push that sends mule deer and elk down to winter range (Wyoming GPS deer moved more on days of deeper snow; the onset modelled near ten inches). Scored +1 for both species from October to mid-December when a SNOTEL gauge within 25 miles, read in the last three days, shows ten inches or more; the factor names the gauge, its elevation and its distance, so a valley spot is told the snow is up at the gauge. Four gauges cover the western Uintas, the upper Weber, the Wasatch above Heber and Boulder Mountain; elsewhere there is no reading. Forecast snowfall on its own was not supported as a predictor, so snow in the forecast stays shown and not scored.</dd>
       <dt>Heat &middot; moderate</dt><dd>On hot days animals bed in shade through the middle of the day, so expect movement at first and last light. No mule deer or elk study gives a temperature; 70 degrees is a guide's figure. Scored &minus;1, and &minus;2 from 80.</dd>
       <dt>Cold front, and clearing after a storm &middot; weak</dt><dd>Hunters report more daylight movement after a cold snap and on the first calm day after a storm. We found no mule deer or elk study that measured either; a whitetail GPS study found no general pattern. Scored +1 each, as a hunch.</dd>
       <dt>Steady precipitation &middot; weak</dt><dd>Heavy weather keeps animals bedded until it eases; light rain or snow changes little. An elk guide's rule of thumb; no study. Scored &minus;1.</dd>
@@ -443,13 +497,13 @@ function fxSheetWhy() {
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-fx],[data-fxsp]');
   if (!t) return;
-  if (t.dataset.fxsp) { FX.species = t.dataset.fxsp === 'elk' ? 'elk' : 'deer'; fxSave(); render(); return; }
+  if (t.dataset.fxsp) { FX.species = t.dataset.fxsp === 'elk' ? 'elk' : 'deer'; fxSave(); if (typeof siteEvent === 'function') siteEvent('forecast-species-' + FX.species); render(); return; }
   const v = t.dataset.fx || '';
   if (v === 'open') { tab = 'forecast'; render(); try { window.scrollTo(0, 0); } catch (x) { /* no window */ } return; }
   if (v === 'gps') { fxLocate(); return; }
   if (v === 'town') { fxSetSpot(null); return; }
   if (v === 'refresh') { FX.error = null; fxLoad(fxSpot(), true).then(render, render); render(); return; }
-  if (v === 'why') { openSheet(fxSheetWhy()); return; }
+  if (v === 'why') { if (typeof siteEvent === 'function') siteEvent('forecast-why'); openSheet(fxSheetWhy()); return; }
   if (v.startsWith('day:')) { const html = fxSheetDay(+v.slice(4)); if (html) openSheet(html); return; }
   if (v.startsWith('unit:')) { const u = typeof hUnit === 'function' ? hUnit(v.slice(5)) : null; if (u) fxSetSpot(fxUnitSpot(u)); return; }
   if (v.startsWith('at:')) {

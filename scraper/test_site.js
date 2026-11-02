@@ -31,7 +31,7 @@ function page(code, opts) {
   };
   vm.createContext(box);
   vm.runInContext(source.replace(/const COUNTER_CODE = '[^']*';/, 'const COUNTER_CODE = ' + JSON.stringify(code) + ';') +
-    '\n;this.T = { paidLink, vPrivacy, vMoney, siteCount, plLoad, plShown,' +
+    '\n;this.T = { paidLink, vPrivacy, vMoney, siteCount, siteEvent, plLoad, plShown,' +
     ' setLinks: l => { PL = { links: l }; plState = "ready"; }, state: () => plState };', box);
   return { T: box.T, box, sent, renders, fetches };
 }
@@ -220,6 +220,27 @@ async function run() {
     odd.T.siteCount('map');
     ok('a code that is not a plain site code sends nothing', odd.sent.length === 0);
 
+    /* events: the same pixel with e=true, by name alone */
+    const ev = page('abc', { referrer: 'https://example.org/' });
+    ev.T.siteEvent('forecast-why');
+    const e0 = ev.sent.length === 1 ? new URL(ev.sent[0]) : null;
+    ok('an event sends one request with e=true, p=/event/<name>, rnd and nothing else, no referrer', e0 && e0.origin === 'https://abc.goatcounter.com' && e0.pathname === '/count' && e0.searchParams.get('e') === 'true' && e0.searchParams.get('p') === '/event/forecast-why' && [...e0.searchParams.keys()].sort().join(',') === 'e,p,rnd', ev.sent.join(' '));
+    ev.T.siteEvent('forecast-why'); ev.T.siteEvent('forecast-species-elk'); ev.T.siteEvent('forecast-species-elk');
+    ok('each event name is sent once per app open', ev.sent.length === 2 && new URL(ev.sent[1]).searchParams.get('p') === '/event/forecast-species-elk', String(ev.sent.length));
+    ev.T.siteCount('forecast');
+    ok('the first screen count after events still carries the referrer, and an event never does', ev.sent.length === 3 && new URL(ev.sent[2]).searchParams.get('r') === 'https://example.org/' && new URL(ev.sent[2]).searchParams.get('e') === null);
+    ev.T.siteEvent('Bad Name!'); ev.T.siteEvent(''); ev.T.siteEvent('forecast/why'); ev.T.siteEvent(null);
+    ok('a name that is not plain lower-case letters, digits and dashes is not sent', ev.sent.length === 3, String(ev.sent.length));
+    const evOff = page('');
+    evOff.T.siteEvent('forecast-why');
+    ok('empty code: no event is sent', evOff.sent.length === 0);
+    const evOffline = page('abc', { online: false });
+    evOffline.T.siteEvent('forecast-why');
+    ok('offline: no event is sent', evOffline.sent.length === 0);
+    const evOdd = page('a.b/c?x');
+    evOdd.T.siteEvent('forecast-why');
+    ok('a code that is not a plain site code sends no event', evOdd.sent.length === 0);
+
     const noScript = fs.readFileSync(path.join(ROOT, 'docs', 'index.html'), 'utf8');
     ok('no third-party script tag in index.html', (noScript.match(/<script[^>]*src="([^"]+)"/g) || []).every(t => !/src="(https?:)?\/\//.test(t)));
   }
@@ -238,8 +259,19 @@ async function run() {
     ok('Privacy lists the six kept items and the six that leave', (a.match(/<li>/g) || []).length === 6 + 6);
     ok('Privacy says how a location can leave', a.indexOf('It leaves the phone only if you tap Text my spot') > 0);
     ok('Privacy links the GitHub issues page', a.indexOf('href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project\'s GitHub page</a>') > 0);
+    ok('code set: Privacy names the three forecast events by name and says nothing goes with them', /three taps the same way, by name alone: Mule deer, Elk, and Why these factors\. No spot, no coordinates and no unit name go with them\./.test(b), b.slice(b.indexOf('GoatCounter'), b.indexOf('GoatCounter') + 700));
+    ok('code empty: Privacy does not mention the events', a.indexOf('Why these factors') < 0 && a.indexOf('three taps') < 0);
     ok('Privacy has no emoji', !EMOJI.test(a) && !EMOJI.test(b));
     ok('Privacy has no script or inline handler', !/<script|onclick=|onerror=/i.test(a));
+  }
+
+  /* ---- the snow gauges the hunt forecast reads */
+  {
+    const snow = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'data', 'ut', 'snow.json'), 'utf8'));
+    ok('snow.json names its source once, first', typeof snow._source === 'string' && /wcc\.sc\.egov\.usda\.gov/.test(snow._source) && Object.keys(snow)[0] === '_source' && Object.keys(snow).filter(k => k === '_source').length === 1);
+    ok('every gauge carries lat and lon inside Utah\'s box, an elevation and a name', Array.isArray(snow.stations) && snow.stations.length >= 1 && snow.stations.every(g => isFinite(g.lat) && isFinite(g.lon) && g.lat >= 37 && g.lat <= 42 && g.lon >= -114.05 && g.lon <= -109.04 && g.elev_ft > 0 && typeof g.name === 'string' && g.name), JSON.stringify((snow.stations || []).map(g => [g.name, g.lat, g.lon, g.elev_ft])));
+    const py = fs.readFileSync(path.join(ROOT, 'scraper', 'sources.py'), 'utf8');
+    ok('each gauge sits where the cache in sources.py says, to four decimals (a move is for a human to read)', snow.stations.every(g => { const m = new RegExp('"' + g.station + '":\\s*\\{[^}]*"lat":\\s*(-?[\\d.]+),\\s*"lon":\\s*(-?[\\d.]+)').exec(py); return m && Math.abs(+m[1] - g.lat) < 0.0001 && Math.abs(+m[2] - g.lon) < 0.0001; }), JSON.stringify(snow.stations.map(g => [g.station, g.lat, g.lon])));
   }
 
   /* ---- Money screen */

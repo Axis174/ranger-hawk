@@ -57,29 +57,35 @@ function paidLink(slot) {
    request to GoatCounter's documented /count pixel endpoint: p is the path, r the
    referrer, rnd a cache buster (https://www.goatcounter.com/help/pixel). One request per
    screen per app open, only while online, and only the screen name: never typed text,
-   coordinates, the trip plan or any stored value. A failure is silent. */
+   coordinates, the trip plan or any stored value. A failure is silent.
+   An event is the same request with e=true and p=/event/<name>: a tap the app counts by
+   name alone, once per name per app open, through the same switch and the same guards. */
 const siteSeen = new Set();
 let siteFirst = true;
-function siteCount(screen) {
+function siteSend(p, event) {
   try {
     if (COUNTER_CODE === '' || !/^[a-z0-9-]+$/i.test(COUNTER_CODE)) return;
-    if (!screen || !navigator.onLine || siteSeen.has(screen)) return;
-    siteSeen.add(screen);
-    let u = 'https://' + COUNTER_CODE + '.goatcounter.com/count?p=' + encodeURIComponent('/screen/' + screen)
+    if (!p || !navigator.onLine || siteSeen.has(p)) return;
+    siteSeen.add(p);
+    let u = 'https://' + COUNTER_CODE + '.goatcounter.com/count?p=' + encodeURIComponent(p) + (event ? '&e=true' : '')
       + '&rnd=' + Math.random().toString(36).slice(2);
-    if (siteFirst) {
+    if (!event && siteFirst) {
       siteFirst = false;
       if (document.referrer) u += '&r=' + encodeURIComponent(document.referrer);
     }
     new Image().src = u;
   } catch (e) { /* counting never breaks the app */ }
 }
+function siteCount(screen) { if (screen) siteSend('/screen/' + screen, false); }
+/* The events today: forecast-species-deer, forecast-species-elk and forecast-why (docs/forecast.js).
+   The Privacy screen names them; name a new one there when one is added here. */
+function siteEvent(name) { if (typeof name === 'string' && /^[a-z0-9-]+$/.test(name)) siteSend('/event/' + name, true); }
 
 /* ----------------------------------------------------------------- screens --- */
 function vPrivacy() {
   const counted = COUNTER_CODE === ''
     ? 'Ranger Hawk does not count visitors today. If that changes, this page will say what is counted.'
-    : 'While you are online, the app tells GoatCounter, a visitor-counting service, which screen was opened, for example Fish, and on first open the address of the page that linked you here. GoatCounter also sees your browser type, operating system, language and the country your connection comes from. It sets no cookie and says it does not store IP addresses. What you type and where you are never go to it.';
+    : 'While you are online, the app tells GoatCounter, a visitor-counting service, which screen was opened, for example Fish, and on first open the address of the page that linked you here. GoatCounter also sees your browser type, operating system, language and the country your connection comes from. It sets no cookie and says it does not store IP addresses. What you type and where you are never go to it. On the Hunt forecast screen it also counts three taps the same way, by name alone: Mule deer, Elk, and Why these factors. No spot, no coordinates and no unit name go with them.';
   return `<div class="card"><div class="card-b"><p class="note">Ranger Hawk has no accounts, no ads and no cookies. Almost everything you do in it stays on your phone. This page lists what is kept there, and the few things that leave.</p></div></div>
 
   <div class="sec-title">Kept on your phone</div><div class="card"><div class="card-b priv">
@@ -118,7 +124,7 @@ function vPrivacy() {
     <p class="note">A link that pays Ranger Hawk is marked Paid link beside it. If you tap one, that company learns you came from Ranger Hawk. See How Ranger Hawk makes money in the Menu.</p>
   </div></div>
 
-  <p class="fine">Last changed 9 October 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;
+  <p class="fine">Last changed 2 November 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;
 }
 
 /* The Home towns page. Twelve public towns come with the app; the hunter picks up to three, in the

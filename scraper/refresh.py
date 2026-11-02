@@ -439,14 +439,28 @@ except Exception as e:                    # noqa: BLE001
 # ------------------------------------------------------------------ snow ----
 try:
     end = datetime.now(timezone.utc).date()
+    # Where each gauge is: latitude, longitude and the agency's elevation, from the same
+    # API's stations call. sources.py carries the last good answer, so a failed call keeps
+    # the gauges where they were, and an answer outside Utah is ignored.
+    where = {}
+    try:
+        mq = urllib.parse.urlencode({"stationTriplets": ",".join(S.SNOTEL)})
+        for m in json.loads(get("https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/stations?" + mq, timeout=60)):
+            lat, lon, elev = m.get("latitude"), m.get("longitude"), m.get("elevation")
+            if lat is None or lon is None or not (37.0 <= float(lat) <= 42.0 and -114.05 <= float(lon) <= -109.04):
+                continue
+            where[m.get("stationTriplet")] = {"lat": round(float(lat), 5), "lon": round(float(lon), 5),
+                                               **({"elev_ft": int(round(float(elev)))} if elev is not None else {})}
+    except Exception as e:                # noqa: BLE001
+        print("snow: stations call failed, keeping the coordinates in sources.py -", repr(e)[:120])
     q = urllib.parse.urlencode({"stationTriplets": ",".join(S.SNOTEL), "elements": "SNWD,WTEQ",
                                 "duration": "DAILY", "beginDate": str(end - timedelta(days=10)),
                                 "endDate": str(end)})
     raw = json.loads(get("https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?" + q, timeout=90))
     snow = []
     for st in raw:
-        meta = S.SNOTEL.get(st.get("stationTriplet"), {})
-        row = {"station": st.get("stationTriplet"), **meta}
+        triplet = st.get("stationTriplet")
+        row = {"station": triplet, **S.SNOTEL.get(triplet, {}), **where.get(triplet, {})}
         for d in st.get("data", []):
             code = d.get("stationElement", {}).get("elementCode")
             vals = [v for v in d.get("values", []) if v.get("value") is not None]
@@ -459,7 +473,8 @@ try:
         if "date" in row:
             snow.append(row)
     if snow:
-        save("snow.json", {"checked": report["run"], "stations": snow,
+        save("snow.json", {"_source": "USDA NRCS SNOTEL, AWDB REST API (data and stations calls), https://wcc.sc.egov.usda.gov/awdbRestApi/",
+                           "checked": report["run"], "stations": snow,
                            "source": "USDA NRCS SNOTEL (AWDB REST API)"})
         report["ok"].append({"source": "snow", "features": len(snow)})
     else:
