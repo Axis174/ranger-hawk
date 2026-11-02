@@ -453,6 +453,13 @@ try:
                                                **({"elev_ft": int(round(float(elev)))} if elev is not None else {})}
     except Exception as e:                # noqa: BLE001
         print("snow: stations call failed, keeping the coordinates in sources.py -", repr(e)[:120])
+    # A gauge the agency has moved is a warning in the Actions log, never a red nightly:
+    # the app follows the agency, and a human updates sources.py when they read it.
+    for triplet, live in where.items():
+        cached = S.SNOTEL.get(triplet, {})
+        if "lat" in cached and (abs(live["lat"] - cached["lat"]) > 0.0001 or abs(live["lon"] - cached["lon"]) > 0.0001):
+            print(f"::warning title=Snow gauge moved::{triplet} {cached.get('name', '')}: NRCS now says {live['lat']}, {live['lon']}; "
+                  f"scraper/sources.py says {cached['lat']}, {cached['lon']}. The app follows NRCS; update sources.py.")
     q = urllib.parse.urlencode({"stationTriplets": ",".join(S.SNOTEL), "elements": "SNWD,WTEQ",
                                 "duration": "DAILY", "beginDate": str(end - timedelta(days=10)),
                                 "endDate": str(end)})

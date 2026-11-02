@@ -336,8 +336,11 @@ function fxSignal(days, i, species, now, units, spot) {
   }
   if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Low of ${d.lo}°: a hard freeze, night lows near 32 to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
   const near = migration ? fxGauge(place, now) : null;
-  if (near) push('Snow on the ground', 1, 'strong', `About ${Math.round(near.g.depth_in)} inches of snow on the ground at ${near.g.name} (${isFinite(near.g.elev_ft) ? Number(near.g.elev_ft).toLocaleString('en-US') + ' ft, ' : ''}${Math.max(1, Math.round(near.dist))} miles away): snow this deep is what sends mule deer and elk down from summer range.`);
-  if (d.snow >= 1) push('Snow in the forecast', 0, 'weak', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" forecast: fresh tracks, and a heavy, windy storm keeps animals bedded until it eases. What sends mule deer and elk downhill is snow piled up on the ground, about ten inches, which this screen reads from the nearest SNOTEL gauge when one is within 25 miles. Shown, not scored.`);
+  if (near) {
+    const far = Math.round(near.dist), away = far < 1 ? 'under a mile away' : far === 1 ? '1 mile away' : far + ' miles away';
+    push('Snow on the ground', 1, 'strong', `About ${Math.round(near.g.depth_in)} inches of snow on the ground at ${near.g.name} (${isFinite(near.g.elev_ft) ? Number(near.g.elev_ft).toLocaleString('en-US') + ' ft, ' : ''}${away}): snow this deep is what sends mule deer and elk down from summer range.`);
+  }
+  if (d.snow >= 1) push('Snow in the forecast', 0, 'weak', `About ${d.snow < 2 ? d.snow.toFixed(1) : Math.round(d.snow)}" forecast: fresh tracks, and a heavy, windy storm keeps animals bedded until it eases. What sends mule deer and elk downhill is snow piled up on the ground, about ten inches, which this screen reads from the nearest SNOTEL gauge within 25 miles, October to mid-December. Shown, not scored.`);
   if (prev && d.hi != null && prev.hi != null) {
     const drop = prev.hi - d.hi;
     if (drop >= 10) push('Cold front', 1, 'weak', `The high falls ${drop}° from ${prev.name}. Hunters report more daylight movement after a cold snap; we found no mule deer or elk study that measured it, so treat it as a hunch.`);

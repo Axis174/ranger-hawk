@@ -100,7 +100,9 @@ async function app(opts = {}) {
   box.__sun = await import(pathToFileURL(path.join(DOCS, 'vendor', 'suncalc.js')).href);
   vm.runInContext('SUN = __sun;', box);
   vm.runInContext(`this.T = { FX, fxSpot, fxUnitSpot, fxKey, fxDays, fxSignal, fxOpeners, fxMoon, fxLoad, fxRecord, vForecast, fxSheetDay, fxSheetWhy, sheetUnit, unitsLoad, legalLight, vPrivacy, fxUnitParam, fxOpenLink, fxGauge,
-    state: () => ({ DB, UNITS, HU, tab, units }), setTab: v => { tab = v; }, setStatic: v => { units.static = v; }, setNow: v => { units.now = v; } };`, box);
+    state: () => ({ DB, UNITS, HU, tab, units }), setTab: v => { tab = v; }, setStatic: v => { units.static = v; }, setNow: v => { units.now = v; },
+    fxResetParam: () => { fxParamRead = false; fxParam = null; fxParamOpened = false; } };`, box);
+  if (opts.static) vm.runInContext('units.static = true;', box);   // a static renderer from the first script on, as build_pages has it
   const week = opts.week || nwsWeek();
   async function flush() {
     for (let turn = 0, idle = 0; turn < 80 && idle < 3; turn++) {
@@ -140,7 +142,7 @@ async function app(opts = {}) {
   const sw = fs.readFileSync(path.join(DOCS, 'sw.js'), 'utf8'), src = fs.readFileSync(path.join(DOCS, 'forecast.js'), 'utf8');
   const EMOJI = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{2B00}-\u{2BFF}]/u;
   ok('forecast.js carries no emoji', !EMOJI.test(src));
-  ok('sw.js is v44 and lists forecast.js exactly once', /VERSION = 'ranger-hawk-v44'/.test(sw) && (sw.match(/'\.\/forecast\.js'/g) || []).length === 1);
+  ok('sw.js is v45 and lists forecast.js exactly once', /VERSION = 'ranger-hawk-v45'/.test(sw) && (sw.match(/'\.\/forecast\.js'/g) || []).length === 1);
 
   /* 1. Offline, nothing stored: no fetch, a plain explanation. */
   let S = await app({ online: false });
@@ -182,7 +184,7 @@ async function app(opts = {}) {
   const names = s => s.factors.map(f => f.k + (f.dir > 0 ? '+' : f.dir < 0 ? '' : '~') + f.dir).join(' ');
   ok('Thursday, nothing special: Fair, no factors, first light from about the start', sig[0].tier === 'Fair' && sig[0].factors.length === 0 && sig[0].best.when === 'dawn' && /^from about \d/.test(sig[0].best.window), names(sig[0]) + ' ' + sig[0].best.window);
   ok('Saturday: hard freeze (strong, +1), snow shown not scored, cold front (weak, +1), wind shown not scored: Good', sig[2].tier === 'Good' && sig[2].score === 2 && names(sig[2]) === 'Hard freeze+1 Snow in the forecast~0 Cold front+1 Wind~0', names(sig[2]));
-  ok('snow in the forecast says the push is snow on the ground, read from the nearest gauge within 25 miles', /reads from the nearest SNOTEL gauge when one is within 25 miles/.test(sig[2].factors[1].why) && sig[2].factors[1].conf === 'weak');
+  ok('snow in the forecast says the push is snow on the ground, read from the nearest gauge within 25 miles in season', /reads from the nearest SNOTEL gauge within 25 miles, October to mid-December/.test(sig[2].factors[1].why) && sig[2].factors[1].conf === 'weak');
   ok('no factor prints a movement percentage; the only percent is the herd share on an opener', sig.every(s => s.factors.every(f => !/\d+%/.test(f.why) || /of a herd/.test(f.why))));
   ok('Saturday\'s front arrives by day, so the window is last light', sig[2].best.when === 'dusk' && /colder than mid-morning/.test(sig[2].best.why), sig[2].best.why);
   ok('every factor carries a confidence word and a reason', sig.every(s => s.factors.every(f => /^(strong|moderate|weak|contested)$/.test(f.conf) && f.why.length > 20)));
@@ -332,6 +334,12 @@ async function app(opts = {}) {
   W = await snowWeek([gauge({ name: 'Low Gauge', lat: 41.82, elev_ft: 7000, depth_in: 0 }), gauge({ name: 'High Gauge', lat: 41.93, elev_ft: 9900, depth_in: 14 })]);   // 6 miles with no snow, 13 miles with snow
   wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW);
   ok('a nearer, lower gauge with no snow does not hide the deep one farther off: the valley spot is told the snow is up there', /About 14 inches of snow on the ground at High Gauge \(9,900 ft, 13 miles away\)/.test((W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground') || {}).why || ''), JSON.stringify(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors));
+  W = await snowWeek([gauge({ lat: 41.7545 })]);   // one mile north
+  wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW);
+  ok('one mile is "1 mile away"', /\(9,100 ft, 1 mile away\)/.test(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground').why));
+  W = await snowWeek([gauge({ lat: 41.745 })]);    // a third of a mile
+  wd = W.T.fxDays(W.T.fxRecord(key), SPOT, NOW);
+  ok('closer than half a mile is "under a mile away"', /\(9,100 ft, under a mile away\)/.test(W.T.fxSignal(wd, 0, 'deer', NOW, undefined, SPOT).factors.find(f => f.k === 'Snow on the ground').why));
   const july = { key: '2026-07-15', hi: 80, lo: 45, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Wednesday' };
   W = await snowWeek([gauge({ depth_in: 30, date: '2026-07-14' })]);
   ok('deep snow in July is left-over snowpack, not a push: nothing outside October to mid-December', !W.T.fxSignal([july], 0, 'deer', Date.parse('2026-07-15T13:00:00Z'), undefined, SPOT).factors.some(f => f.k === 'Snow on the ground'));
@@ -351,12 +359,16 @@ async function app(opts = {}) {
   ok('?unit= with ?fx=: the tab wins and the sheet is not opened', D.T.state().tab === 'forecast' && D.T.FX.spot && D.T.FX.spot.id === cacheUnit.id && D.opened.length === 0, JSON.stringify([D.T.state().tab, D.opened.length]));
   D = await app({ online: false, search: '?unit=' + cacheSlug });
   ok('?unit= alone still opens the sheet, not the tab', D.T.state().tab !== 'forecast' && D.opened.length === 1 && /Cache, East Rich/.test(D.opened[0]), JSON.stringify([D.T.state().tab, D.opened.length]));
+  D = await app({ online: false, search: '?fx=' + cacheSlug, static: true });
+  ok('a static renderer never reads it: no parameter, no tab, no unit load', D.T.fxUnitParam() === null && D.T.state().tab !== 'forecast' && D.T.FX.spot === null && !D.fetched.some(u => /units_geo\.json/.test(u)), JSON.stringify([D.T.fxUnitParam(), D.T.state().tab, D.T.FX.spot]));
   D = await app({ online: false });
   const loadingD = D.T.unitsLoad(); await D.flush(); await loadingD; await D.flush();
   D.box.location.search = '?fx=' + cacheSlug;
+  D.T.fxResetParam();
   D.T.setStatic(true);
-  ok('static mode never reads it', D.T.fxUnitParam() === null && D.T.fxOpenLink() === false && D.T.state().tab !== 'forecast');
+  ok('with the shapes loaded, static mode still opens nothing', D.T.fxOpenLink() === false && D.T.fxUnitParam() === null && D.T.state().tab !== 'forecast' && D.T.FX.spot === null);
   D.T.setStatic(false);
+  ok('off static, the same parameter opens the screen on the unit', D.T.fxOpenLink() === true && D.T.state().tab === 'forecast' && D.T.FX.spot && D.T.FX.spot.id === cacheUnit.id);
   ok('the static sheet renderer links the static unit page to the deep link in the button\'s own words', (() => { D.T.setStatic(true); const h = D.T.sheetUnit(cacheUnit.id); D.T.setStatic(false); return h.includes('<a class="btn ghost" href="/?fx=' + cacheSlug + '">7-day hunt forecast for this unit</a>') && !h.includes('data-fx='); })());
 
   /* 11. The events: by name alone, once per app open, through the counter's switch. */

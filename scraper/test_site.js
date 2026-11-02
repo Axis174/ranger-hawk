@@ -271,7 +271,8 @@ async function run() {
     ok('snow.json names its source once, first', typeof snow._source === 'string' && /wcc\.sc\.egov\.usda\.gov/.test(snow._source) && Object.keys(snow)[0] === '_source' && Object.keys(snow).filter(k => k === '_source').length === 1);
     ok('every gauge carries lat and lon inside Utah\'s box, an elevation and a name', Array.isArray(snow.stations) && snow.stations.length >= 1 && snow.stations.every(g => isFinite(g.lat) && isFinite(g.lon) && g.lat >= 37 && g.lat <= 42 && g.lon >= -114.05 && g.lon <= -109.04 && g.elev_ft > 0 && typeof g.name === 'string' && g.name), JSON.stringify((snow.stations || []).map(g => [g.name, g.lat, g.lon, g.elev_ft])));
     const py = fs.readFileSync(path.join(ROOT, 'scraper', 'sources.py'), 'utf8');
-    ok('each gauge sits where the cache in sources.py says, to four decimals (a move is for a human to read)', snow.stations.every(g => { const m = new RegExp('"' + g.station + '":\\s*\\{[^}]*"lat":\\s*(-?[\\d.]+),\\s*"lon":\\s*(-?[\\d.]+)').exec(py); return m && Math.abs(+m[1] - g.lat) < 0.0001 && Math.abs(+m[2] - g.lon) < 0.0001; }), JSON.stringify(snow.stations.map(g => [g.station, g.lat, g.lon])));
+    ok('sources.py carries a lat and lon cache for every gauge in the file (a move is a warning in the nightly log, not a red run)', snow.stations.every(g => new RegExp('"' + g.station + '":\\s*\\{[^}]*"lat":\\s*-?[\\d.]+,\\s*"lon":\\s*-?[\\d.]+').test(py)));
+    ok('refresh.py warns, and does not fail, when a gauge moves', /::warning title=Snow gauge moved::/.test(fs.readFileSync(path.join(ROOT, 'scraper', 'refresh.py'), 'utf8')));
   }
 
   /* ---- Money screen */
@@ -303,7 +304,7 @@ async function run() {
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);
-    ok('sw.js is v44 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v44'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/ut/paid_links.json'") > 0);
+    ok('sw.js is v45 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v45'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/ut/paid_links.json'") > 0);
     const scripts = (idx.match(/<script\b[^>]*>/g) || []).filter(t => !/type="application\/ld\+json"/.test(t));   // the structured data in <head> is not an app script
     ok('index.html loads state.js first before app.js and sw.js lists it', scripts[0] === '<script src="state.js">' && scripts.indexOf('<script src="app.js">') > 0 && sw.indexOf("'./state.js'") > 0);
   }
