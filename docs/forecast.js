@@ -453,6 +453,10 @@ function vForecast() {
   if (t.moon) h += `<div class="sec-title">Moon</div><div class="card">${fxMoonStats(t)}<p class="fine">Phase and times for this spot. Shown because hunters ask; the studies that tracked deer found little change in movement with the moon, so it is not scored.</p></div>`;
   h += `<div class="sec-title">This week</div><div class="card">${days.map((d, i) => fxRow(d, sigs[i])).join('')}</div>`;
   h += `<p class="fine" style="padding:14px 0 0">${fxSourceLine(rec, spot)} The movement read is Ranger Hawk's own, from published research on mule deer and elk: a reason to get up, not a promise. <button class="btn ghost" data-fx="why" style="padding:4px 10px;font-size:12px;margin-top:8px">Why these factors</button></p>`;
+  /* The paid-link slot, if a link is ever filled in: last on the screen, after the source line
+     and the Why button, never inside a factor row or beside the legal-light card (the money
+     research of 2026-10-26, section 1 and gate 7). site.js draws it marked Paid link. */
+  if (typeof paidLink === 'function') h += paidLink('forecast');
   return h;
 }
 function fxAgo(ms) {

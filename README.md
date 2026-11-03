@@ -559,9 +559,12 @@ and saves the choice is `docs/state.js`, which loads before every other script.
 
 **The paid-link slot.** `docs/data/ut/paid_links.json` ships as `{"links": []}`. To add one,
 append `{"slot": "draw", "company": "Name", "label": "What the link says", "url": "https://..."}`.
-Only `https://` links draw. `draw` is the only slot a screen uses today (the foot of Draw
-odds, after the agency's source paragraph, which is never edited); a new placement means a
-`paidLink('slot')` call in that screen and the slot added to `PL_PLACED` in `site.js`. The
+Only `https://` links draw. Two slots exist: `draw` (the foot of Draw odds, after the
+agency's source paragraph, which is never edited) and `forecast` (the foot of the Hunt
+forecast screen, after the source line and the Why button, never inside a factor row or
+beside the legal-light card; added 2026-11-03, empty until Pete fills a link in); a new
+placement means a `paidLink('slot')` call in that screen and the slot added to `PL_PLACED`
+in `site.js`. The
 link is always drawn marked **Paid link** with `rel="sponsored noopener"`. Neither is
 optional: the mark is what the Privacy and money screens promise, and `sponsored` is what
 search engines and the affiliate networks expect. The money screen lists the companies of

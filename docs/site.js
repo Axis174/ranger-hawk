@@ -18,8 +18,10 @@ let PL = null, plState = 'idle';
 
 /* The slots that a screen actually draws. A link whose slot is not here shows nowhere,
    so the money screen does not list it as "in the app". Add a slot here when a screen
-   starts calling paidLink() with it. */
-const PL_PLACED = ['draw'];
+   starts calling paidLink() with it. draw: the foot of Draw odds, after the agency's
+   source paragraph. forecast: the foot of the Hunt forecast screen, after the source
+   line and the Why button, never inside a factor row or beside the legal-light card. */
+const PL_PLACED = ['draw', 'forecast'];
 
 function plLoad() {
   if (plState !== 'idle') return;
@@ -121,10 +123,10 @@ function vPrivacy() {
   </div></div>
 
   <div class="sec-title">Paid links</div><div class="card"><div class="card-b">
-    <p class="note">A link that pays Ranger Hawk is marked Paid link beside it. If you tap one, that company learns you came from Ranger Hawk. See How Ranger Hawk makes money in the Menu.</p>
+    <p class="note">A link that pays Ranger Hawk is marked Paid link beside it. If you tap one, you leave for that company's site by way of the affiliate network that pays Ranger Hawk, and both learn you came from Ranger Hawk. The company's site may set a cookie so a purchase is credited to Ranger Hawk. Once you leave, their own privacy rules apply. See How Ranger Hawk makes money in the Menu.</p>
   </div></div>
 
-  <p class="fine">Last changed 2 November 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;
+  <p class="fine">Last changed 3 November 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;
 }
 
 /* The Home towns page. Twelve public towns come with the app; the hunter picks up to three, in the
@@ -196,13 +198,14 @@ function vMoney() {
   return `<div class="card"><div class="card-b"><p class="note">Today it makes none. The app is free, with no ads and no accounts.</p></div></div>
 
   <div class="sec-title">What stays free</div><div class="card"><div class="card-b">
-    <p class="note">The rules. Seasons, limits, boundaries and the agencies' own wording are never sold and never sit behind a sign-up.</p>
+    <p class="note">The rules and the forecast. Seasons, limits, boundaries, the agencies' own wording and the hunt forecast are never sold and never sit behind a sign-up.</p>
   </div></div>
 
   <div class="sec-title">How it may earn later</div>
   <div class="card"><div class="card-b">
     <p class="note"><strong>Paid links</strong></p>
     <p class="note">Some links to other companies' products may pay Ranger Hawk a commission if you join or buy through them. Each one is marked Paid link beside the link. It costs you nothing extra. A paid link never changes what the app says about a rule, a season or a place.</p>
+    <p class="note">Under the hunt forecast, a paid link may point to in-season gear. It never changes what the forecast says, and no factor in it is ever an ad.</p>
     <p class="note">Paid links in the app today: ${today}</p>
   </div></div>
   <div class="card"><div class="card-b">

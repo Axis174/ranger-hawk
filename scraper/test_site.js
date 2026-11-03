@@ -31,7 +31,7 @@ function page(code, opts) {
   };
   vm.createContext(box);
   vm.runInContext(source.replace(/const COUNTER_CODE = '[^']*';/, 'const COUNTER_CODE = ' + JSON.stringify(code) + ';') +
-    '\n;this.T = { paidLink, vPrivacy, vMoney, siteCount, siteEvent, plLoad, plShown,' +
+    '\n;this.T = { paidLink, vPrivacy, vMoney, siteCount, siteEvent, plLoad, plShown, placed: () => PL_PLACED.slice(),' +
     ' setLinks: l => { PL = { links: l }; plState = "ready"; }, state: () => plState };', box);
   return { T: box.T, box, sent, renders, fetches };
 }
@@ -258,6 +258,7 @@ async function run() {
     ok('Privacy has the opening note', a.indexOf('Ranger Hawk has no accounts, no ads and no cookies. Almost everything you do in it stays on your phone. This page lists what is kept there, and the few things that leave.') >= 0);
     ok('Privacy lists the six kept items and the six that leave', (a.match(/<li>/g) || []).length === 6 + 6);
     ok('Privacy says how a location can leave', a.indexOf('It leaves the phone only if you tap Text my spot') > 0);
+    ok('Privacy says a paid-link tap goes by way of the affiliate network and may set a cookie at the store', /by way of the affiliate network that pays Ranger Hawk, and both learn you came from Ranger Hawk\. The company's site may set a cookie so a purchase is credited to Ranger Hawk\. Once you leave, their own privacy rules apply\./.test(a));
     ok('Privacy links the GitHub issues page', a.indexOf('href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project\'s GitHub page</a>') > 0);
     ok('code set: Privacy names the three forecast events by name and says nothing goes with them', /three taps the same way, by name alone: Mule deer, Elk, and Why these factors\. No spot, no coordinates and no unit name go with them\./.test(b), b.slice(b.indexOf('GoatCounter'), b.indexOf('GoatCounter') + 700));
     ok('code empty: Privacy does not mention the events', a.indexOf('Why these factors') < 0 && a.indexOf('three taps') < 0);
@@ -287,11 +288,24 @@ async function run() {
     ok('Money has both cards', m.indexOf('<strong>Paid links</strong>') >= 0 && m.indexOf('<strong>A directory of outfitters and guides</strong>') >= 0);
     ok('Money says "none" with an empty list', m.indexOf('Paid links in the app today: none.') >= 0, m.slice(m.indexOf('Paid links in the app today')));
     ok('Money has no emoji', !EMOJI.test(m));
+    ok('Money says the forecast stays free and that no factor in it is ever an ad', m.indexOf('The rules and the forecast.') >= 0 && m.indexOf('Under the hunt forecast, a paid link may point to in-season gear. It never changes what the forecast says, and no factor in it is ever an ad.') >= 0);
     T.setLinks([Object.assign({}, ENTRY, { company: 'Bad first', url: 'javascript:alert(1)' }), Object.assign({}, ENTRY, { company: 'First <Co>' }), Object.assign({}, ENTRY, { company: 'Second Co', slot: 'draw' }), Object.assign({}, ENTRY, { company: 'Elsewhere', slot: 'nowhere' }), Object.assign({}, ENTRY, { company: 'Bad', url: 'http://x.com' })]);
     const m2 = T.vMoney();
     ok('Money lists only the company whose link is drawn, escaped', m2.indexOf('Paid links in the app today: First &lt;Co&gt;</p>') >= 0, m2.slice(m2.indexOf('Paid links in the app today')));
     ok('and does not list an unplaced slot or a non-https link', m2.indexOf('Elsewhere') < 0 && m2.indexOf('Bad') < 0);
     ok('Money with links has no "none"', m2.indexOf('today: none') < 0);
+  }
+
+  /* ---- the forecast slot (added 2026-11-03; empty until a link is filled in) */
+  {
+    const { T } = page('');
+    const FX_ENTRY = { slot: 'forecast', company: 'Example Gear Co', label: 'Gaiters and traction for a snow week at Example Gear Co', url: 'https://example.com/gaiters' };
+    T.setLinks([FX_ENTRY]);
+    ok('a forecast entry is drawn by the forecast slot and by no other', T.paidLink('forecast') !== '' && T.paidLink('draw') === '');
+    ok('the forecast slot is placed, so the money screen lists its company', T.plShown().length === 1 && T.vMoney().indexOf('Paid links in the app today: Example Gear Co</p>') >= 0, T.vMoney().slice(T.vMoney().indexOf('Paid links in the app today')));
+    ok('the placed slots are draw and forecast, in that order', JSON.stringify(T.placed()) === '["draw","forecast"]', JSON.stringify(T.placed()));
+    T.setLinks([]);
+    ok('with the shipped empty file the forecast slot draws nothing', T.paidLink('forecast') === '');
   }
 
   /* ---- the wiring in the other files */
@@ -302,6 +316,9 @@ async function run() {
     ok('app.js draws the two screens', /privacy: \(typeof vPrivacy/.test(app) && /money: \(typeof vMoney/.test(app));
     ok('app.js counts the screen from render()', /function render\(\) \{\n  if \(typeof siteCount === 'function'\) siteCount\(tab\)/.test(app));
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
+    const fx = fs.readFileSync(path.join(ROOT, 'docs', 'forecast.js'), 'utf8');
+    ok('vForecast puts the paid link last, after the source line and the Why button', /Why these factors<\/button><\/p>`;\n(?:  \/\*[^]*?\*\/\n)?  if \(typeof paidLink === 'function'\) h \+= paidLink\('forecast'\);\n  return h;\n\}/.test(fx));
+    ok('forecast.js calls the slot once, so it is never inside a factor row or a card', (fx.match(/paidLink\(/g) || []).length === 1, String((fx.match(/paidLink\(/g) || []).length));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);
     ok('sw.js is v45 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v45'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/ut/paid_links.json'") > 0);
