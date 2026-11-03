@@ -143,7 +143,7 @@ async function run() {
     T.setLinks([Object.assign({}, ENTRY, { label: '' })]);
     ok('a link with no label is not drawn', T.paidLink('draw') === '');
     T.setLinks([ENTRY]);
-    const want = '<p class="fine paidlink"><b>Paid link</b> &middot; <a href="https://example.com/join?a=1&amp;b=2" target="_blank" rel="sponsored noopener">Draw odds and unit research at Example Co</a>. Ranger Hawk earns a commission if you join or buy through it.</p>';
+    const want = '<p class="fine paidlink"><b>Paid link</b> &middot; <a href="https://example.com/join?a=1&amp;b=2" target="_blank" rel="sponsored noopener">Draw odds and unit research at Example Co</a>. Ranger Hawk earns a commission if you join or buy through it. Tapping lets that site set a cookie so Ranger Hawk is credited.</p>';
     ok('a fixture entry gives the exact marked string', T.paidLink('draw') === want, T.paidLink('draw'));
     T.setLinks([Object.assign({}, ENTRY, { label: 'A <b>big</b> deal "now"', url: 'https://example.com/"x"' })]);
     const h = T.paidLink('draw');

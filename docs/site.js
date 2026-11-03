@@ -52,7 +52,7 @@ function paidLink(slot) {
   if (!PL) return '';
   const l = plFor(slot);
   if (!l) return '';
-  return `<p class="fine paidlink"><b>Paid link</b> &middot; <a href="${esc(l.url)}" target="_blank" rel="sponsored noopener">${esc(l.label)}</a>. Ranger Hawk earns a commission if you join or buy through it.</p>`;
+  return `<p class="fine paidlink"><b>Paid link</b> &middot; <a href="${esc(l.url)}" target="_blank" rel="sponsored noopener">${esc(l.label)}</a>. Ranger Hawk earns a commission if you join or buy through it. Tapping lets that site set a cookie so Ranger Hawk is credited.</p>`;
 }
 
 /* ---------------------------------------------------------- visitor count --- */
