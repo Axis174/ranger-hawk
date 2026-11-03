@@ -124,7 +124,7 @@ function vPrivacy() {
   </div></div>
 
   <div class="sec-title">Paid links</div><div class="card"><div class="card-b">
-    <p class="note">A link that pays Ranger Hawk is marked Paid link beside it. If you tap one, you leave for that company's site by way of the affiliate network that pays Ranger Hawk, and both learn you came from Ranger Hawk. The company's site may set a cookie so a purchase is credited to Ranger Hawk. Once you leave, their own privacy rules apply. See How Ranger Hawk makes money in the Menu.</p>
+    <p class="note">A link that pays Ranger Hawk is marked Paid link beside it. If you tap one, you leave for that company's site, usually by way of the affiliate network that pays Ranger Hawk. The company, and the network when there is one, learn you came from Ranger Hawk, and their sites may set a cookie so a purchase is credited to Ranger Hawk. Once you leave, their own privacy rules apply. See How Ranger Hawk makes money in the Menu.</p>
   </div></div>
 
   <p class="fine">Last changed 3 November 2026. Questions or corrections: open an issue on <a href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project's GitHub page</a>.</p>`;

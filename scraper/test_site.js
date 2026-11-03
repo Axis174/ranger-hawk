@@ -268,7 +268,7 @@ async function run() {
     ok('Privacy has the opening note', a.indexOf('Ranger Hawk has no accounts, no ads and no cookies. Almost everything you do in it stays on your phone. This page lists what is kept there, and the few things that leave.') >= 0);
     ok('Privacy lists the six kept items and the six that leave', (a.match(/<li>/g) || []).length === 6 + 6);
     ok('Privacy says how a location can leave', a.indexOf('It leaves the phone only if you tap Text my spot') > 0);
-    ok('Privacy says a paid-link tap goes by way of the affiliate network and may set a cookie at the store', /by way of the affiliate network that pays Ranger Hawk, and both learn you came from Ranger Hawk\. The company's site may set a cookie so a purchase is credited to Ranger Hawk\. Once you leave, their own privacy rules apply\./.test(a));
+    ok('Privacy says a paid-link tap goes by way of the affiliate network and may set a cookie at the store', /you leave for that company's site, usually by way of the affiliate network that pays Ranger Hawk\. The company, and the network when there is one, learn you came from Ranger Hawk, and their sites may set a cookie so a purchase is credited to Ranger Hawk\. Once you leave, their own privacy rules apply\./.test(a));
     ok('Privacy links the GitHub issues page', a.indexOf('href="https://github.com/Axis174/ranger-hawk/issues" target="_blank" rel="noopener">the project\'s GitHub page</a>') > 0);
     ok('code set: Privacy names the three forecast events by name and says nothing goes with them', /three taps the same way, by name alone: Mule deer, Elk, and Why these factors\. No spot, no coordinates and no unit name go with them\./.test(b), b.slice(b.indexOf('GoatCounter'), b.indexOf('GoatCounter') + 700));
     ok('code empty: Privacy does not mention the events', a.indexOf('Why these factors') < 0 && a.indexOf('three taps') < 0);
@@ -327,7 +327,7 @@ async function run() {
     ok('app.js counts the screen from render()', /function render\(\) \{\n  if \(typeof siteCount === 'function'\) siteCount\(tab\)/.test(app));
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
     const fx = fs.readFileSync(path.join(ROOT, 'docs', 'forecast.js'), 'utf8');
-    ok('vForecast puts the paid link last, after the source line and the Why button', /Why these factors<\/button><\/p>`;\n(?:  \/\*[^]*?\*\/\n)?  if \(typeof paidLink === 'function'\) \{ const pl = paidLink\('forecast'\); if \(pl\) h \+= `<div class="fx-paid">\$\{pl\}<\/div>`; \}\n  return h;\n\}/.test(fx));
+    ok('vForecast puts the paid link last, after the source line and the Why button', /Why these factors<\/button><\/p>`;\n(?:  \/\*(?:(?!\*\/)[^])*\*\/\n)?  if \(typeof paidLink === 'function'\) \{ const pl = paidLink\('forecast'\); if \(pl\) h \+= `<div class="fx-paid">\$\{pl\}<\/div>`; \}\n  return h;\n\}/.test(fx));
     ok('styles.css lines the forecast paid link up with the source line', /\.fx-paid \.paidlink\{padding-inline:0\}/.test(fs.readFileSync(path.join(ROOT, 'docs', 'styles.css'), 'utf8')));
     ok('forecast.js calls the slot once, so it is never inside a factor row or a card', (fx.match(/paidLink\(/g) || []).length === 1, String((fx.match(/paidLink\(/g) || []).length));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
