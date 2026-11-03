@@ -456,7 +456,7 @@ function vForecast() {
   /* The paid-link slot, if a link is ever filled in: last on the screen, after the source line
      and the Why button, never inside a factor row or beside the legal-light card (the money
      research of 2026-10-26, section 1 and gate 7). site.js draws it marked Paid link. */
-  if (typeof paidLink === 'function') h += paidLink('forecast');
+  if (typeof paidLink === 'function') { const pl = paidLink('forecast'); if (pl) h += `<div class="fx-paid">${pl}</div>`; }
   return h;
 }
 function fxAgo(ms) {

@@ -31,8 +31,9 @@ function plLoad() {
     .then(j => {
       PL = { links: j && Array.isArray(j.links) ? j.links : [] };
       plState = 'ready';
-      /* Only redraw when there is something new to show; with the shipped empty file nothing changes. */
-      if (plShown().length && typeof render === 'function' && (tab === 'money' || tab === 'seasons')) render();
+      /* Only redraw when there is something new to show; with the shipped empty file nothing changes.
+         The screens that draw a placed slot: Draw odds (seasons), the Hunt forecast, and Money. */
+      if (plShown().length && typeof render === 'function' && (tab === 'money' || tab === 'seasons' || tab === 'forecast')) render();
     })
     .catch(() => { PL = { links: [] }; plState = 'failed'; });
 }

@@ -171,6 +171,16 @@ async function run() {
     ok('once it arrives a link is drawn', withOne.T.paidLink('draw') !== '');
     ok('and the open screen is redrawn once', withOne.renders.length === 1, String(withOne.renders.length));
 
+    const FX_ENTRY2 = { slot: 'forecast', company: 'Example Gear Co', label: 'Gaiters at Example Gear Co', url: 'https://example.com/g' };
+    const fxOpen = page('', { fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ links: [FX_ENTRY2] }) }) });
+    fxOpen.box.tab = 'forecast';
+    ok('forecast tab open, before the file arrives nothing is drawn', fxOpen.T.paidLink('forecast') === '');
+    await settle();
+    ok('once a forecast link arrives the open forecast screen is redrawn once', fxOpen.T.paidLink('forecast') !== '' && fxOpen.renders.length === 1, String(fxOpen.renders.length));
+    const other = page('', { fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ links: [FX_ENTRY2] }) }) });
+    other.box.tab = 'fish'; other.T.paidLink('forecast'); await settle();
+    ok('a screen with no slot is not redrawn when a link arrives', other.renders.length === 0, String(other.renders.length));
+
     const quiet = page('', { fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ links: [] }) }) });
     quiet.box.tab = 'seasons'; quiet.T.paidLink('draw'); await settle();
     ok('an empty file redraws nothing', quiet.renders.length === 0);
@@ -317,7 +327,8 @@ async function run() {
     ok('app.js counts the screen from render()', /function render\(\) \{\n  if \(typeof siteCount === 'function'\) siteCount\(tab\)/.test(app));
     ok('vDraw puts the paid link after the agency paragraph', /Always confirm at utahdraws\.com before applying\.<\/p>`;\n  if \(typeof paidLink === 'function'\) h \+= paidLink\('draw'\);\n  return h;/.test(app));
     const fx = fs.readFileSync(path.join(ROOT, 'docs', 'forecast.js'), 'utf8');
-    ok('vForecast puts the paid link last, after the source line and the Why button', /Why these factors<\/button><\/p>`;\n(?:  \/\*[^]*?\*\/\n)?  if \(typeof paidLink === 'function'\) h \+= paidLink\('forecast'\);\n  return h;\n\}/.test(fx));
+    ok('vForecast puts the paid link last, after the source line and the Why button', /Why these factors<\/button><\/p>`;\n(?:  \/\*[^]*?\*\/\n)?  if \(typeof paidLink === 'function'\) \{ const pl = paidLink\('forecast'\); if \(pl\) h \+= `<div class="fx-paid">\$\{pl\}<\/div>`; \}\n  return h;\n\}/.test(fx));
+    ok('styles.css lines the forecast paid link up with the source line', /\.fx-paid \.paidlink\{padding-inline:0\}/.test(fs.readFileSync(path.join(ROOT, 'docs', 'styles.css'), 'utf8')));
     ok('forecast.js calls the slot once, so it is never inside a factor row or a card', (fx.match(/paidLink\(/g) || []).length === 1, String((fx.match(/paidLink\(/g) || []).length));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);

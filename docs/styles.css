@@ -150,6 +150,7 @@ footer.legal{padding:26px 16px 10px;font-size:11.5px;color:var(--faint);line-hei
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 .fine{font-size:11.5px;line-height:1.5;color:var(--muted);padding:10px 14px 12px;margin:0}
+.fx-paid .paidlink{padding-inline:0} /* the forecast's foot sits at the gutter; its paid link lines up with the source line */
 .card>.stats{margin-top:0;border-top:0}
 .stats.fxs{grid-template-columns:repeat(3,1fr)}
 
