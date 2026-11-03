@@ -575,8 +575,10 @@ the links that are drawn, so it stays true by itself.
 only, plus the referring site on the first) to GoatCounter's `/count` pixel endpoint, with
 no script loaded. The numbers are at rangerhawk.goatcounter.com. The Privacy screen names
 GoatCounter in its "Counting visitors" paragraph. Emptying the code switches counting off
-and swaps that paragraph back by itself. GoatCounter's free plan is for non-commercial
-use: revisit it before the first paid link goes live. Tests: `node scraper/test_site.js`.
+and swaps that paragraph back by itself. GoatCounter's free hosted plan covers "a personal
+website or small-to-medium business" and names no non-commercial limit (its own pricing
+page, read 2026-11-03; research/2026-11-03_forecast-money_program-terms-pwa.md), so a
+labelled paid link stays within it. Tests: `node scraper/test_site.js`.
 
 ## Search and AI search (v37)
 
