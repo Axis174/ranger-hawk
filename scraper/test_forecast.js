@@ -15,7 +15,7 @@ process.env.TZ = 'America/Denver';
 const fs = require('fs'), path = require('path'), vm = require('vm'), { pathToFileURL } = require('url');
 
 const ROOT = path.resolve(__dirname, '..'), DOCS = path.join(ROOT, 'docs');
-const INDEX = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8');
+const INDEX = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');   // what a browser loads: a tag inside an HTML comment is text, not a script
 const SPOT = { lat: 41.74, lon: -111.83, label: 'Cache, East Rich', kind: 'unit', id: 1 };
 const NOW = Date.parse('2026-10-29T13:00:00Z');   // 7:00 am MDT, Thursday
 

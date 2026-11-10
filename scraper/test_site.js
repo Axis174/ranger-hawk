@@ -251,8 +251,13 @@ async function run() {
     evOdd.T.siteEvent('forecast-why');
     ok('a code that is not a plain site code sends no event', evOdd.sent.length === 0);
 
+    /* A tag inside an HTML comment is text: no browser fetches or runs it. Comments come out first, so the
+       guard reads what a browser would load (2026-11-10, a site-ownership check that sat in a comment). */
+    const thirdParty = html => (html.replace(/<!--[\s\S]*?-->/g, '').match(/<script[^>]*src="([^"]+)"/g) || []).filter(t => /src="(https?:)?\/\//.test(t));
     const noScript = fs.readFileSync(path.join(ROOT, 'docs', 'index.html'), 'utf8');
-    ok('no third-party script tag in index.html', (noScript.match(/<script[^>]*src="([^"]+)"/g) || []).every(t => !/src="(https?:)?\/\//.test(t)));
+    ok('no third-party script tag in index.html', thirdParty(noScript).length === 0, thirdParty(noScript).join(' '));
+    ok('the guard bites on a live third-party tag, http, https or protocol-relative', thirdParty('<script src="https://x.example/a.js"></script>').length === 1 && thirdParty('<script type="text/javascript" src="http://x.example/a.js"></script>').length === 1 && thirdParty('<script src="//x.example/a.js"></script>').length === 1);
+    ok('and passes a tag inside a comment, but not one that follows the comment', thirdParty('<!-- <script src="https://x.example/a.js"></script> -->').length === 0 && thirdParty('<!-- note --><script src="https://x.example/a.js"></script>').length === 1);
   }
 
   /* ---- Privacy screen */
