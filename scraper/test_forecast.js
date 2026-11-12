@@ -540,6 +540,58 @@ async function app(opts = {}) {
   const Z = await load(nwsWeek(), NOW, { lat: 37.2645, lon: -112.9932, label: 'Zion', kind: 'unit', id: 2, units: ['Zion'] });
   ok('a unit centre with four decimals still goes to the weather service at two, and nothing finer leaves the phone', Z.A.fetched.filter(u => u.includes('weather.gov'))[0] === 'https://api.weather.gov/points/37.26,-112.99' && [...Z.A.fetched, ...Z.A.pixels].every(u => !/37\.26\d|112\.99\d/.test(decodeURIComponent(u))) && /Sun and moon computed on this phone for 37\.26[45], -112\.993\./.test(Z.html), Z.A.fetched.filter(u => u.includes('weather.gov')).join(' '));
 
+  /* 13. The two follow-ups the v47 audit left open (research/2026-11-12_forecast-polish_checker-verdict.md). */
+  /* 13a. Gusts: the largest gust in the grid chunks inside legal light, not the calendar day's. */
+  const gustChunk = (d, h, hours, mph) => ({ validTime: new Date(Date.parse(local(d, h))).toISOString().replace('.000Z', '+00:00') + '/PT' + hours + 'H', value: mph / 0.621371 });
+  const wkG = nwsWeek(), gustValues = wkG.grid.properties.windGust.values;
+  gustValues.push(gustChunk('2026-10-29', 21, 3, 30));   // tonight, 9 pm to midnight
+  gustValues.push(gustChunk('2026-10-30', 0, 3, 40));    // Friday, midnight to 3 am
+  gustValues.push(gustChunk('2026-11-02', 17, 3, 35));   // Monday, 5 to 8 pm: touches the end of legal light
+  gustValues.push(gustChunk('2026-11-02', 5, 3, 22));    // Monday, 5 to 8 am: covers the first hour and more of it
+  const G = await load(wkG), gd = G.days, gustTile = i => tile(G.A.T.fxSheetDay(i), 'Gusts');
+  const windFactor = i => G.A.T.fxSignal(gd, i, 'deer', NOW, [], SPOT).factors.find(f => f.k === 'Wind');
+  ok('the record keeps each grid chunk\'s length in hours', G.rec.gust.find(v => v.v === 40).h === 3 && G.rec.gust.filter(v => v.h === 6).length === 7 && G.rec.snow[0].h === 6, JSON.stringify(G.rec.gust.slice(0, 2)));
+  ok('a gust after midnight is not the day\'s gust: Friday shows its daylight figure', gd[1].gust === 18 && gustTile(1) === '18 mph', gd[1].gust + ' | ' + gustTile(1));
+  ok('the Wind factor names the daylight gust, still shown and not scored', (() => { const f = windFactor(1); return !!f && f.dir === 0 && f.conf === 'contested' && /^Wind to 18 mph: /.test(f.why) && /Shown, not scored\.$/.test(f.why); })(), JSON.stringify(windFactor(1)));
+  ok('a gust tonight does not raise today\'s tile or call up the Wind factor', gd[0].gust === 13 && tile(G.html, 'Gusts') === '13 mph' && !windFactor(0), gd[0].gust + ' | ' + tile(G.html, 'Gusts') + ' | ' + JSON.stringify(windFactor(0)));
+  const mon = gd[4].light, minutesInside = (h1, h2) => (Math.min(Date.parse(local('2026-11-02', h2)), mon.late.getTime()) - Math.max(Date.parse(local('2026-11-02', h1)), mon.start.getTime())) / 60000;
+  ok('a chunk with under an hour of legal light is night, one with an hour or more is day', minutesInside(17, 20) > 0 && minutesInside(17, 20) < 60 && minutesInside(5, 8) >= 60 && gd[4].gust === 22, JSON.stringify([minutesInside(17, 20), minutesInside(5, 8), gd[4].gust]));
+  const oldRec = JSON.parse(JSON.stringify(G.rec)); oldRec.gust.forEach(v => { delete v.h; });
+  ok('a week stored before v48 has no chunk lengths and keeps the calendar-day figure', G.A.T.fxDays(oldRec, SPOT, NOW)[1].gust === 40 && G.A.T.fxDays(oldRec, SPOT, NOW)[4].gust === 35);
+  const nightOnly = JSON.parse(JSON.stringify(G.rec)); nightOnly.gust = nightOnly.gust.filter(v => !(v.h === 6 && /^2026-10-30/.test(v.s)));
+  ok('a day with no chunk inside legal light falls back to the calendar day', G.A.T.fxDays(nightOnly, SPOT, NOW)[1].gust === 40, G.A.T.fxDays(nightOnly, SPOT, NOW)[1].gust);
+  vm.runInContext('__keepSun = SUN; SUN = null;', G.A.box);
+  const gustNoSun = G.A.T.fxDays(G.rec, SPOT, NOW)[1].gust;
+  vm.runInContext('SUN = __keepSun;', G.A.box);
+  ok('with no sun times the calendar-day figure stands', gustNoSun === 40, gustNoSun);
+  ok('the standing week is unchanged: Saturday\'s daylight gust is still 33', plain.days[2].gust === 33 && tile(plain.A.T.fxSheetDay(2), 'Gusts') === '33 mph');
+
+  /* 13b. Before 6 am: today's row reads the night to come, as it does for the rest of the day; the Overnight words come first on the sheet. */
+  const dawnWeek = (overnightLow, tonightLow, tonightChance = 0) => {
+    const w = nwsWeek();
+    w.forecast.properties.periods.unshift({ ...nwsPeriod(DAYS[0], false), name: 'Overnight', startTime: local('2026-10-29', 3), endTime: local('2026-10-29', 6), temperature: overnightLow, shortForecast: 'Clear', detailedForecast: 'Clear, with a low around ' + overnightLow + '.', ...chance(0) });
+    Object.assign(periodOf(w, '2026-10-29', false), { name: 'Thursday Night', temperature: tonightLow }, chance(tonightChance));
+    w.hourly.properties.periods = w.hourly.properties.periods.filter(p => Date.parse(p.startTime) >= DAWN);
+    return w;
+  };
+  const at3 = await load(dawnWeek(22, 38), DAWN);
+  ok('at 3 am today\'s Low is the coming night\'s, not the Overnight period\'s', at3.days[0].lo === 38 && tile(at3.html, 'Low') === '38&deg;' && at3.days[0].nightP.n === 'Thursday Night' && at3.days[0].early.n === 'Overnight', JSON.stringify([at3.days[0].lo, tile(at3.html, 'Low'), at3.days[0].nightP && at3.days[0].nightP.n, at3.days[0].early && at3.days[0].early.n]));
+  ok('at 3 am a hard Overnight low does not score the hard-freeze factor when the night to come is mild', !at3.A.T.fxSignal(at3.days, 0, 'deer', DAWN, [], SPOT).factors.some(f => f.k === 'Hard freeze'));
+  const sheet3 = at3.A.T.fxSheetDay(0);
+  ok('the day sheet gives the forecaster\'s words in the order they happen: Overnight, the day, the night', /In the forecaster's words<\/div>\s*<p[^>]*><b>Overnight\.<\/b> Clear, with a low around 22\.<\/p><p[^>]*><b>Daytime\.<\/b>[^<]*<\/p><p[^>]*><b>Thursday Night\.<\/b>[^<]*<\/p>/.test(sheet3), sheet3.slice(sheet3.indexOf('In the forecaster')).slice(0, 400));
+  const SIX = Date.parse('2026-10-29T12:01:00Z');   // 6:01 am MDT: the Overnight period is gone
+  const wkSix = nwsWeek();
+  Object.assign(periodOf(wkSix, '2026-10-29', false), { name: 'Tonight' });
+  wkSix.hourly.properties.periods = wkSix.hourly.properties.periods.filter(p => Date.parse(p.startTime) >= SIX - 60000);
+  const at6 = await load(wkSix, SIX);
+  ok('the Today row reads the same at 3 am and at 6:01 am: Low, day chance, night chance and tier', at6.days[0].lo === at3.days[0].lo && at6.days[0].dpop === at3.days[0].dpop && at6.days[0].npop === at3.days[0].npop && at6.A.T.fxSignal(at6.days, 0, 'deer', SIX, [], SPOT).tier === at3.A.T.fxSignal(at3.days, 0, 'deer', DAWN, [], SPOT).tier && !at6.days[0].early, JSON.stringify([at6.days[0].lo, at3.days[0].lo]));
+  const cold3 = await load(dawnWeek(40, 26, 80), DAWN), freeze3 = cold3.A.T.fxSignal(cold3.days, 0, 'deer', DAWN, [], SPOT).factors.find(f => f.k === 'Hard freeze');
+  ok('at 3 am a hard freeze in the night to come scores as it does after 6 am, and names that low', !!freeze3 && freeze3.dir === 1 && freeze3.conf === 'strong' && freeze3.why.startsWith('Forecast low of 26°. '), JSON.stringify(freeze3));
+  ok('at 3 am the factors\' largest chance counts the night to come', cold3.days[0].pop === 80 && cold3.days[0].npop === 80 && cold3.days[0].dpop === 0, JSON.stringify([cold3.days[0].pop, cold3.days[0].npop]));
+  const Dn = await load(wk4);
+  ok('a day with no evening period yet has no night period, and its Low is the day\'s lowest hourly figure as before', Dn.days[6].nightP === null && Dn.days[6].early === null && Dn.days[6].lo === Math.min(...Dn.days[6].hours.map(h => h.t)), JSON.stringify([Dn.days[6].nightP, Dn.days[6].lo]));
+  ok('after dark the night period is still Tonight: its Low and its wind stand', (await load(wk3, NIGHT)).days[0].nightP.n === 'Tonight');
+
   finished = true;
   console.log(`test_forecast: ${pass} pass, ${fail} fail`);
   process.exit(fail ? 1 : 0);
