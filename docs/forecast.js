@@ -222,9 +222,44 @@ function fxMoon(day, lat, lon) {
 }
 
 /* ------------------------------------------------------------------ days ---- */
+/* The day's wind for the tile and the row: the strongest hourly wind inside
+   legal light (the hours that overlap the start and the big-game end for that
+   day and spot) with the direction of that same hour, so the speed and the
+   direction always belong together. Until v47 it was the strongest hour of the
+   whole calendar day beside the daytime period's direction, and a midnight
+   wind could sit beside an afternoon direction (the Zion unit on 2026-11-04:
+   12 mph from an east wind at midnight, shown as WNW; the weather service's
+   daytime figure was 7). Where several hours tie for the peak, one blowing
+   from the daytime period's direction is taken, so the label agrees with the
+   weather service's wherever it can. When the hourly rows do not reach the end
+   of legal light (the seventh day, today after dark, no sun times) the wind
+   and direction are a period's own, taken together: the daytime period's,
+   then the night period's. A peak of 0 shows as no figure, as it always has. */
+function fxWind(hours, L, dayP, nightP) {
+  const H = 3600000, rows = (hours || []).map(h => ({ t: Date.parse(h.s), v: fxMph(h.w), d: h.d || '' })).filter(r => r.v != null && isFinite(r.t));
+  const peak = list => { const top = Math.max(...list.map(r => r.v)), at = list.filter(r => r.v === top); return { wind: top || null, dir: (at.find(r => dayP && r.d === dayP.d) || at[0]).d }; };
+  if (L) {
+    const lit = rows.filter(r => r.t + H > L.start.getTime() && r.t <= L.late.getTime());
+    if (lit.some(r => r.t + H > L.late.getTime())) return peak(lit);
+  }
+  for (const p of [dayP, nightP]) if (p && fxMph(p.w) != null) return { wind: fxMph(p.w) || null, dir: p.d || '' };
+  return rows.length ? peak(rows) : { wind: null, dir: '' };
+}
 /* Seven local days from today. The 12-hour periods carry the forecaster's
-   words and the high and low; the hourly rows feed the dawn and dusk tables
-   and the best-window call; the grid layers add gusts and snow. */
+   words and the high and low; the hourly rows feed the dawn and dusk tables,
+   the best-window call and the daylight wind; the grid layers add gusts and
+   snow.
+
+   The chance of precipitation is kept three ways. dpop and npop are the day
+   and the night apart, as the weather service files them: its daytime period,
+   and the night period that starts that evening (before 6 am today has two,
+   Overnight and Tonight, and the larger is taken). Hourly rows stand in only
+   when a period is missing: 6 am to 6 pm for the day, 6 pm on for the night.
+   The tile and the row print those two, so tonight's chance is never shown as
+   today's (the Kamas unit on 2026-11-03 read 24% with a dry day). pop is still
+   the largest figure on the calendar day; the factors read it and it is
+   unchanged. nlabel is "tonight" only for today's row when its one night
+   period is the one the weather service names Tonight. */
 function fxDays(rec, spot, now) {
   const start = fxDay(new Date(now == null ? fxNow() : now).toISOString());
   const [y, m, d] = start.split('-').map(Number);
@@ -239,19 +274,25 @@ function fxDays(rec, spot, now) {
     const temps = hours.map(h => h.t).filter(t => t != null);
     const sum = list => +(list.filter(v => fxDay(v.s) === key).reduce((a, v) => a + v.v, 0)).toFixed(2);
     const gust = Math.max(0, ...(rec.gust || []).filter(v => fxDay(v.s) === key).map(v => v.v));
+    const light = typeof legalLight === 'function' ? legalLight(date, spot.lat, spot.lon) : null;
+    const wind = fxWind(hours, light, dayP, nightP);
+    const nights = rec.periods.filter(p => !p.day && fxDay(p.s) === key);
+    const most = list => list.length ? Math.max(...list.map(v => v || 0)) : null;
+    const clockHours = (from, to) => hours.filter(h => { const c = fxHour(h.s); return c >= from && c < to; }).map(h => h.pop);
     out.push({
       key, date, i, name: i === 0 ? 'Today' : fxWF.format(date), label: fxLF.format(date),
       hi: dayP ? dayP.t : (temps.length ? Math.max(...temps) : null),
       lo: nightP ? nightP.t : (temps.length ? Math.min(...temps) : null),
       words: dayP ? dayP.sf : (nightP ? nightP.sf : (hours[0] ? hours[0].sf : '')),
       nwords: nightP ? nightP.sf : '',
-      wind: Math.max(0, fxMph(dayP && dayP.w) || 0, ...hours.map(h => fxMph(h.w) || 0)) || null,
-      dir: dayP ? dayP.d : (hours[0] ? hours[0].d : ''),
+      wind: wind.wind, dir: wind.dir,
       gust: gust ? Math.round(gust) : null,
       pop: Math.max(0, dayP && dayP.pop || 0, nightP && nightP.pop || 0, ...hours.map(h => h.pop || 0)),
+      dpop: dayP ? dayP.pop || 0 : most(clockHours(6, 18)),
+      npop: nights.length ? most(nights.map(p => p.pop)) : most(clockHours(18, 24)),
+      nlabel: i === 0 && nights.length === 1 && nights[0].n === 'Tonight' ? 'tonight' : 'at night',
       snow: sum(rec.snow || []), rain: sum(rec.qpf || []),
-      hours, dayP, nightP,
-      light: typeof legalLight === 'function' ? legalLight(date, spot.lat, spot.lon) : null,
+      hours, dayP, nightP, light,
       moon: fxMoon(date, spot.lat, spot.lon)
     });
   }
@@ -334,7 +375,7 @@ function fxSignal(days, i, species, now, units, spot) {
       ? `${s.name} opened ${when}. When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting in the first days. Hunt away from the roads.`
       : `${s.name} opened ${when}. In Wyoming, bucks moved farther from roads once the rifle season opened. Hunt away from the roads.`);
   }
-  if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Low of ${d.lo}°: a hard freeze, night lows near 32 to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
+  if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Forecast low of ${d.lo}°. A hard freeze, with night lows from about 32° down to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
   const near = migration ? fxGauge(place, now) : null;
   if (near) {
     const far = Math.round(near.dist), away = far < 1 ? 'under a mile away' : far === 1 ? '1 mile away' : far + ' miles away';
@@ -373,13 +414,24 @@ function fxSignal(days, i, species, now, units, spot) {
 /* ---------------------------------------------------------------- screen ---- */
 const fxDeg = t => t == null ? '--' : t + '&deg;';
 const fxT = v => v ? clock(v) : '--';
+/* The chance of precipitation on the tile: one figure when the day and the
+   night agree, otherwise each with its word, and a lone figure always says
+   which it is. In the week row a chance shows from 20%: the day's bare, the
+   night's always labelled. */
+const fxPop = d => d.dpop != null && d.npop != null ? (d.dpop === d.npop ? d.dpop + '%' : d.dpop + '% day<br>' + d.npop + '% night')
+  : d.dpop != null ? d.dpop + '% day' : d.npop != null ? d.npop + '% night' : '--';
+function fxPopBit(d) {
+  const day = d.dpop != null && d.dpop >= 20, night = d.npop != null && d.npop >= 20;
+  if (day && night) return d.dpop === d.npop ? `precip ${d.dpop}%` : `precip ${d.dpop}%, ${d.npop}% ${d.nlabel}`;
+  return day ? `precip ${d.dpop}%` : night ? `precip ${d.npop}% ${d.nlabel}` : '';
+}
 function fxStats(d) {
   return `<div class="stats fxs">
     <div class="stat"><div class="k">High</div><div class="v">${fxDeg(d.hi)}</div></div>
     <div class="stat"><div class="k">Low</div><div class="v">${fxDeg(d.lo)}</div></div>
     <div class="stat"><div class="k">Wind</div><div class="v">${d.wind != null ? esc(d.dir || '') + ' ' + d.wind + ' mph' : '--'}</div></div>
     <div class="stat"><div class="k">Gusts</div><div class="v">${d.gust ? d.gust + ' mph' : '--'}</div></div>
-    <div class="stat"><div class="k">Precip</div><div class="v">${d.pop}%</div></div>
+    <div class="stat"><div class="k">Precip</div><div class="v">${fxPop(d)}</div></div>
     <div class="stat"><div class="k">Snow</div><div class="v">${d.snow >= 0.1 ? d.snow.toFixed(1) + ' in' : '--'}</div></div>
   </div>`;
 }
@@ -409,7 +461,7 @@ function fxFactors(sig) {
   return `<dl class="f">${sig.factors.map(f => `<dt>${mark(f)} ${esc(f.k)} &middot; ${esc(f.conf)}</dt><dd>${esc(f.why)}</dd>`).join('')}</dl>`;
 }
 function fxRow(d, sig) {
-  const bits = [d.words, d.wind != null ? `${d.dir || ''} ${d.wind} mph`.trim() : '', d.pop >= 20 ? `precip ${d.pop}%` : ''].filter(Boolean);
+  const bits = [d.words, d.wind != null ? `${d.dir || ''} ${d.wind} mph`.trim() : '', fxPopBit(d)].filter(Boolean);
   return `<button class="row" data-fx="day:${d.i}" style="--g:${FX_TIER[sig.tier]}"><span class="pill"></span>
     <span><span class="t">${esc(d.name)}${d.i === 0 ? '' : ' ' + esc(d.label.replace(/^\w+,?\s+/, ''))} &middot; ${esc(sig.tier)}</span><span class="s">${bits.map(esc).join(' &middot; ')}</span></span>
     <span class="v">${fxDeg(d.hi)}<small>${fxDeg(d.lo)}</small></span></button>`;
@@ -418,7 +470,13 @@ function fxSourceLine(rec, spot) {
   const U = rec.urls || {};
   const where = [U.near ? 'grid cell near ' + esc(U.near) : '', rec.elev != null ? 'at ' + Number(rec.elev).toLocaleString('en-US') + ' ft' : ''].filter(Boolean).join(' ');
   const when = v => { const t = new Date(v); return (fxDay(t.toISOString()) === fxDay(new Date(fxNow()).toISOString()) ? '' : fxLF.format(t) + ' ') + clock(t); };
-  return `Forecast: National Weather Service${U.office ? ', ' + esc(U.office) + ' office' : ''}${where ? ', ' + where : ''}${rec.issued ? ', issued ' + when(rec.issued) : ''}; fetched ${when(rec.at)}. Sun and moon computed on this phone for ${spot.lat.toFixed(3)}, ${spot.lon.toFixed(3)}.`;
+  /* The spot goes to the weather service rounded to two decimals (about a kilometre, as the Privacy
+     page promises), and the rounded point can fall in the grid cell next to the spot's own, at
+     another elevation: the Zion unit's centre is in a 5,971 ft cell and its rounded point in a
+     6,982 ft one that read 3 to 5 degrees colder on 2026-11-03. Nothing more precise is sent; the
+     line says whose forecast this is instead. */
+  const cell = `The forecast is for ${U.near ? 'that' : 'a'} grid cell${rec.elev != null ? ' at that elevation' : ''}, not the exact spot, and may differ from it.`;
+  return `Forecast: National Weather Service${U.office ? ', ' + esc(U.office) + ' office' : ''}${where ? ', ' + where : ''}${rec.issued ? ', issued ' + when(rec.issued) : ''}; fetched ${when(rec.at)}. ${cell} Sun and moon computed on this phone for ${spot.lat.toFixed(3)}, ${spot.lon.toFixed(3)}.`;
 }
 function vForecast() {
   const spot = fxSpot(), key = fxKey(spot), rec = fxRecord(key), now = fxNow();
@@ -493,7 +551,7 @@ function fxSheetWhy() {
       <dt>First and last light &middot; strong</dt><dd>Elk and mule deer feed and travel at the edges of the day and rest through the middle (Oregon GPS); whitetail work puts the peaks within about two hours of sunrise and sunset. That is the frame for every day here. No study gives it in minutes, so neither does this.</dd>
       <dt>Rut &middot; dates strong, daytime effect moderate</dt><dd>The Utah DWR management plans put the mule deer rut peak in mid-November and the elk rut peak in mid to late September. Near the peak, bucks tend and chase does and bulls gather cows, and both move more by day; after the rut they go quiet. No Utah GPS study measures the daytime change. Scored +2 at the peak, +1 on the shoulders.</dd>
       <dt>Opening days &middot; strong for elk, moderate for deer</dt><dd>When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting. In Wyoming, mule deer bucks moved farther from roads once the rifle season opened. Scored &minus;1 on a rifle opener and the two days after, for the seasons in this app that cover the spot's unit.</dd>
-      <dt>Hard freeze &middot; strong, mule deer</dt><dd>Night lows near 32 to 23 degrees are what typically start mule deer drifting off the high country (Wyoming and Montana GPS does). Scored +1 for deer from October. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>
+      <dt>Hard freeze &middot; strong, mule deer</dt><dd>Night lows from about 32 down to 23 degrees are what typically start mule deer drifting off the high country (Wyoming and Montana GPS does). Scored +1 for deer when the forecast low is 28 degrees or colder, October to mid-December. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>
       <dt>Snow on the ground &middot; strong</dt><dd>Snow piling up on the summer range, about ten inches, is the main push that sends mule deer and elk down to winter range (Wyoming GPS deer moved more on days of deeper snow; the onset modelled near ten inches). Scored +1 for both species from October to mid-December when a SNOTEL gauge within 25 miles, read in the last three days, shows ten inches or more; the factor names the gauge, its elevation and its distance, so a valley spot is told the snow is up at the gauge. Four gauges cover the western Uintas, the upper Weber, the Wasatch above Heber and Boulder Mountain; elsewhere there is no reading. Forecast snowfall on its own was not supported as a predictor, so snow in the forecast stays shown and not scored.</dd>
       <dt>Heat &middot; moderate</dt><dd>On hot days animals bed in shade through the middle of the day, so expect movement at first and last light. No mule deer or elk study gives a temperature; 70 degrees is a guide's figure. Scored &minus;1, and &minus;2 from 80.</dd>
       <dt>Cold front, and clearing after a storm &middot; weak</dt><dd>Hunters report more daylight movement after a cold snap and on the first calm day after a storm. We found no mule deer or elk study that measured either; a whitetail GPS study found no general pattern. Scored +1 each, as a hunch.</dd>

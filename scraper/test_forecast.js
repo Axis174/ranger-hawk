@@ -394,6 +394,110 @@ async function app(opts = {}) {
   await E3.click({ fxsp: 'elk' }); await E3.click({ fx: 'why' });
   ok('COUNTER_CODE empty: no pixel at all', E3.pixels.length === 0, E3.pixels.join(' '));
 
+  /* 12. The four things the 2026-11-03 weather sanity pass found (research/2026-11-03_forecast-money_weather-sanity.md). */
+  const hourRow = (week, d, h) => week.hourly.properties.periods.find(p => p.startTime === local(d, h));
+  const setHours = (week, d, hs, patch) => hs.forEach(h => Object.assign(hourRow(week, d, h), patch));
+  const periodOf = (week, d, isDay) => week.forecast.properties.periods.find(p => p.startTime === local(d, isDay ? 6 : 18));
+  const chance = v => ({ probabilityOfPrecipitation: { unitCode: 'wmoUnit:percent', value: v } });
+  const load = async (week, now = NOW, spot = SPOT, extra = {}) => {
+    const A = await app({ online: true, week, now, ...extra });
+    A.T.FX.spot = spot; A.T.setTab('forecast'); A.T.vForecast(); await A.flush();
+    const r = A.T.fxRecord(A.T.fxKey(spot));
+    return { A, rec: r, days: A.T.fxDays(r, spot, now), html: A.T.vForecast() };
+  };
+  const rowText = (h, i) => (new RegExp('data-fx="day:' + i + '" style[\\s\\S]*?<span class="s">([^<]*)</span>').exec(h) || [])[1];
+  const tile = (h, k) => (new RegExp('<div class="k">' + k + '</div><div class="v">(.*?)</div>').exec(h) || [])[1];
+  const pair = d => d.dir + ' ' + d.wind;
+
+  /* 12a. Wind: the peak of the hours inside legal light, with that hour's own direction. */
+  const windList = DAYS.map(d => ({ ...d }));
+  windList[1] = { ...windList[1], w: '7 mph', dir: 'WNW' };
+  const wk1 = nwsWeek(windList);
+  setHours(wk1, '2026-10-30', [0, 1], { windSpeed: '12 mph', windDirection: 'E' });        // the Zion case: a midnight wind from another quarter
+  setHours(wk1, '2026-10-29', [20, 21, 22], { windSpeed: '15 mph', windDirection: 'E' });  // the Kamas case: tonight's wind on today's row
+  setHours(wk1, '2026-11-01', [14], { windSpeed: '9 mph', windDirection: 'NW' });          // the peak hour blows from somewhere the period does not name
+  setHours(wk1, '2026-11-02', [6, 7], { windDirection: 'E' });                             // a tie: the first hours of light from the east, the rest from the period's south
+  setHours(wk1, '2026-11-03', [6, 7, 8, 9, 10, 11], { windDirection: 'SE' });              // a tie with no hour from the period's direction
+  setHours(wk1, '2026-11-03', [12, 13, 14, 15, 16, 17], { windDirection: 'SW' });
+  let X = await load(wk1);
+  ok('a midnight wind from another quarter is not the day\'s wind: the row shows the daylight peak and its direction', pair(X.days[1]) === 'WNW 7' && /^Mostly Sunny &middot; WNW 7 mph/.test(rowText(X.html, 1)), pair(X.days[1]) + ' | ' + rowText(X.html, 1));
+  ok('tonight\'s wind does not sit on today\'s row or tile', pair(X.days[0]) === 'S 5' && tile(X.A.T.fxSheetDay(0), 'Wind') === 'S 5 mph', pair(X.days[0]) + ' | ' + tile(X.A.T.fxSheetDay(0), 'Wind'));
+  ok('the direction is the peak hour\'s own, not the daytime period\'s', pair(X.days[3]) === 'NW 9' && X.days[3].dayP.d === 'N' && tile(X.A.T.fxSheetDay(3), 'Wind') === 'NW 9 mph', pair(X.days[3]));
+  ok('where hours tie for the peak, one from the daytime period\'s direction is taken', pair(X.days[4]) === 'S 5' && X.days[4].hours.find(h => /T06:/.test(h.s)).d === 'E', pair(X.days[4]));
+  ok('a tie with no hour from the period\'s direction takes the earliest', pair(X.days[5]) === 'SE 10' && X.days[5].dayP.d === 'S', pair(X.days[5]));
+  ok('the wind factor still says shown, not scored, and scores nothing', (() => { const sat = X.A.T.fxSignal(X.days, 2, 'deer', NOW).factors.find(v => v.k === 'Wind'); return !!sat && sat.dir === 0 && sat.conf === 'contested' && /^Wind to 33 mph: /.test(sat.why) && /Shown, not scored\.$/.test(sat.why) && /Shown from 18 mph, not scored\./.test(X.A.T.fxSheetWhy()); })());
+  const wk2 = nwsWeek();
+  wk2.hourly.properties.periods = wk2.hourly.properties.periods.filter(p => !p.startTime.startsWith('2026-11-03') && !(p.startTime.startsWith('2026-11-04') && +p.startTime.slice(11, 13) >= 12));
+  setHours(wk2, '2026-11-04', [9], { windSpeed: '20 mph', windDirection: 'E' });
+  X = await load(wk2);
+  ok('a day with no hourly rows takes the daytime period\'s own wind and direction', X.days[5].hours.length === 0 && pair(X.days[5]) === 'S 10', pair(X.days[5]));
+  ok('hourly rows that stop before legal light ends are not trusted for a peak: the period\'s own wind stands', X.days[6].hours.length === 12 && pair(X.days[6]) === 'S 5', pair(X.days[6]));
+  const NIGHT = Date.parse('2026-10-30T02:00:00Z');   // 8:00 pm MDT, Thursday
+  const wk3 = nwsWeek();
+  wk3.forecast.properties.periods.shift();            // after 6 pm the weather service drops today's daytime period
+  Object.assign(wk3.forecast.properties.periods[0], { name: 'Tonight', windSpeed: '5 to 10 mph', windDirection: 'E' }, chance(30));
+  wk3.hourly.properties.periods = wk3.hourly.properties.periods.filter(p => Date.parse(p.startTime) >= NIGHT);
+  setHours(wk3, '2026-10-29', [20, 21, 22, 23], { windSpeed: '15 mph', windDirection: 'NE' });
+  X = await load(wk3, NIGHT);
+  ok('after dark today, with no daylight hours and no daytime period, the night period\'s wind and direction are taken together', X.days[0].key === '2026-10-29' && !X.days[0].dayP && pair(X.days[0]) === 'E 10', pair(X.days[0]));
+  ok('after dark the one chance left is tonight\'s and says so, on the tile and in the row', X.days[0].dpop === null && X.days[0].npop === 30 && tile(X.A.T.fxSheetDay(0), 'Precip') === '30% night' && / &middot; precip 30% tonight$/.test(rowText(X.html, 0)), JSON.stringify([X.days[0].dpop, X.days[0].npop, tile(X.A.T.fxSheetDay(0), 'Precip'), rowText(X.html, 0)]));
+
+  /* 12b. Precipitation: the day and the night apart, as the weather service files them. */
+  const wk4 = nwsWeek();
+  periodOf(wk4, '2026-10-29', true).name = 'Today';
+  Object.assign(periodOf(wk4, '2026-10-29', false), { name: 'Tonight' }, chance(24));                       // the Kamas case: a dry day, 24% tonight
+  setHours(wk4, '2026-10-29', [20, 21, 22, 23], chance(24));
+  Object.assign(periodOf(wk4, '2026-10-30', false), chance(40));                                            // Friday: 10% by day, 40% at night
+  Object.assign(periodOf(wk4, '2026-10-31', false), chance(90));                                            // Saturday: 70% by day, 90% at night
+  Object.assign(periodOf(wk4, '2026-11-01', false), chance(40));                                            // Sunday night into Monday before dawn
+  setHours(wk4, '2026-11-02', [2, 3, 4], chance(40));
+  Object.assign(periodOf(wk4, '2026-11-03', true), chance(null)); Object.assign(periodOf(wk4, '2026-11-03', false), chance(null));   // the weather service sends null for no chance
+  wk4.forecast.properties.periods.pop();                                                                     // the seventh night period is not out yet
+  setHours(wk4, '2026-11-04', [18, 19, 20, 21, 22, 23], chance(35));
+  X = await load(wk4);
+  const pd = X.days, sheetTile = i => tile(X.A.T.fxSheetDay(i), 'Precip');
+  ok('a dry day with a chance tonight: the tile shows the two apart and the row says tonight', pd[0].dpop === 0 && pd[0].npop === 24 && tile(X.html, 'Precip') === '0% day<br>24% night' && rowText(X.html, 0) === 'Sunny &middot; S 5 mph &middot; precip 24% tonight', JSON.stringify([pd[0].dpop, pd[0].npop, tile(X.html, 'Precip'), rowText(X.html, 0)]));
+  ok('no bare percentage stands for tonight\'s chance on the Today tile or row', !/<div class="k">Precip<\/div><div class="v">24%<\/div>/.test(X.html) && !/precip 24%(?! tonight)/.test(X.html));
+  ok('another day whose only chance is at night says at night', pd[1].dpop === 10 && pd[1].npop === 40 && / &middot; precip 40% at night$/.test(rowText(X.html, 1)) && sheetTile(1) === '10% day<br>40% night', rowText(X.html, 1) + ' | ' + sheetTile(1));
+  ok('a day with both shows the day\'s chance bare and the night\'s labelled', / &middot; precip 70%, 90% at night$/.test(rowText(X.html, 2)) && sheetTile(2) === '70% day<br>90% night', rowText(X.html, 2) + ' | ' + sheetTile(2));
+  ok('a chance before dawn belongs to the night before, as the weather service files it, and is not on the next day\'s row', / &middot; precip 40% at night$/.test(rowText(X.html, 3)) && pd[4].dpop === 0 && pd[4].npop === 0 && !/precip/.test(rowText(X.html, 4)) && sheetTile(4) === '0%', rowText(X.html, 3) + ' | ' + rowText(X.html, 4) + ' | ' + sheetTile(4));
+  ok('the factors still read the largest figure on the calendar day, as before', pd[0].pop === 24 && pd[4].pop === 40 && pd[2].pop === 90);
+  ok('a null chance from the weather service is 0, and a day and night that agree show one figure', pd[5].dpop === 0 && pd[5].npop === 0 && sheetTile(5) === '0%' && !/precip/.test(rowText(X.html, 5)));
+  ok('with the night period not out yet, the evening hours stand in and are labelled', pd[6].npop === 35 && pd[6].nlabel === 'at night' && / &middot; precip 35% at night$/.test(rowText(X.html, 6)) && sheetTile(6) === '0% day<br>35% night', rowText(X.html, 6) + ' | ' + sheetTile(6));
+  const plain = await load(nwsWeek());
+  ok('the storm day in the standing week, 70% by day and by night, reads precip 70% once and one figure on its tile', rowText(plain.html, 2) === 'Snow Showers Likely &middot; NW 25 mph &middot; precip 70%' && tile(plain.A.T.fxSheetDay(2), 'Precip') === '70%' && tile(plain.html, 'Precip') === '0%', rowText(plain.html, 2) + ' | ' + tile(plain.A.T.fxSheetDay(2), 'Precip'));
+  const DAWN = Date.parse('2026-10-29T09:00:00Z');    // 3:00 am MDT, Thursday
+  const wk5 = nwsWeek();
+  wk5.forecast.properties.periods.unshift({ ...nwsPeriod(DAYS[0], false), name: 'Overnight', startTime: local('2026-10-29', 3), endTime: local('2026-10-29', 6), ...chance(30) });
+  periodOf(wk5, '2026-10-29', false).name = 'Thursday Night';
+  wk5.hourly.properties.periods = wk5.hourly.properties.periods.filter(p => Date.parse(p.startTime) >= DAWN);
+  X = await load(wk5, DAWN);
+  ok('before 6 am today has two night periods, Overnight and tonight\'s: the larger chance shows, labelled at night, never tonight', X.days[0].npop === 30 && X.days[0].nlabel === 'at night' && / &middot; precip 30% at night$/.test(rowText(X.html, 0)) && !/tonight/.test(rowText(X.html, 0)), rowText(X.html, 0));
+
+  /* 12c. The hard-freeze line: the forecast low in its own sentence, the study's range in the next. */
+  const freeze = sig[4].factors.find(f => f.k === 'Hard freeze');
+  ok('Monday\'s 28-degree low: the forecast low stands apart from the study\'s range, same claim, same confidence', freeze && freeze.dir === 1 && freeze.conf === 'strong' && freeze.why === 'Forecast low of 28°. A hard freeze, with night lows from about 32° down to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).', JSON.stringify(freeze));
+  ok('no factor runs a forecast low into the study\'s range any more', sig.every(s => s.factors.every(f => !/near 32 to 23|Low of \d+°:/.test(f.why))));
+  X = await load(nwsWeek());
+  const cold = (key, lo, sp = 'deer') => X.A.T.fxSignal([{ key, hi: 40, lo, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Tuesday' }], 0, sp, NOW, [], SPOT).factors.find(f => f.k === 'Hard freeze');
+  ok('the rule the Why sheet now states is the rule the code runs: 28 or colder, October 1 to December 15, deer only', !!cold('2026-12-15', 28) && !cold('2026-12-15', 29) && !cold('2026-12-16', 20) && !cold('2026-09-30', 20) && !!cold('2026-10-01', 28) && !cold('2026-11-10', 10, 'elk'));
+  ok('a low far below the study\'s range still reads true', cold('2026-11-10', 10).why.startsWith('Forecast low of 10°. A hard freeze, with night lows from about 32° down to 23°, is what typically starts'));
+  ok('the Why sheet gives the range the same way and states the trigger', /<dt>Hard freeze &middot; strong, mule deer<\/dt><dd>Night lows from about 32 down to 23 degrees are what typically start mule deer drifting off the high country \(Wyoming and Montana GPS does\)\. Scored \+1 for deer when the forecast low is 28 degrees or colder, October to mid-December\. Not scored for elk, where the studies point to snow depth and hunting pressure instead\.<\/dd>/.test(X.A.T.fxSheetWhy()));
+
+  /* 12d. The rounded spot and its grid cell: nothing more precise is sent, and the line says whose forecast it is. */
+  const cellLine = /; fetched [^.<]*\. The forecast is for that grid cell at that elevation, not the exact spot, and may differ from it\. Sun and moon computed on this phone for 41\.740, -111\.830\./;
+  ok('the source line says the forecast is for the named cell at its elevation, on the screen and on a day sheet', cellLine.test(X.html) && cellLine.test(X.A.T.fxSheetDay(2)) && /grid cell near Logan, UT at 5,906 ft, issued/.test(X.html), X.html.slice(X.html.indexOf('Forecast: National')).slice(0, 400));
+  ok('the sentence is said once on the screen', X.html.split('not the exact spot').length === 2);
+  const noGrid = await load(nwsWeek(), NOW, SPOT, { nwsFail: u => /gridpoints\/SLC\/1,1$/.test(u) });
+  ok('with no elevation on the record the sentence does not point at one', noGrid.rec.elev === null && /SLC office, grid cell near Logan, UT, issued [^.<]*; fetched [^.<]*\. The forecast is for that grid cell, not the exact spot, and may differ from it\. Sun/.test(noGrid.html), noGrid.html.slice(noGrid.html.indexOf('Forecast: National')).slice(0, 400));
+  const wkNoNear = nwsWeek(); delete wkNoNear.points.properties.relativeLocation;
+  const noNear = await load(wkNoNear);
+  ok('with no place name for the cell the sentence does not say "that" cell', /SLC office, at 5,906 ft, issued [^.<]*; fetched [^.<]*\. The forecast is for a grid cell at that elevation, not the exact spot, and may differ from it\. Sun/.test(noNear.html), noNear.html.slice(noNear.html.indexOf('Forecast: National')).slice(0, 400));
+  const bare = await load(wkNoNear, NOW, SPOT, { nwsFail: u => /gridpoints\/SLC\/1,1$/.test(u) });
+  ok('with neither, it is still a true sentence', /SLC office, issued [^.<]*; fetched [^.<]*\. The forecast is for a grid cell, not the exact spot, and may differ from it\. Sun/.test(bare.html), bare.html.slice(bare.html.indexOf('Forecast: National')).slice(0, 400));
+  const Z = await load(nwsWeek(), NOW, { lat: 37.2645, lon: -112.9932, label: 'Zion', kind: 'unit', id: 2, units: ['Zion'] });
+  ok('a unit centre with four decimals still goes to the weather service at two, and nothing finer leaves the phone', Z.A.fetched.filter(u => u.includes('weather.gov'))[0] === 'https://api.weather.gov/points/37.26,-112.99' && [...Z.A.fetched, ...Z.A.pixels].every(u => !/37\.26\d|112\.99\d/.test(decodeURIComponent(u))) && /Sun and moon computed on this phone for 37\.26[45], -112\.993\./.test(Z.html), Z.A.fetched.filter(u => u.includes('weather.gov')).join(' '));
+
   finished = true;
   console.log(`test_forecast: ${pass} pass, ${fail} fail`);
   process.exit(fail ? 1 : 0);
