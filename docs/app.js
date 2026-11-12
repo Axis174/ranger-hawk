@@ -1093,7 +1093,7 @@ load().then(ok => {
   render(); net();
   if (typeof fWaterParam === 'function' && fWaterParam()) fishLoad();
   if ((typeof hUnitParam === 'function' && hUnitParam()) || (typeof fxUnitParam === 'function' && fxUnitParam())) unitsLoad();
-  import('./vendor/suncalc.js').then(m => { SUN = m; if (tab === 'today') render(); }).catch(() => { /* no legal-light card */ });
+  import('./vendor/suncalc.js').then(m => { SUN = m; if (tab === 'today' || tab === 'forecast') render(); }).catch(() => { /* no legal-light card */ });
 });
 /* Register the worker, and when a new one takes over, reload once so the
    running page picks up the new shell instead of showing the old one until

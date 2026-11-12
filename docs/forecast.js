@@ -258,21 +258,26 @@ function fxWind(hours, L, dayP, nightP) {
   return rows.length ? peak(rows) : { wind: null, dir: '' };
 }
 /* The day's gust for the tile and the Wind factor: the largest gust among the
-   grid chunks that lie inside legal light for at least an hour (the same
-   start and big-game end the wind uses). The grid comes in three- and six-hour
-   chunks, so "inside" cannot be exact: a chunk that only touches the last
-   minutes of legal light (5 to 8 pm in November) is night, and one that
-   covers the first hour and more of it (5 to 8 am) is day. Until v48 it was
-   the largest gust of the whole calendar day, so a midnight gust could sit
-   beside a daylight wind, and the Wind factor could name it. The calendar-day
-   figure still stands when there is nothing better: no sun times, no chunk
-   inside legal light (the grid stops short), or a week stored before v48,
-   whose chunks carry no length. */
+   grid chunks that overlap legal light (the same start and big-game end the
+   wind uses) with no more than three hours of the chunk outside it. The grid
+   comes in three- and six-hour chunks, so the figure cannot stop at the
+   minute: the three-hour chunk that holds first or last light always counts
+   (5 to 8 pm in November carries the last forty minutes of legal light), a
+   chunk wholly in the dark never does, and a six-hour chunk that only begins
+   or ends in legal light (5 to 11 pm) is left out as mostly night. Until v48
+   it was the largest gust of the whole calendar day, so a midnight gust could
+   sit beside a daylight wind, and the Wind factor could name it. The
+   calendar-day figure still stands when there is nothing better: no sun
+   times, no chunk that qualifies, or a week stored before v48, whose chunks
+   carry no length. Today's figure is the day's, hours already past included. */
 function fxGust(list, key, L) {
   const all = Math.max(0, ...(list || []).filter(v => fxDay(v.s) === key).map(v => v.v));
   if (!L) return all;
   const H = 3600000, from = L.start.getTime(), to = L.late.getTime();
-  const lit = (list || []).filter(v => v.h > 0).filter(v => { const mid = Date.parse(v.s), half = v.h * H / 2; return Math.min(mid + half, to) - Math.max(mid - half, from) >= H; });
+  const lit = (list || []).filter(v => v.h > 0).filter(v => {
+    const mid = Date.parse(v.s), a = mid - v.h * H / 2, b = mid + v.h * H / 2, inside = Math.min(b, to) - Math.max(a, from);
+    return inside > 0 && (b - a) - inside <= 3 * H;
+  });
   return lit.length ? Math.max(0, ...lit.map(v => v.v)) : all;
 }
 /* Seven local days from today. The 12-hour periods carry the forecaster's
@@ -289,19 +294,22 @@ function fxGust(list, key, L) {
    when a period is missing: 6 am to 6 pm for the day, 6 pm to midnight for
    the night.
    The tile and the row print those two, so tonight's chance is never shown as
-   today's (the Kamas unit on 2026-11-03 read 24% with a dry day). pop is the
-   largest figure on the calendar day and the night to come; the factors read
-   it. nlabel is "tonight" only for today's row when its night period is the
-   one the weather service names Tonight.
+   today's (the Kamas unit on 2026-11-03 read 24% with a dry day). pop is still
+   the largest figure on the calendar day; the factors read it and it is
+   unchanged. nlabel is "tonight" only for today's row when its evening period
+   is the one the weather service names Tonight.
 
-   nightP is the night period that starts that evening, at every hour. Until
-   v48 it was the first night period dated today, which before 6 am is the
-   Overnight one, so today's Low, its night words and the hard-freeze factor
-   read this morning's low until 6 am and tonight's after it, beside a night
-   chance that was already tonight's. The Overnight period is kept as early,
-   for the forecaster's words on the day sheet, where it comes first. A day
-   with no evening period yet (the seventh, on a fetch before dawn) has no
-   nightP and the Low falls to the day's lowest hourly figure, as before. */
+   Before 6 am the weather service sends an Overnight period dated today as
+   well as the night to come. nightP is the first night period dated today,
+   so until 6 am it is the Overnight one and today's Low and the hard-freeze
+   factor read this morning's low; after 6 am they read tonight's. That is
+   left as it was on purpose: the evidence file says the previous day's
+   weather predicted movement best, so which night the factor should read is
+   an open question for every day, not one to settle by tidying this row
+   (research/2026-11-12_forecast-gusts-dawn-low_checker-verdict.md). early and
+   evening hold the two periods apart: the night chance reads evening, and the
+   day sheet prints the forecaster's words for early, the day and evening in
+   the order they happen. */
 function fxDays(rec, spot, now) {
   const start = fxDay(new Date(now == null ? fxNow() : now).toISOString());
   const [y, m, d] = start.split('-').map(Number);
@@ -310,8 +318,9 @@ function fxDays(rec, spot, now) {
     const key = fxDay(new Date(Date.UTC(y, m - 1, d + i, 19)).toISOString());
     const [ky, km, kd] = key.split('-').map(Number), date = new Date(ky, km - 1, kd);
     const dayP = rec.periods.find(p => p.day && fxDay(p.s) === key) || null;
-    const nightP = rec.periods.find(p => !p.day && fxDay(p.s) === key && fxHour(p.s) >= 12) || null;
     const early = rec.periods.find(p => !p.day && fxDay(p.s) === key && fxHour(p.s) < 12) || null;
+    const evening = rec.periods.find(p => !p.day && fxDay(p.s) === key && fxHour(p.s) >= 12) || null;
+    const nightP = early || evening;
     const hours = rec.hourly.filter(h => fxDay(h.s) === key);
     if (!dayP && !nightP && !hours.length) continue;
     const temps = hours.map(h => h.t).filter(t => t != null);
@@ -331,10 +340,10 @@ function fxDays(rec, spot, now) {
       gust: gust ? Math.round(gust) : null,
       pop: Math.max(0, dayP && dayP.pop || 0, nightP && nightP.pop || 0, ...hours.map(h => h.pop || 0)),
       dpop: dayP ? dayP.pop || 0 : most(clockHours(6, 18)),
-      npop: nightP ? nightP.pop || 0 : most(clockHours(18, 24)),
-      nlabel: i === 0 && nightP && nightP.n === 'Tonight' ? 'tonight' : 'at night',
+      npop: evening ? evening.pop || 0 : most(clockHours(18, 24)),
+      nlabel: i === 0 && evening && evening.n === 'Tonight' ? 'tonight' : 'at night',
       snow: sum(rec.snow || []), rain: sum(rec.qpf || []),
-      hours, dayP, nightP, early, light,
+      hours, dayP, nightP, early, evening, light,
       moon: fxMoon(date, spot.lat, spot.lon)
     });
   }
@@ -583,7 +592,7 @@ function fxSheetDay(i) {
     <div class="sec-title" style="padding:0 16px">Last light</div>${fxHours(d, L.sunset.getTime() - 3 * H, L.late.getTime() + H)}`;
   if (d.moon) h += `<div class="sec-title" style="padding:0 16px">Moon</div>${fxMoonStats(d)}`;
   /* In the order they happen: before 6 am the weather service's Overnight period comes first, then the day, then the night to come. */
-  const said = [d.early, d.dayP, d.nightP].filter(Boolean);
+  const said = [d.early, d.dayP, d.evening].filter(Boolean);
   if (said.length) h += `<div class="sec-title" style="padding:0 16px">In the forecaster's words</div>
     ${said.map(p => `<p class="fine" style="padding:4px 16px 0"><b>${esc(p.n)}.</b> ${esc(p.df)}</p>`).join('')}`;
   h += `<p class="fine" style="padding:12px 16px 0">${fxSourceLine(rec, spot)}</p>`;
