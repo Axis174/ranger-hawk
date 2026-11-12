@@ -436,6 +436,14 @@ async function app(opts = {}) {
   ok('a tie with no hour from the period\'s exact direction takes the nearest on the compass, not the earliest', pair(tie.days[2]) === 'WNW 8' && tie.days[2].dayP.d === 'NW', pair(tie.days[2]));
   ok('compass distance wraps through north and an unknown direction never wins a tie', vm.runInContext("fxTurn('NNW', 'NNE') === 2 && fxTurn('N', 'S') === 8 && fxTurn('W', 'W') === 0 && fxTurn('', 'NW') === 99 && fxTurn('VRB', 'NW') === 99", tie.A.box));
   ok('the wind factor still says shown, not scored, and scores nothing', (() => { const sat = X.A.T.fxSignal(X.days, 2, 'deer', NOW).factors.find(v => v.k === 'Wind'); return !!sat && sat.dir === 0 && sat.conf === 'contested' && /^Wind to 33 mph: /.test(sat.why) && /Shown, not scored\.$/.test(sat.why) && /Shown from 18 mph, not scored\./.test(X.A.T.fxSheetWhy()); })());
+  /* Legal light that ends exactly on the hour: the row that starts then is night, and rows that end then cover the day. */
+  const fxWindFn = vm.runInContext('fxWind', tie.A.box);
+  const edgeLight = { start: new Date(local('2026-11-02', 6)), late: new Date(local('2026-11-02', 18)) };
+  const edgeRows = [...Array(12).keys()].map(i => ({ s: local('2026-11-02', 6 + i), w: '5 mph', d: 'S' }));
+  const edgePeriod = { w: '20 mph', d: 'N' };
+  const withNight = fxWindFn([...edgeRows, { s: local('2026-11-02', 18), w: '30 mph', d: 'E' }], edgeLight, edgePeriod, null), toTheHour = fxWindFn(edgeRows, edgeLight, edgePeriod, null);
+  ok('legal light ending on the hour: the hour that starts then is not a daylight hour', withNight.wind === 5 && withNight.dir === 'S', JSON.stringify(withNight));
+  ok('legal light ending on the hour: rows that end then are trusted, not swapped for the period\'s wind', toTheHour.wind === 5 && toTheHour.dir === 'S', JSON.stringify(toTheHour));
   const wk2 = nwsWeek();
   wk2.hourly.properties.periods = wk2.hourly.properties.periods.filter(p => !p.startTime.startsWith('2026-11-03') && !(p.startTime.startsWith('2026-11-04') && +p.startTime.slice(11, 13) >= 12));
   setHours(wk2, '2026-11-04', [9], { windSpeed: '20 mph', windDirection: 'E' });
