@@ -229,18 +229,29 @@ function fxMoon(day, lat, lon) {
    whole calendar day beside the daytime period's direction, and a midnight
    wind could sit beside an afternoon direction (the Zion unit on 2026-11-04:
    12 mph from an east wind at midnight, shown as WNW; the weather service's
-   daytime figure was 7). Where several hours tie for the peak, one blowing
-   from the daytime period's direction is taken, so the label agrees with the
-   weather service's wherever it can. When the hourly rows do not reach the end
+   daytime figure was 7). Where several hours tie for the peak, the one whose
+   direction is nearest the daytime period's on the compass is taken (the
+   earliest of equals), so the label agrees with the weather service's as far
+   as a peak hour allows: the Kamas unit on 2026-11-14 tied at 8 mph, from the
+   SE at dawn and the WNW in the afternoon, beside a period that said NW. It is
+   still a peak hour's own direction, so it can differ from the period's label,
+   which is the weather service's summary of the whole day. When the hourly rows do not reach the end
    of legal light (the seventh day, today after dark, no sun times) the wind
    and direction are a period's own, taken together: the daytime period's,
    then the night period's. A peak of 0 shows as no figure, as it always has. */
+const FX_COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const fxTurn = (a, b) => { const i = FX_COMPASS.indexOf(a), j = FX_COMPASS.indexOf(b); if (i < 0 || j < 0) return a === b ? 0 : 99; const d = Math.abs(i - j); return Math.min(d, 16 - d); };   // compass points between two directions
 function fxWind(hours, L, dayP, nightP) {
   const H = 3600000, rows = (hours || []).map(h => ({ t: Date.parse(h.s), v: fxMph(h.w), d: h.d || '' })).filter(r => r.v != null && isFinite(r.t));
-  const peak = list => { const top = Math.max(...list.map(r => r.v)), at = list.filter(r => r.v === top); return { wind: top || null, dir: (at.find(r => dayP && r.d === dayP.d) || at[0]).d }; };
+  const peak = list => {
+    const top = Math.max(...list.map(r => r.v)), at = list.filter(r => r.v === top);
+    let best = at[0];
+    if (dayP && dayP.d) for (const r of at) if (fxTurn(r.d, dayP.d) < fxTurn(best.d, dayP.d)) best = r;
+    return { wind: top || null, dir: best.d };
+  };
   if (L) {
-    const lit = rows.filter(r => r.t + H > L.start.getTime() && r.t <= L.late.getTime());
-    if (lit.some(r => r.t + H > L.late.getTime())) return peak(lit);
+    const lit = rows.filter(r => r.t + H > L.start.getTime() && r.t < L.late.getTime());
+    if (lit.some(r => r.t + H >= L.late.getTime())) return peak(lit);
   }
   for (const p of [dayP, nightP]) if (p && fxMph(p.w) != null) return { wind: fxMph(p.w) || null, dir: p.d || '' };
   return rows.length ? peak(rows) : { wind: null, dir: '' };
@@ -252,9 +263,12 @@ function fxWind(hours, L, dayP, nightP) {
 
    The chance of precipitation is kept three ways. dpop and npop are the day
    and the night apart, as the weather service files them: its daytime period,
-   and the night period that starts that evening (before 6 am today has two,
-   Overnight and Tonight, and the larger is taken). Hourly rows stand in only
-   when a period is missing: 6 am to 6 pm for the day, 6 pm on for the night.
+   and the night period that starts that evening. The Overnight period the
+   weather service sends before 6 am covers the hours before dawn and is left
+   out, as the hours before dawn are on every other day: at 4 am a wet
+   Overnight must not read as a wet night to come. Hourly rows stand in only
+   when a period is missing: 6 am to 6 pm for the day, 6 pm to midnight for
+   the night.
    The tile and the row print those two, so tonight's chance is never shown as
    today's (the Kamas unit on 2026-11-03 read 24% with a dry day). pop is still
    the largest figure on the calendar day; the factors read it and it is
@@ -276,7 +290,7 @@ function fxDays(rec, spot, now) {
     const gust = Math.max(0, ...(rec.gust || []).filter(v => fxDay(v.s) === key).map(v => v.v));
     const light = typeof legalLight === 'function' ? legalLight(date, spot.lat, spot.lon) : null;
     const wind = fxWind(hours, light, dayP, nightP);
-    const nights = rec.periods.filter(p => !p.day && fxDay(p.s) === key);
+    const nights = rec.periods.filter(p => !p.day && fxDay(p.s) === key && fxHour(p.s) >= 12);
     const most = list => list.length ? Math.max(...list.map(v => v || 0)) : null;
     const clockHours = (from, to) => hours.filter(h => { const c = fxHour(h.s); return c >= from && c < to; }).map(h => h.pop);
     out.push({
