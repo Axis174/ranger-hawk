@@ -156,7 +156,10 @@ says when it was fetched. Since v47 the day's wind is the strongest hour inside 
 light with that hour's own direction (the weather service's period wind when the hourly
 rows stop short), the chance of precipitation is shown for the day and the night apart as
 the weather service files them, and the source line says the forecast is for the named
-grid cell at its elevation, not the exact spot. Snow on the ground comes from the four SNOTEL gauges in
+grid cell at its elevation, not the exact spot. Since v48 the day's gust is the largest
+gust value whose span overlaps legal light, not the calendar day's, and before 6 am the
+day sheet gives the forecaster's words for Overnight, the day and the night to come in
+that order. Snow on the ground comes from the four SNOTEL gauges in
 `data/ut/snow.json` (their lat, lon and elevation from the NWCC stations call, cached in
 `scraper/sources.py`): a gauge within 25 miles of the spot, read in the last three days and
 showing ten inches or more, scores +1 strong from October to mid-December and names the
