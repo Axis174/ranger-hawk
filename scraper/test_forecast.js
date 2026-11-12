@@ -542,7 +542,8 @@ async function app(opts = {}) {
 
   /* 13. The follow-ups the v47 audit left open (research/2026-11-12_forecast-polish_checker-verdict.md and
      research/2026-11-12_forecast-gusts-dawn-low_checker-verdict.md). */
-  /* 13a. Gusts: the largest gust in the grid chunks that overlap legal light, not the calendar day's. */
+  /* 13a. Gusts: the largest gust value whose span overlaps legal light, not the calendar day's. The weather service
+     merges neighbouring hours that share a value, so spans run from three hours to twelve and more. */
   const gustChunk = (d, h, hours, mph) => ({ validTime: new Date(Date.parse(local(d, h))).toISOString().replace('.000Z', '+00:00') + '/PT' + hours + 'H', value: mph / 0.621371 });
   const wkG = nwsWeek(), gustValues = wkG.grid.properties.windGust.values;
   gustValues.push(gustChunk('2026-10-29', 21, 3, 30));   // tonight, 9 pm to midnight
@@ -551,25 +552,29 @@ async function app(opts = {}) {
   gustValues.push(gustChunk('2026-11-02', 5, 3, 22));    // Monday, 5 to 8 am: holds first light
   gustValues.push(gustChunk('2026-11-02', 17, 3, 35));   // Monday, 5 to 8 pm: holds the last minutes of legal light
   gustValues.push(gustChunk('2026-11-02', 20, 3, 50));   // Monday, 8 to 11 pm: wholly in the dark
-  gustValues.push(gustChunk('2026-11-03', 17, 6, 45));   // Tuesday, 5 to 11 pm in one six-hour chunk: mostly night
+  gustValues.push(gustChunk('2026-11-01', 0, 3, 55));    // Sunday, the small hours of the day the clocks go back
+  gustValues.push(gustChunk('2026-11-03', 17, 6, 45));   // Tuesday, 5 to 11 pm as one six-hour value: it holds the last minutes of legal light
+  gustValues.push(gustChunk('2026-11-04', 14, 9, 31));   // Wednesday, 2 to 11 pm as one nine-hour value, as the weather service merges equal neighbours
   const G = await load(wkG), gd = G.days, gustTile = i => tile(G.A.T.fxSheetDay(i), 'Gusts');
   const windFactor = i => G.A.T.fxSignal(gd, i, 'deer', NOW, [], SPOT).factors.find(f => f.k === 'Wind');
-  ok('the record keeps each grid chunk\'s length in hours', G.rec.gust.find(v => v.v === 40).h === 3 && G.rec.gust.filter(v => v.h === 6).length === 8 && G.rec.snow[0].h === 6, JSON.stringify(G.rec.gust.slice(0, 2)));
+  ok('the record keeps each grid chunk\'s length in hours', G.rec.gust.find(v => v.v === 40).h === 3 && G.rec.gust.filter(v => v.h === 6).length === 8 && G.rec.gust.find(v => v.v === 31).h === 9 && G.rec.snow[0].h === 6, JSON.stringify(G.rec.gust.slice(0, 2)));
   ok('a gust after midnight is not the day\'s gust: Friday shows its daylight figure', gd[1].gust === 18 && gustTile(1) === '18 mph', gd[1].gust + ' | ' + gustTile(1));
   ok('the Wind factor names the daylight gust, still shown and not scored', (() => { const f = windFactor(1); return !!f && f.dir === 0 && f.conf === 'contested' && /^Wind to 18 mph: /.test(f.why) && /Shown, not scored\.$/.test(f.why); })(), JSON.stringify(windFactor(1)));
   ok('a gust tonight does not raise today\'s tile or call up the Wind factor', gd[0].gust === 13 && tile(G.html, 'Gusts') === '13 mph' && !windFactor(0), gd[0].gust + ' | ' + tile(G.html, 'Gusts') + ' | ' + JSON.stringify(windFactor(0)));
   const mon = gd[4].light, minutesInside = (h1, h2) => (Math.min(Date.parse(local('2026-11-02', h2)), mon.late.getTime()) - Math.max(Date.parse(local('2026-11-02', h1)), mon.start.getTime())) / 60000;
   ok('the three-hour chunk that holds last light counts, though under an hour of it is legal light; the chunk after it, wholly in the dark, does not', minutesInside(17, 20) > 0 && minutesInside(17, 20) < 60 && minutesInside(20, 23) <= 0 && gd[4].gust === 35 && gustTile(4) === '35 mph', JSON.stringify([minutesInside(17, 20), minutesInside(20, 23), gd[4].gust]));
-  ok('a six-hour chunk that only begins in legal light is left out as mostly night', gd[5].gust === 18, gd[5].gust);
-  ok('an afternoon chunk on the day the clocks go back counts', gd[3].gust === 28, gd[3].gust);
+  ok('a six-hour value that begins in the last minutes of legal light counts: it is the forecast for those minutes too', gd[5].gust === 45 && gustTile(5) === '45 mph', gd[5].gust);
+  ok('a value merged into a nine-hour span counts when the span reaches into legal light, and the Wind factor names it', gd[6].gust === 31 && gustTile(6) === '31 mph' && /^Wind to 31 mph: /.test((windFactor(6) || {}).why || ''), gd[6].gust + ' | ' + JSON.stringify(windFactor(6)));
+  ok('on the day the clocks go back an afternoon value counts and a value in the small hours does not', gd[3].gust === 28, gd[3].gust);
   const withTouch = JSON.parse(JSON.stringify(G.rec)); withTouch.gust.push({ s: new Date(mon.start.getTime() - 1.5 * 3600000).toISOString(), v: 60, h: 3 });
   ok('a chunk that ends the minute legal light starts is night', G.A.T.fxDays(withTouch, SPOT, NOW)[4].gust === 35, G.A.T.fxDays(withTouch, SPOT, NOW)[4].gust);
   const oldRec = JSON.parse(JSON.stringify(G.rec)); oldRec.gust.forEach(v => { delete v.h; });
-  ok('a week stored before v48 has no chunk lengths and keeps the calendar-day figure', G.A.T.fxDays(oldRec, SPOT, NOW)[1].gust === 40 && G.A.T.fxDays(oldRec, SPOT, NOW)[4].gust === 50);
+  ok('a week stored before v48 has no chunk lengths and keeps the calendar-day figure', G.A.T.fxDays(oldRec, SPOT, NOW)[1].gust === 40 && G.A.T.fxDays(oldRec, SPOT, NOW)[3].gust === 55 && G.A.T.fxDays(oldRec, SPOT, NOW)[4].gust === 50);
   const nightOnly = JSON.parse(JSON.stringify(G.rec)); nightOnly.gust = nightOnly.gust.filter(v => !(v.h === 6 && /^2026-10-30/.test(v.s)));
-  ok('a day with no chunk that overlaps legal light falls back to the calendar day', G.A.T.fxDays(nightOnly, SPOT, NOW)[1].gust === 40, G.A.T.fxDays(nightOnly, SPOT, NOW)[1].gust);
-  const wholeDay = JSON.parse(JSON.stringify(nightOnly)); wholeDay.gust = wholeDay.gust.filter(v => !/^2026-10-30/.test(v.s)); wholeDay.gust.push({ s: new Date(Date.parse(local('2026-10-30', 12))).toISOString(), v: 44, h: 24 });
-  ok('a chunk a whole day long is too coarse to call daylight: the calendar-day figure stands', G.A.T.fxDays(wholeDay, SPOT, NOW)[1].gust === 44, G.A.T.fxDays(wholeDay, SPOT, NOW)[1].gust);
+  ok('a day with no value that overlaps legal light falls back to the calendar day', G.A.T.fxDays(nightOnly, SPOT, NOW)[1].gust === 40, G.A.T.fxDays(nightOnly, SPOT, NOW)[1].gust);
+  const wholeDay = JSON.parse(JSON.stringify(G.rec)); wholeDay.gust = wholeDay.gust.filter(v => !/^2026-10-30/.test(v.s));
+  wholeDay.gust.push({ s: new Date(Date.parse(local('2026-10-30', 12))).toISOString(), v: 44, h: 24 }, { s: new Date(Date.parse(local('2026-10-30', 1)) + 1800000).toISOString(), v: 60, h: 1 });
+  ok('a value that holds for the whole day counts, and a one-hour value in the small hours beside it does not', G.A.T.fxDays(wholeDay, SPOT, NOW)[1].gust === 44, G.A.T.fxDays(wholeDay, SPOT, NOW)[1].gust);
   vm.runInContext('__keepSun = SUN; SUN = null;', G.A.box);
   const gustNoSun = G.A.T.fxDays(G.rec, SPOT, NOW)[1].gust;
   vm.runInContext('SUN = __keepSun;', G.A.box);

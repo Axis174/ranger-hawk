@@ -257,27 +257,24 @@ function fxWind(hours, L, dayP, nightP) {
   for (const p of [dayP, nightP]) if (p && fxMph(p.w) != null) return { wind: fxMph(p.w) || null, dir: p.d || '' };
   return rows.length ? peak(rows) : { wind: null, dir: '' };
 }
-/* The day's gust for the tile and the Wind factor: the largest gust among the
-   grid chunks that overlap legal light (the same start and big-game end the
-   wind uses) with no more than three hours of the chunk outside it. The grid
-   comes in three- and six-hour chunks, so the figure cannot stop at the
-   minute: the three-hour chunk that holds first or last light always counts
-   (5 to 8 pm in November carries the last forty minutes of legal light), a
-   chunk wholly in the dark never does, and a six-hour chunk that only begins
-   or ends in legal light (5 to 11 pm) is left out as mostly night. Until v48
-   it was the largest gust of the whole calendar day, so a midnight gust could
-   sit beside a daylight wind, and the Wind factor could name it. The
-   calendar-day figure still stands when there is nothing better: no sun
-   times, no chunk that qualifies, or a week stored before v48, whose chunks
-   carry no length. Today's figure is the day's, hours already past included. */
+/* The day's gust for the tile and the Wind factor: the largest gust value
+   whose span overlaps legal light (the same start and big-game end the wind
+   uses). The weather service gives the gust as a run of values, each good for
+   a span of hours: three or six as issued, and nine, twelve or more where it
+   has merged neighbouring hours that share a value. A value is the forecast
+   for every hour of its span, so it counts when any of that span is legal
+   light, however long the span is; a value wholly in the dark never counts.
+   Until v48 the figure was the largest gust of the whole calendar day, so a
+   midnight gust could sit beside a daylight wind, and the Wind factor could
+   name it. The calendar-day figure still stands when there is nothing
+   better: no sun times, no value that overlaps legal light, or a week stored
+   before v48, whose values carry no span. Today's figure is the day's, hours
+   already past included. */
 function fxGust(list, key, L) {
   const all = Math.max(0, ...(list || []).filter(v => fxDay(v.s) === key).map(v => v.v));
   if (!L) return all;
   const H = 3600000, from = L.start.getTime(), to = L.late.getTime();
-  const lit = (list || []).filter(v => v.h > 0).filter(v => {
-    const mid = Date.parse(v.s), a = mid - v.h * H / 2, b = mid + v.h * H / 2, inside = Math.min(b, to) - Math.max(a, from);
-    return inside > 0 && (b - a) - inside <= 3 * H;
-  });
+  const lit = (list || []).filter(v => v.h > 0).filter(v => { const mid = Date.parse(v.s), half = v.h * H / 2; return Math.min(mid + half, to) > Math.max(mid - half, from); });
   return lit.length ? Math.max(0, ...lit.map(v => v.v)) : all;
 }
 /* Seven local days from today. The 12-hour periods carry the forecaster's
