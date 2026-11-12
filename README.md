@@ -152,7 +152,11 @@ in words (Strong, Good, Fair, Slow) and never a percentage. The table behind it 
 Spots: where the hunter stands (rounded to about a kilometre before it goes to the weather
 service), a hunt unit (the centre of its largest ring), an access point, or the home town;
 the last three weeks fetched stay in localStorage, so the screen works with no signal and
-says when it was fetched. Snow on the ground comes from the four SNOTEL gauges in
+says when it was fetched. Since v47 the day's wind is the strongest hour inside legal
+light with that hour's own direction (the weather service's period wind when the hourly
+rows stop short), the chance of precipitation is shown for the day and the night apart as
+the weather service files them, and the source line says the forecast is for the named
+grid cell at its elevation, not the exact spot. Snow on the ground comes from the four SNOTEL gauges in
 `data/ut/snow.json` (their lat, lon and elevation from the NWCC stations call, cached in
 `scraper/sources.py`): a gauge within 25 miles of the spot, read in the last three days and
 showing ten inches or more, scores +1 strong from October to mid-December and names the

@@ -337,7 +337,7 @@ async function run() {
     ok('forecast.js calls the slot once, so it is never inside a factor row or a card', (fx.match(/paidLink\(/g) || []).length === 1, String((fx.match(/paidLink\(/g) || []).length));
     ok('go.js has the two rows', /tab: 'privacy'/.test(go) && /tab: 'money'/.test(go));
     ok('index.html loads site.js after go.js', idx.indexOf('<script src="go.js"></script>\n<script src="site.js"></script>') > 0);
-    ok('sw.js is v46 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v46'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/ut/paid_links.json'") > 0);
+    ok('sw.js is v47 and lists site.js and paid_links.json', /VERSION = 'ranger-hawk-v47'/.test(sw) && sw.indexOf("'./site.js'") > 0 && sw.indexOf("'./data/ut/paid_links.json'") > 0);
     const scripts = (idx.match(/<script\b[^>]*>/g) || []).filter(t => !/type="application\/ld\+json"/.test(t));   // the structured data in <head> is not an app script
     ok('index.html loads state.js first before app.js and sw.js lists it', scripts[0] === '<script src="state.js">' && scripts.indexOf('<script src="app.js">') > 0 && sw.indexOf("'./state.js'") > 0);
   }
