@@ -33,6 +33,7 @@ const fxSave = () => { try { localStorage.setItem('ha.fx', JSON.stringify({ spot
 
 const FX_TTL = 90 * 60000;          // refresh a forecast older than this when there is signal
 const FX_KEEP = 3;                  // spots kept on the phone
+const FX_CARRY = 36 * 3600000;      // this morning's low is carried forward only from a forecast this fresh
 const FX_TZ = 'America/Denver';     // all of Utah
 const FX_TIER = { Strong: 'var(--elk)', Good: 'var(--brand)', Fair: 'var(--faint)', Slow: 'var(--warn)' };
 const fxKey = s => s.lat.toFixed(2) + ',' + s.lon.toFixed(2);
@@ -145,11 +146,45 @@ async function fxJson(url, tries = 2) {
 }
 /* Grid layers come as (UTC validTime, SI value) chunks; keep what the day rows sum, and each
    chunk's length in hours (h) so the gust figure can tell a daylight chunk from a night one. */
+const fxSpan = iso => { const m = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/.exec(iso || ''); return m ? ((+m[1] || 0) * 24 + (+m[2] || 0)) * 3600000 + (+m[3] || 0) * 60000 : 0; };
 function fxGrid(g, name, scale) {
   const layer = g && g.properties && g.properties[name];
-  const span = iso => { const m = /P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/.exec(iso || ''); return m ? ((+m[1] || 0) * 24 + (+m[2] || 0)) * 3600000 + (+m[3] || 0) * 60000 : 0; };
   // A chunk is dated by its midpoint: a six-hour chunk starting at 23:00 belongs to the next day, which matters once the clocks go back.
-  return (layer && layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { s: new Date(Date.parse(start) + span(dur) / 2).toISOString(), v: +(v.value * scale).toFixed(2), h: +(span(dur) / 3600000).toFixed(2) }; });
+  return (layer && layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { s: new Date(Date.parse(start) + fxSpan(dur) / 2).toISOString(), v: +(v.value * scale).toFixed(2), h: +(fxSpan(dur) / 3600000).toFixed(2) }; });
+}
+/* The grid's minimum-temperature layer: one figure for each night (7 pm to 9 am),
+   kept with the time its span ends and turned to whole degrees F. Once the
+   forecast is revised in the morning the first span is cut short to the last
+   hours of the night, but its figure is still the whole night's low: on
+   2026-11-16, across 15 forecast offices, 27 of 37 cut-short spans carried a
+   figure lower than every hourly temperature left inside them, and none a
+   higher one. A layer in any unit but Celsius is left out. */
+function fxGridLows(g) {
+  const layer = g && g.properties && g.properties.minTemperature;
+  if (!layer || !/degC$/.test(layer.uom || '')) return [];
+  return (layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { e: new Date(Date.parse(start) + fxSpan(dur)).toISOString(), v: Math.round(v.value * 9 / 5 + 32) }; });
+}
+/* The forecast low of the night that ends on the morning of the local day
+   `key`: the low the deer woke up to. The hard-freeze factor reads this and
+   never the night that follows the hunting day; why is in
+   research/2026-11-13_hard-freeze-night-evidence.md (no study tested weather
+   after the day, and a freeze after the hunt cannot have moved deer during it).
+   In order: the forecast's night period whose end falls on that morning (every
+   later day has one; today has one before 6 am, the Overnight period, and in a
+   forecast saved the evening before); for today only, the grid's figure for the
+   span that ended this morning, there from 6 am until about mid-afternoon; for
+   today only, the figure this phone saved earlier for this morning (dawn, set
+   in fxLoad). Null when none is there, and the factor then says nothing.
+   The period is matched by its end time, never as "the row before, nightP":
+   before 6 am today's nightP is the Overnight period, which would hand
+   tomorrow's row this morning's low. */
+function fxNightBefore(rec, key, today) {
+  const p = (rec.periods || []).find(p => !p.day && p.t != null && p.e && fxDay(p.e) === key && fxHour(p.e) <= 12);
+  if (p) return { lo: p.t, s: p.s };
+  if (!today) return null;
+  const g = (rec.lows || []).find(v => fxDay(v.e) === key && fxHour(v.e) <= 12);
+  if (g) return { lo: g.v };
+  return rec.dawn && rec.dawn.key === key && rec.dawn.lo != null ? { lo: rec.dawn.lo } : null;
 }
 async function fxLoad(spot, force) {
   const key = fxKey(spot), have = fxRecord(key);
@@ -175,8 +210,15 @@ async function fxLoad(spot, force) {
       elev: g && g.properties.elevation && g.properties.elevation.value != null ? Math.round(g.properties.elevation.value * 3.28084) : null,
       periods: f.properties.periods.map(p => ({ s: p.startTime, e: p.endTime, day: !!p.isDaytime, n: p.name, t: p.temperature, w: p.windSpeed, d: p.windDirection, sf: p.shortForecast, df: p.detailedForecast, pop: pop(p) })),
       hourly: h.properties.periods.slice(0, 170).map(p => ({ s: p.startTime, t: p.temperature, w: p.windSpeed, d: p.windDirection, sf: p.shortForecast, pop: pop(p) })),
-      gust: fxGrid(g, 'windGust', 0.621371), snow: fxGrid(g, 'snowfallAmount', 1 / 25.4), qpf: fxGrid(g, 'quantitativePrecipitation', 1 / 25.4)
+      gust: fxGrid(g, 'windGust', 0.621371), snow: fxGrid(g, 'snowfallAmount', 1 / 25.4), qpf: fxGrid(g, 'quantitativePrecipitation', 1 / 25.4),
+      lows: fxGridLows(g)
     };
+    /* This morning's low, kept with its date so a later refresh that no longer carries it can still
+       show it: from this forecast when it has it, else from the one it replaces if that was fetched
+       since yesterday morning (an older one is too stale a forecast to stand for last night). */
+    const today = fxDay(fxNow()), own = fxNightBefore(rec, today, true);
+    const kept = !own && have && fxNow() - have.at < FX_CARRY ? fxNightBefore(have, today, true) : null;
+    rec.dawn = own || kept ? { key: today, lo: (own || kept).lo } : null;
     FX.cache[key] = rec; FX.error = null; fxStore(key, rec);
     return rec;
   })();
@@ -298,15 +340,18 @@ function fxGust(list, key, L) {
 
    Before 6 am the weather service sends an Overnight period dated today as
    well as the night to come. nightP is the first night period dated today,
-   so until 6 am it is the Overnight one and today's Low and the hard-freeze
-   factor read this morning's low; after 6 am they read tonight's. That is
-   left as it was on purpose: the evidence file says the previous day's
-   weather predicted movement best, so which night the factor should read is
-   an open question for every day, not one to settle by tidying this row
-   (research/2026-11-12_forecast-gusts-dawn-low_checker-verdict.md). early and
+   so until 6 am it is the Overnight one and today's Low reads this morning's
+   low; after 6 am it reads tonight's. The Low tile keeps the weather
+   service's pairing of a day with the night that follows it. early and
    evening hold the two periods apart: the night chance reads evening, and the
    day sheet prints the forecaster's words for early, the day and evening in
-   the order they happen. */
+   the order they happen.
+
+   The hard-freeze factor does not read lo. It reads dawn: the low of the
+   night that ends on the morning of the row's day (fxNightBefore), with the
+   words that name that night: "this morning" on today's row, "tonight" on
+   tomorrow's, the weekday and "night" after that. Null when the forecast
+   and the phone have no figure for that night. */
 function fxDays(rec, spot, now) {
   const start = fxDay(new Date(now == null ? fxNow() : now).toISOString());
   const [y, m, d] = start.split('-').map(Number);
@@ -326,11 +371,13 @@ function fxDays(rec, spot, now) {
     const gust = fxGust(rec.gust, key, light);
     const wind = fxWind(hours, light, dayP, nightP);
     const most = list => list.length ? Math.max(...list.map(v => v || 0)) : null;
+    const before = fxNightBefore(rec, key, i === 0);
     const clockHours = (from, to) => hours.filter(h => { const c = fxHour(h.s); return c >= from && c < to; }).map(h => h.pop);
     out.push({
       key, date, i, name: i === 0 ? 'Today' : fxWF.format(date), label: fxLF.format(date),
       hi: dayP ? dayP.t : (temps.length ? Math.max(...temps) : null),
       lo: nightP ? nightP.t : (temps.length ? Math.min(...temps) : null),
+      dawn: before ? { lo: before.lo, when: i === 0 ? 'this morning' : i === 1 ? 'tonight' : fxWF.format(new Date(before.s)) + ' night' } : null,
       words: dayP ? dayP.sf : (nightP ? nightP.sf : (hours[0] ? hours[0].sf : '')),
       nwords: nightP ? nightP.sf : '',
       wind: wind.wind, dir: wind.dir,
@@ -423,7 +470,10 @@ function fxSignal(days, i, species, now, units, spot) {
       ? `${s.name} opened ${when}. When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting in the first days. Hunt away from the roads.`
       : `${s.name} opened ${when}. In Wyoming, bucks moved farther from roads once the rifle season opened. Hunt away from the roads.`);
   }
-  if (sp === 'deer' && migration && d.lo != null && d.lo <= 28) push('Hard freeze', 1, 'strong', `Forecast low of ${d.lo}°. A hard freeze, with night lows from about 32° down to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).`);
+  /* The night that ends on the morning of this day, not the Low tile's night (fxNightBefore). The
+     sentence names the night so it cannot be read against the tile. Worded from
+     research/2026-11-13_hard-freeze-night-evidence.md. */
+  if (sp === 'deer' && migration && d.dawn && d.dawn.lo != null && d.dawn.lo <= 28) push('Hard freeze', 1, 'moderate', `Forecast low of ${d.dawn.lo}° ${d.dawn.when}. Hard freezes are one of the cues that start mule deer drifting off the high country: a Wyoming count of deer at a highway underpass, in one of its two autumns, linked the start to daily lows of about 32° down to 23°, and in Montana, GPS-collared does were more likely to start down the colder the daily low.`);
   const near = migration ? fxGauge(place, now) : null;
   if (near) {
     const far = Math.round(near.dist), away = far < 1 ? 'under a mile away' : far === 1 ? '1 mile away' : far + ' miles away';
@@ -601,7 +651,7 @@ function fxSheetWhy() {
       <dt>First and last light &middot; strong</dt><dd>Elk and mule deer feed and travel at the edges of the day and rest through the middle (Oregon GPS); whitetail work puts the peaks within about two hours of sunrise and sunset. That is the frame for every day here. No study gives it in minutes, so neither does this.</dd>
       <dt>Rut &middot; dates strong, daytime effect moderate</dt><dd>The Utah DWR management plans put the mule deer rut peak in mid-November and the elk rut peak in mid to late September. Near the peak, bucks tend and chase does and bulls gather cows, and both move more by day; after the rut they go quiet. No Utah GPS study measures the daytime change. Scored +2 at the peak, +1 on the shoulders.</dd>
       <dt>Opening days &middot; strong for elk, moderate for deer</dt><dd>When the rifle hunt opens, many elk move onto private land or into thick cover away from roads; Utah counted 10 to 15% of a herd shifting. In Wyoming, mule deer bucks moved farther from roads once the rifle season opened. Scored &minus;1 on a rifle opener and the two days after, for the seasons in this app that cover the spot's unit.</dd>
-      <dt>Hard freeze &middot; strong, mule deer</dt><dd>Night lows from about 32 down to 23 degrees are what typically start mule deer drifting off the high country (Wyoming and Montana GPS does). Scored +1 for deer when the forecast low is 28 degrees or colder, October to mid-December. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>
+      <dt>Hard freeze &middot; moderate, mule deer</dt><dd>Hard freezes are one of the cues that start mule deer drifting off the high country. A Wyoming count of deer at a highway underpass, in one of its two autumns, linked the start to daily lows of about 32 down to 23 degrees; in Montana, GPS-collared does were more likely to start down the colder the daily low. Both studied the autumn migration, not how much deer move on a given hunting day. Scored +1 for deer when the forecast low for the night before the hunting day is 28 degrees or colder, October to mid-December; 28 is this screen's own line inside the Wyoming range. Today's row reads this morning's low and says nothing when neither the forecast nor the phone still has it. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>
       <dt>Snow on the ground &middot; strong</dt><dd>Snow piling up on the summer range, about ten inches, is the main push that sends mule deer and elk down to winter range (Wyoming GPS deer moved more on days of deeper snow; the onset modelled near ten inches). Scored +1 for both species from October to mid-December when a SNOTEL gauge within 25 miles, read in the last three days, shows ten inches or more; the factor names the gauge, its elevation and its distance, so a valley spot is told the snow is up at the gauge. Four gauges cover the western Uintas, the upper Weber, the Wasatch above Heber and Boulder Mountain; elsewhere there is no reading. Forecast snowfall on its own was not supported as a predictor, so snow in the forecast stays shown and not scored.</dd>
       <dt>Heat &middot; moderate</dt><dd>On hot days animals bed in shade through the middle of the day, so expect movement at first and last light. No mule deer or elk study gives a temperature; 70 degrees is a guide's figure. Scored &minus;1, and &minus;2 from 80.</dd>
       <dt>Cold front, and clearing after a storm &middot; weak</dt><dd>Hunters report more daylight movement after a cold snap and on the first calm day after a storm. We found no mule deer or elk study that measured either; a whitetail GPS study found no general pattern. Scored +1 each, as a hunch.</dd>
@@ -610,7 +660,7 @@ function fxSheetWhy() {
       <dt>Moon &middot; weak</dt><dd>Hunters report slower mornings after a bright night. A GPS study of 48 whitetail bucks found no effect of the moon's phase or position; there is no mule deer or elk moon study. Shown, not scored.</dd>
       <dt>Barometric pressure &middot; contested</dt><dd>Pressure travels with fronts, wind and temperature, and the studies that tested it alone found no steady effect. Not scored, not shown.</dd>
     </dl>
-    <p class="fine" style="padding:12px 16px 0">The rut and the migration overlap in November: when both apply they are listed apart, not blended. Plan statements are herd-wide and typical; individual herds vary. Sources: the Utah DWR mule deer and elk management plans; the Utah and BYU GPS elk work on opening day (Sergeyev and others, 2022); Rodgers and others, 2021, on Wyoming mule deer and roads; Rittenhouse and others, 2015, and Anton and others, 2022, on snow depth and hard freezes; Mississippi State Extension, 2025, on the moon; whitetail GPS weather studies, named as whitetail. Mule deer and elk are not whitetails: most movement-forecast research, and most of the apps, are built on whitetail data. This read says "weak" or "contested" where the Western evidence is thin, and it never claims a percentage. The research notes behind this screen carry the links.</p>`;
+    <p class="fine" style="padding:12px 16px 0">The rut and the migration overlap in November: when both apply they are listed apart, not blended. Plan statements are herd-wide and typical; individual herds vary. Sources: the Utah DWR mule deer and elk management plans; the Utah and BYU GPS elk work on opening day (Sergeyev and others, 2022); Rodgers and others, 2021, on Wyoming mule deer and roads; Rittenhouse and others, 2015, and Anton and others, 2022 and 2025, on snow depth and hard freezes; Mississippi State Extension, 2025, on the moon; whitetail GPS weather studies, named as whitetail. Mule deer and elk are not whitetails: most movement-forecast research, and most of the apps, are built on whitetail data. This read says "weak" or "contested" where the Western evidence is thin, and it never claims a percentage. The research notes behind this screen carry the links.</p>`;
 }
 
 /* --------------------------------------------------------------- events ---- */

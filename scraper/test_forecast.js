@@ -25,6 +25,7 @@ function ok(name, cond, detail) {
   fail++; console.log('  FAIL ' + name + (detail ? '\n       got ' + String(detail).slice(0, 400) : ''));
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
+const fxDayOf = iso => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
 /* An await that never settles (a fetch nobody answered) drains the event loop and Node exits 0
    in silence, which the nightly would read as green. Say so and fail instead. */
 process.on('beforeExit', () => { if (!finished) { console.log('  ERROR test_forecast ended before its last check: an await never settled (' + pass + ' passed so far)'); process.exit(1); } });
@@ -43,7 +44,7 @@ const DAYS = [
 const local = (d, h) => `${d}T${String(h).padStart(2, '0')}:00:00${d >= '2026-11-01' ? '-07:00' : '-06:00'}`;
 const shift = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 86400000).toISOString().slice(0, 10);
 function nwsPeriod(day, isDay) {
-  return { name: isDay ? 'Daytime' : 'Night', startTime: local(day.d, isDay ? 6 : 18), endTime: local(day.d, isDay ? 18 : 23), isDaytime: isDay,
+  return { name: isDay ? 'Daytime' : 'Night', startTime: local(day.d, isDay ? 6 : 18), endTime: isDay ? local(day.d, 18) : local(shift(day.d, 1), 6), isDaytime: isDay,
     temperature: isDay ? day.hi : day.lo, temperatureUnit: 'F', windSpeed: day.w, windDirection: day.dir,
     shortForecast: isDay ? day.sf : day.nsf, detailedForecast: (isDay ? day.sf : day.nsf) + ', with a high near ' + day.hi + '. ' + day.dir + ' wind ' + day.w + '.',
     probabilityOfPrecipitation: { unitCode: 'wmoUnit:percent', value: day.pop } };
@@ -183,14 +184,15 @@ async function app(opts = {}) {
   const sig = days.map((d, i) => S.T.fxSignal(days, i, 'deer', NOW));
   const names = s => s.factors.map(f => f.k + (f.dir > 0 ? '+' : f.dir < 0 ? '' : '~') + f.dir).join(' ');
   ok('Thursday, nothing special: Fair, no factors, first light from about the start', sig[0].tier === 'Fair' && sig[0].factors.length === 0 && sig[0].best.when === 'dawn' && /^from about \d/.test(sig[0].best.window), names(sig[0]) + ' ' + sig[0].best.window);
-  ok('Saturday: hard freeze (strong, +1), snow shown not scored, cold front (weak, +1), wind shown not scored: Good', sig[2].tier === 'Good' && sig[2].score === 2 && names(sig[2]) === 'Hard freeze+1 Snow in the forecast~0 Cold front+1 Wind~0', names(sig[2]));
-  ok('snow in the forecast says the push is snow on the ground, read from the nearest gauge within 25 miles in season', /reads from the nearest SNOTEL gauge within 25 miles, October to mid-December/.test(sig[2].factors[1].why) && sig[2].factors[1].conf === 'weak');
+  ok('Saturday: no hard freeze, because Friday night is 40 and Saturday night\'s 24 comes after the hunt; snow shown not scored, cold front (weak, +1), wind shown not scored: Good', sig[2].tier === 'Good' && sig[2].score === 1 && names(sig[2]) === 'Snow in the forecast~0 Cold front+1 Wind~0', names(sig[2]));
+  ok('snow in the forecast says the push is snow on the ground, read from the nearest gauge within 25 miles in season', /reads from the nearest SNOTEL gauge within 25 miles, October to mid-December/.test(sig[2].factors[0].why) && sig[2].factors[0].conf === 'weak');
   ok('no factor prints a movement percentage; the only percent is the herd share on an opener', sig.every(s => s.factors.every(f => !/\d+%/.test(f.why) || /of a herd/.test(f.why))));
   ok('Saturday\'s front arrives by day, so the window is last light', sig[2].best.when === 'dusk' && /colder than mid-morning/.test(sig[2].best.why), sig[2].best.why);
   ok('every factor carries a confidence word and a reason', sig.every(s => s.factors.every(f => /^(strong|moderate|weak|contested)$/.test(f.conf) && f.why.length > 20)));
   ok('the cold front calls itself a hunch with no mule deer or elk study', /no mule deer or elk study that measured it, so treat it as a hunch/.test(sig[2].factors.find(f => f.k === 'Cold front').why));
-  ok('Sunday: rut shoulder (+1), hard freeze (+1), clearing after the storm (+1): Strong', sig[3].tier === 'Strong' && names(sig[3]) === 'Rut+1 Hard freeze+1 Clearing after the storm+1' && sig[3].factors[0].conf === 'moderate' && /guide's rule of thumb/.test(sig[3].factors[2].why), names(sig[3]));
-  ok('Monday: rut (+1) and a 28-degree low (+1) against an 11-degree warm-up (-1): Good', sig[4].tier === 'Good' && names(sig[4]) === 'Rut+1 Hard freeze+1 Warm-up-1', names(sig[4]));
+  ok('Sunday: rut shoulder (+1), Saturday night\'s 24 as a hard freeze (+1), clearing after the storm (+1): Strong', sig[3].tier === 'Strong' && names(sig[3]) === 'Rut+1 Hard freeze+1 Clearing after the storm+1' && sig[3].factors[1].why.startsWith('Forecast low of 24° Saturday night. ') && sig[3].factors[0].conf === 'moderate' && /guide's rule of thumb/.test(sig[3].factors[2].why), names(sig[3]));
+  ok('Monday: rut (+1) and Sunday night\'s 20 (+1) against an 11-degree warm-up (-1): Good', sig[4].tier === 'Good' && names(sig[4]) === 'Rut+1 Hard freeze+1 Warm-up-1' && sig[4].factors[1].why.startsWith('Forecast low of 20° Sunday night. '), names(sig[4]));
+  ok('Tuesday: Monday night\'s 28 is on the line, so it counts: rut (+1), hard freeze (+1), wind shown not scored: Good', sig[5].tier === 'Good' && names(sig[5]) === 'Rut+1 Hard freeze+1 Wind~0', names(sig[5]));
   ok('Wednesday at 72: rut, warm-up and a warm day: Fair, and the warm day says 70 is a guide\'s figure', sig[6].tier === 'Fair' && names(sig[6]) === 'Rut+1 Warm-up-1 Warm day-1' && /guide's figure/.test(sig[6].factors[2].why), names(sig[6]));
   const elk = days.map((d, i) => S.T.fxSignal(days, i, 'elk', NOW));
   ok('for elk: no November rut, no hard freeze (a mule deer study), Saturday Good, Wednesday Slow at 72', elk[2].tier === 'Good' && names(elk[2]) === 'Snow in the forecast~0 Cold front+1 Wind~0' && elk[3].factors.every(f => f.k !== 'Rut') && elk[6].tier === 'Slow' && elk[6].who === 'Elk', names(elk[2]) + ' | ' + names(elk[6]));
@@ -218,7 +220,7 @@ async function app(opts = {}) {
   ok('legal light is labelled an estimate and points at the guidebook, in the Today card\'s words', /Legal light today &middot; estimate/.test(html) && /guidebook table shifts a few minutes by county and is the legal one/.test(html) && /Computed for the centre of Cache, East Rich/.test(html));
   ok('the moon card says it is not scored', /Moon<\/div>/.test(html) && /not scored/.test(html));
   ok('no percentage sits beside the movement read', !/(Strong|Good|Fair|Slow)[^<]{0,20}\d+%/.test(html) && !/\d+% (High|Moderate|Low)/.test(html));
-  ok('the why sheet repeats the table with confidence words and the sources', /First and last light &middot; strong/.test(S.T.fxSheetWhy()) && /Rut &middot; dates strong, daytime effect moderate/.test(S.T.fxSheetWhy()) && /Hard freeze &middot; strong, mule deer/.test(S.T.fxSheetWhy()) && /Barometric pressure &middot; contested/.test(S.T.fxSheetWhy()) && /Rittenhouse/.test(S.T.fxSheetWhy()) && /48 whitetail bucks/.test(S.T.fxSheetWhy()) && /never claims a percentage/.test(S.T.fxSheetWhy()));
+  ok('the why sheet repeats the table with confidence words and the sources', /First and last light &middot; strong/.test(S.T.fxSheetWhy()) && /Rut &middot; dates strong, daytime effect moderate/.test(S.T.fxSheetWhy()) && /Hard freeze &middot; moderate, mule deer/.test(S.T.fxSheetWhy()) && /Barometric pressure &middot; contested/.test(S.T.fxSheetWhy()) && /Rittenhouse/.test(S.T.fxSheetWhy()) && /48 whitetail bucks/.test(S.T.fxSheetWhy()) && /never claims a percentage/.test(S.T.fxSheetWhy()));
   ok('the privacy page says the one time a position leaves the phone, rounded, to the weather service', /rounded to about a kilometre/.test(S.T.vPrivacy()) && /goes to the weather service and nowhere else/.test(S.T.vPrivacy()) && /to no online service but one/.test(S.T.vPrivacy()));
   ok('before any link is filled in the screen carries no paid link', !/Paid link/.test(html));
   vm.runInContext('PL = { links: [{ slot: "forecast", company: "Example Gear Co", label: "Gaiters at Example Gear Co", url: "https://example.com/g" }] }; plState = "ready";', S.box);
@@ -325,7 +327,9 @@ async function app(opts = {}) {
   ok('the same for elk', W.T.fxSignal(wd, 0, 'elk', NOW, undefined, SPOT).factors.some(f => f.k === 'Snow on the ground' && f.dir === 1 && f.conf === 'strong'));
   ok('with no spot passed, the screen\'s spot is used', W.T.fxSignal(wd, 0, 'deer', NOW).factors.some(f => f.k === 'Snow on the ground'));
   const sat = W.T.fxSignal(wd, 2, 'deer', NOW, undefined, SPOT);
-  ok('Saturday: the gauge sits between the hard freeze and the forecast snow, and the day is Strong', names(sat) === 'Hard freeze+1 Snow on the ground+1 Snow in the forecast~0 Cold front+1 Wind~0' && sat.tier === 'Strong', names(sat));
+  ok('Saturday: the gauge sits ahead of the forecast snow, and with no freeze the night before the day is Good', names(sat) === 'Snow on the ground+1 Snow in the forecast~0 Cold front+1 Wind~0' && sat.tier === 'Good', names(sat));
+  const sun = W.T.fxSignal(wd, 3, 'deer', NOW, undefined, SPOT);
+  ok('Sunday: the gauge sits after the hard freeze, and the day is Strong', names(sun) === 'Rut+1 Hard freeze+1 Snow on the ground+1 Clearing after the storm+1' && sun.tier === 'Strong', names(sun));
   ok('the day sheet carries it too', /Snow on the ground &middot; strong/.test(W.T.fxSheetDay(0)));
   ok('the Why sheet states the gauge rule: 25 miles, three days, ten inches, both species', /Snow on the ground &middot; strong<\/dt>/.test(W.T.fxSheetWhy()) && /within 25 miles, read in the last three days, shows ten inches or more/.test(W.T.fxSheetWhy()) && !/not on this screen yet/.test(W.T.fxSheetWhy()));
   const noSnow = async st => { const A = await snowWeek(st); const d = A.T.fxDays(A.T.fxRecord(key), SPOT, NOW); return !A.T.fxSignal(d, 0, 'deer', NOW, undefined, SPOT).factors.some(f => f.k === 'Snow on the ground') && !A.T.fxSignal(d, 2, 'deer', NOW, undefined, SPOT).factors.some(f => f.k === 'Snow on the ground'); };
@@ -517,14 +521,15 @@ async function app(opts = {}) {
   ok('with no sun times the daytime period\'s own wind and direction are shown, never the midnight hour', noSun[1].light === null && pair(noSun[1]) === 'WNW 7' && pair(noSun[3]) === 'N 5', pair(noSun[1]) + ' | ' + pair(noSun[3]));
 
   /* 12c. The hard-freeze line: the forecast low in its own sentence, the study's range in the next. */
-  const freeze = sig[4].factors.find(f => f.k === 'Hard freeze');
-  ok('Monday\'s 28-degree low: the forecast low stands apart from the study\'s range, same claim, same confidence', freeze && freeze.dir === 1 && freeze.conf === 'strong' && freeze.why === 'Forecast low of 28°. A hard freeze, with night lows from about 32° down to 23°, is what typically starts mule deer drifting off the high country (Wyoming and Montana GPS does).', JSON.stringify(freeze));
+  const freeze = sig[5].factors.find(f => f.k === 'Hard freeze');
+  ok('Tuesday reads Monday night\'s 28: the forecast low names its night and stands apart from the study\'s range; moderate, and no stronger than the two studies', freeze && freeze.dir === 1 && freeze.conf === 'moderate' && freeze.why === 'Forecast low of 28° Monday night. Hard freezes are one of the cues that start mule deer drifting off the high country: a Wyoming count of deer at a highway underpass, in one of its two autumns, linked the start to daily lows of about 32° down to 23°, and in Montana, GPS-collared does were more likely to start down the colder the daily low.', JSON.stringify(freeze));
   ok('no factor runs a forecast low into the study\'s range any more', sig.every(s => s.factors.every(f => !/near 32 to 23|Low of \d+°:/.test(f.why))));
   X = await load(nwsWeek());
-  const cold = (key, lo, sp = 'deer') => X.A.T.fxSignal([{ key, hi: 40, lo, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Tuesday' }], 0, sp, NOW, [], SPOT).factors.find(f => f.k === 'Hard freeze');
+  const cold = (key, lo, sp = 'deer') => X.A.T.fxSignal([{ key, hi: 40, lo: 45, dawn: { lo, when: 'Monday night' }, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Tuesday' }], 0, sp, NOW, [], SPOT).factors.find(f => f.k === 'Hard freeze');
   ok('the rule the Why sheet now states is the rule the code runs: 28 or colder, October 1 to December 15, deer only', !!cold('2026-12-15', 28) && !cold('2026-12-15', 29) && !cold('2026-12-16', 20) && !cold('2026-09-30', 20) && !!cold('2026-10-01', 28) && !cold('2026-11-10', 10, 'elk'));
-  ok('a low far below the study\'s range still reads true, at zero and below it too', [10, 0, -5].every(lo => cold('2026-11-10', lo).why.startsWith('Forecast low of ' + lo + '°. A hard freeze, with night lows from about 32° down to 23°, is what typically starts')));
-  ok('the Why sheet gives the range the same way and states the trigger', /<dt>Hard freeze &middot; strong, mule deer<\/dt><dd>Night lows from about 32 down to 23 degrees are what typically start mule deer drifting off the high country \(Wyoming and Montana GPS does\)\. Scored \+1 for deer when the forecast low is 28 degrees or colder, October to mid-December\. Not scored for elk, where the studies point to snow depth and hunting pressure instead\.<\/dd>/.test(X.A.T.fxSheetWhy()));
+  ok('a low far below the study\'s range still reads true, at zero and below it too', [10, 0, -5].every(lo => cold('2026-11-10', lo).why.startsWith('Forecast low of ' + lo + '° Monday night. Hard freezes are one of the cues that start')));
+  ok('the Why sheet names both studies for what they are, states the trigger and the night, and says when today is silent', X.A.T.fxSheetWhy().includes("<dt>Hard freeze &middot; moderate, mule deer</dt><dd>Hard freezes are one of the cues that start mule deer drifting off the high country. A Wyoming count of deer at a highway underpass, in one of its two autumns, linked the start to daily lows of about 32 down to 23 degrees; in Montana, GPS-collared does were more likely to start down the colder the daily low. Both studied the autumn migration, not how much deer move on a given hunting day. Scored +1 for deer when the forecast low for the night before the hunting day is 28 degrees or colder, October to mid-December; 28 is this screen's own line inside the Wyoming range. Today's row reads this morning's low and says nothing when neither the forecast nor the phone still has it. Not scored for elk, where the studies point to snow depth and hunting pressure instead.</dd>") && /Anton and others, 2022 and 2025, on snow depth and hard freezes/.test(X.A.T.fxSheetWhy()) && !/GPS does\)/.test(X.A.T.fxSheetWhy()));
+  ok('the factor reads the night before, never the Low tile: a 45-degree Low with a 20-degree night before still counts, and a row with no figure for that night says nothing', !!cold('2026-11-10', 20) && !X.A.T.fxSignal([{ key: '2026-11-10', hi: 40, lo: 10, dawn: null, pop: 0, snow: 0, wind: 5, gust: null, hours: [], light: null, moon: null, name: 'Tuesday' }], 0, 'deer', NOW, [], SPOT).factors.some(f => f.k === 'Hard freeze'));
 
   /* 12d. The rounded spot and its grid cell: nothing more precise is sent, and the line says whose forecast it is. */
   const cellLine = /; fetched [^.<]*\. The forecast is for that grid cell at that elevation, not the exact spot, and may differ from it\. Sun and moon computed on this phone for 41\.740, -111\.830\./;
@@ -596,13 +601,55 @@ async function app(opts = {}) {
   ok('at 3 am the day sheet gives the forecaster\'s words in the order they happen: Overnight, the day, the night to come', /In the forecaster's words<\/div>\s*<p[^>]*><b>Overnight\.<\/b> Clear, with a low around 22\.<\/p><p[^>]*><b>Daytime\.<\/b>[^<]*<\/p><p[^>]*><b>Thursday Night\.<\/b>[^<]*<\/p>/.test(sheet3), sheet3.slice(sheet3.indexOf('In the forecaster')).slice(0, 400));
   ok('at 3 am the two night periods are held apart: the night chance is the evening\'s', at3.days[0].early.n === 'Overnight' && at3.days[0].evening.n === 'Thursday Night' && at3.days[0].npop === 40 && at3.days[0].nlabel === 'at night', JSON.stringify([at3.days[0].npop, at3.days[0].nlabel]));
   const freeze3 = at3.A.T.fxSignal(at3.days, 0, 'deer', DAWN, [], SPOT).factors.find(f => f.k === 'Hard freeze');
-  ok('at 3 am today\'s Low and the hard-freeze factor still read this morning\'s low, as in v47', at3.days[0].lo === 22 && tile(at3.html, 'Low') === '22&deg;' && at3.days[0].nightP.n === 'Overnight' && !!freeze3 && freeze3.why.startsWith('Forecast low of 22°. '), JSON.stringify([at3.days[0].lo, freeze3]));
+  ok('at 3 am today\'s Low and the hard-freeze factor both read this morning\'s low, and the factor says which night', at3.days[0].lo === 22 && tile(at3.html, 'Low') === '22&deg;' && at3.days[0].nightP.n === 'Overnight' && !!freeze3 && freeze3.why.startsWith('Forecast low of 22° this morning. '), JSON.stringify([at3.days[0].lo, freeze3]));
   const Dn = await load(wk4);
   ok('a day with no evening period yet has no night period, and its Low is the day\'s lowest hourly figure as before', Dn.days[6].nightP === null && Dn.days[6].early === null && Dn.days[6].evening === null && Dn.days[6].lo === Math.min(...Dn.days[6].hours.map(h => h.t)), JSON.stringify([Dn.days[6].nightP, Dn.days[6].lo]));
   const afterDark = (await load(wk3, NIGHT)).days[0];
   ok('after dark the night period is Tonight: the Low is its temperature and the wind is its own', afterDark.nightP.n === 'Tonight' && afterDark.evening === afterDark.nightP && afterDark.early === null && afterDark.lo === 38 && pair(afterDark) === 'E 10', JSON.stringify([afterDark.lo, pair(afterDark)]));
   const plainSheet = plain.A.T.fxSheetDay(2);
   ok('on an ordinary day the sheet still gives the day and then the night, once each', /In the forecaster's words<\/div>\s*<p[^>]*><b>Daytime\.<\/b>[^<]*<\/p><p[^>]*><b>Night\.<\/b>[^<]*<\/p><p class="fine" style="padding:12px 16px 0">Forecast: National/.test(plainSheet), plainSheet.slice(plainSheet.indexOf('In the forecaster')).slice(0, 300));
+
+  /* 14. Which night the hard-freeze factor reads: the one that ends on the morning of the row's day,
+     never the night that follows it (research/2026-11-13_hard-freeze-night-evidence.md). */
+  const dawns = d => d.dawn ? d.dawn.lo + ' ' + d.dawn.when : null;
+  const hf = (L, i, now = NOW) => L.A.T.fxSignal(L.days, i, 'deer', now, [], SPOT).factors.find(f => f.k === 'Hard freeze');
+  ok('every later row reads the night before it and names it: tonight, then the weekday', Dn.days.slice(1).map(dawns).join(' | ') === '38 tonight | 40 Friday night | 24 Saturday night | 20 Sunday night | 28 Monday night | 30 Tuesday night', Dn.days.map(dawns).join(' | '));
+  ok('the Low is untouched: each row still pairs the day with the night that follows it', Dn.days.slice(0, 6).map(d => d.lo).join(' ') === '38 40 24 20 28 30', Dn.days.map(d => d.lo).join(' '));
+  ok('after 6 am, with no figure for this morning in the forecast or on the phone, today has none', Dn.days[0].dawn === null && Dn.rec.dawn === null && Dn.rec.lows.length === 0, JSON.stringify([Dn.days[0].dawn, Dn.rec.dawn]));
+  const coldTonight = nwsWeek(); periodOf(coldTonight, '2026-10-29', false).temperature = 20;
+  const Ct = await load(coldTonight);
+  ok('a cold night to come says nothing about today: today has no factor though its Low is 20, and tomorrow carries it as tonight', Ct.days[0].lo === 20 && !hf(Ct, 0) && !!hf(Ct, 1) && hf(Ct, 1).why.startsWith('Forecast low of 20° tonight. '), JSON.stringify([Ct.days[0].lo, hf(Ct, 0), hf(Ct, 1)]));
+  ok('at 3 am tomorrow reads the night to come, not the Overnight period that is today\'s nightP', dawns(at3.days[0]) === '22 this morning' && dawns(at3.days[1]) === '38 tonight' && at3.days[0].nightP.n === 'Overnight' && at3.rec.dawn.lo === 22 && at3.rec.dawn.key === '2026-10-29', at3.days.slice(0, 2).map(dawns).join(' | '));
+  const Nt = await load(wk3, NIGHT);
+  ok('after dark tomorrow reads the night in progress and calls it tonight; today, with nothing saved, has none', dawns(Nt.days[1]) === Nt.days[0].lo + ' tonight' && Nt.days[0].dawn === null, Nt.days.slice(0, 2).map(dawns).join(' | '));
+  /* The grid file: this morning's span, cut short after the morning revision, then tonight's whole span. */
+  const lowsOf = (...spans) => ({ uom: 'wmoUnit:degC', values: spans.map(([validTime, f]) => ({ validTime, value: (f - 32) * 5 / 9 })) });
+  const gridWeek = layer => { const w = nwsWeek(); w.grid.properties.minTemperature = layer; return w; };
+  const Gm = await load(gridWeek(lowsOf(['2026-10-29T10:00:00+00:00/PT5H', 26], ['2026-10-30T01:00:00+00:00/PT14H', 38])));
+  ok('after 6 am today reads the grid file\'s figure for the span that ended this morning, cut short or not, and the Low stays tonight\'s', dawns(Gm.days[0]) === '26 this morning' && !!hf(Gm, 0) && hf(Gm, 0).why.startsWith('Forecast low of 26° this morning. ') && Gm.days[0].lo === 38 && dawns(Gm.days[1]) === '38 tonight' && Gm.rec.dawn.lo === 26, JSON.stringify([dawns(Gm.days[0]), Gm.days[0].lo, Gm.rec.lows]));
+  const Gt = await load(gridWeek(lowsOf(['2026-10-30T01:00:00+00:00/PT14H', 20])));
+  ok('a grid span that ends tomorrow morning is not this morning\'s: today has none', Gt.days[0].dawn === null && Gt.rec.lows.length === 1, JSON.stringify(Gt.days[0].dawn));
+  const Gf = await load(gridWeek({ uom: 'wmoUnit:degF', values: [{ validTime: '2026-10-29T10:00:00+00:00/PT5H', value: 26 }] }));
+  ok('a minimum-temperature layer in any unit but Celsius is left out', Gf.rec.lows.length === 0 && Gf.days[0].dawn === null, JSON.stringify(Gf.rec.lows));
+  const Gn = await load(nwsWeek(), NOW, SPOT, { nwsFail: u => u.endsWith('/gridpoints/SLC/1,1') });
+  ok('with no grid file the week still loads and today has no figure', Gn.days.length === 7 && Gn.rec.lows.length === 0 && Gn.days[0].dawn === null, JSON.stringify([Gn.days.length, Gn.rec.lows]));
+  /* The figure the phone saved: a forecast fetched the evening before holds the night that ends this morning. */
+  const WED = { ...DAYS[0], d: '2026-10-28', lo: 25 }, eveWeek = () => nwsWeek([WED, ...DAYS.slice(0, 6)]);
+  const EVE = Date.parse('2026-10-29T02:00:00Z');     // 8:00 pm MDT, Wednesday
+  const Ev = await load(eveWeek(), EVE);
+  const kept = Object.fromEntries(Ev.A.store);
+  const Off = await load(nwsWeek(), NOW, SPOT, { online: false, storage: kept });
+  ok('last evening\'s forecast shown with no signal: today reads its night period that ended this morning', dawns(Off.days[0]) === '25 this morning' && !!hf(Off, 0) && Off.days[0].lo === 38, JSON.stringify([dawns(Off.days[0]), Off.days[0].lo]));
+  const Re = await load(nwsWeek(), NOW, SPOT, { storage: kept });
+  ok('a refresh after 6 am no longer carries this morning, so the saved figure is carried forward with its date', Re.rec.at === NOW && !Re.rec.periods.some(p => !p.day && fxDayOf(p.e) === '2026-10-29') && Re.rec.dawn.lo === 25 && Re.rec.dawn.key === '2026-10-29' && dawns(Re.days[0]) === '25 this morning' && hf(Re, 0).why.startsWith('Forecast low of 25° this morning. '), JSON.stringify([Re.rec.at, Re.rec.dawn]));
+  const Re2 = await load(nwsWeek(), NOW + 3 * 3600000, SPOT, { storage: Object.fromEntries(Re.A.store) });
+  ok('and it survives the next refresh that day', Re2.rec.at === NOW + 3 * 3600000 && Re2.rec.dawn.lo === 25 && dawns(Re2.days[0]) === '25 this morning', JSON.stringify(Re2.rec.dawn));
+  const nextDay = Re2.A.T.fxDays(Re2.rec, SPOT, NOW + 86400000);
+  ok('the carried figure is dated: the next day it is not shown as that morning\'s', nextDay[0].key === '2026-10-30' && dawns(nextDay[0]) === '38 this morning', JSON.stringify([nextDay[0].key, dawns(nextDay[0])]));
+  const OLD = Date.parse('2026-10-28T00:00:00Z');     // 6:00 pm MDT, Tuesday: 37 hours before
+  const Ol = await load(nwsWeek([{ ...DAYS[0], d: '2026-10-27' }, WED, ...DAYS.slice(0, 5)]), OLD);
+  const Ro = await load(nwsWeek(), NOW, SPOT, { storage: Object.fromEntries(Ol.A.store) });
+  ok('a forecast older than a day and a half is too stale to stand for last night: nothing is carried', Ro.rec.at === NOW && Ro.rec.dawn === null && Ro.days[0].dawn === null, JSON.stringify(Ro.rec.dawn));
 
   finished = true;
   console.log(`test_forecast: ${pass} pass, ${fail} fail`);
