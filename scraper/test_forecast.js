@@ -619,14 +619,18 @@ async function app(opts = {}) {
   const coldTonight = nwsWeek(); periodOf(coldTonight, '2026-10-29', false).temperature = 20;
   const Ct = await load(coldTonight);
   ok('a cold night to come says nothing about today: today has no factor though its Low is 20, and tomorrow carries it as tonight', Ct.days[0].lo === 20 && !hf(Ct, 0) && !!hf(Ct, 1) && hf(Ct, 1).why.startsWith('Forecast low of 20° tonight. '), JSON.stringify([Ct.days[0].lo, hf(Ct, 0), hf(Ct, 1)]));
-  ok('at 3 am tomorrow reads the night to come, not the Overnight period that is today\'s nightP', dawns(at3.days[0]) === '22 this morning' && dawns(at3.days[1]) === '38 tonight' && at3.days[0].nightP.n === 'Overnight' && at3.rec.dawn.lo === 22 && at3.rec.dawn.key === '2026-10-29', at3.days.slice(0, 2).map(dawns).join(' | '));
+  ok('at 3 am tomorrow reads the night to come, not the Overnight period that is today\'s nightP', dawns(at3.days[0]) === '22 this morning' && dawns(at3.days[1]) === '38 tonight' && at3.days[0].nightP.n === 'Overnight' && at3.rec.dawn === null, at3.days.slice(0, 2).map(dawns).join(' | '));
+  const Pm = await load(nwsWeek(), NOW + 10 * 3600000, SPOT, { storage: Object.fromEntries(at3.A.store) });
+  ok('a figure seen before 6 am is still today\'s at 5 pm, after the forecast has stopped sending it', Pm.rec.at === NOW + 10 * 3600000 && Pm.rec.dawn.lo === 22 && Pm.rec.dawn.key === '2026-10-29' && dawns(Pm.days[0]) === '22 this morning' && hf(Pm, 0, NOW + 10 * 3600000).why.startsWith('Forecast low of 22° this morning. '), JSON.stringify([Pm.rec.at, Pm.rec.dawn, dawns(Pm.days[0])]));
   const Nt = await load(wk3, NIGHT);
   ok('after dark tomorrow reads the night in progress and calls it tonight; today, with nothing saved, has none', dawns(Nt.days[1]) === Nt.days[0].lo + ' tonight' && Nt.days[0].dawn === null, Nt.days.slice(0, 2).map(dawns).join(' | '));
   /* The grid file: this morning's span, cut short after the morning revision, then tonight's whole span. */
   const lowsOf = (...spans) => ({ uom: 'wmoUnit:degC', values: spans.map(([validTime, f]) => ({ validTime, value: (f - 32) * 5 / 9 })) });
   const gridWeek = layer => { const w = nwsWeek(); w.grid.properties.minTemperature = layer; return w; };
   const Gm = await load(gridWeek(lowsOf(['2026-10-29T10:00:00+00:00/PT5H', 26], ['2026-10-30T01:00:00+00:00/PT14H', 38])));
-  ok('after 6 am today reads the grid file\'s figure for the span that ended this morning, cut short or not, and the Low stays tonight\'s', dawns(Gm.days[0]) === '26 this morning' && !!hf(Gm, 0) && hf(Gm, 0).why.startsWith('Forecast low of 26° this morning. ') && Gm.days[0].lo === 38 && dawns(Gm.days[1]) === '38 tonight' && Gm.rec.dawn.lo === 26, JSON.stringify([dawns(Gm.days[0]), Gm.days[0].lo, Gm.rec.lows]));
+  ok('after 6 am today reads the grid file\'s figure for the span that ended this morning, cut short or not, and the Low stays tonight\'s', dawns(Gm.days[0]) === '26 this morning' && !!hf(Gm, 0) && hf(Gm, 0).why.startsWith('Forecast low of 26° this morning. ') && Gm.days[0].lo === 38 && dawns(Gm.days[1]) === '38 tonight' && Gm.rec.dawn === null && Gm.rec.lows[0].h === 5 && Gm.rec.lows[1].h === 14, JSON.stringify([dawns(Gm.days[0]), Gm.days[0].lo, Gm.rec.lows]));
+  const Gl = await load(nwsWeek(), NOW + 9 * 3600000, SPOT, { storage: Object.fromEntries(Gm.A.store) });
+  ok('once the span has dropped out of the grid file in the afternoon, the figure it gave is carried forward', Gl.rec.lows.length === 0 && Gl.rec.dawn.lo === 26 && dawns(Gl.days[0]) === '26 this morning', JSON.stringify([Gl.rec.lows, Gl.rec.dawn]));
   const Gt = await load(gridWeek(lowsOf(['2026-10-30T01:00:00+00:00/PT14H', 20])));
   ok('a grid span that ends tomorrow morning is not this morning\'s: today has none', Gt.days[0].dawn === null && Gt.rec.lows.length === 1, JSON.stringify(Gt.days[0].dawn));
   const Gf = await load(gridWeek({ uom: 'wmoUnit:degF', values: [{ validTime: '2026-10-29T10:00:00+00:00/PT5H', value: 26 }] }));
@@ -650,6 +654,24 @@ async function app(opts = {}) {
   const Ol = await load(nwsWeek([{ ...DAYS[0], d: '2026-10-27' }, WED, ...DAYS.slice(0, 5)]), OLD);
   const Ro = await load(nwsWeek(), NOW, SPOT, { storage: Object.fromEntries(Ol.A.store) });
   ok('a forecast older than a day and a half is too stale to stand for last night: nothing is carried', Ro.rec.at === NOW && Ro.rec.dawn === null && Ro.days[0].dawn === null, JSON.stringify(Ro.rec.dawn));
+
+  /* Which figure wins for today when more than one is there: a whole night's span in the grid file
+     over the saved figure, and the saved figure over a span cut short (whose figure may be only the
+     lowest of the hours left). */
+  const Gw = await load(gridWeek(lowsOf(['2026-10-29T01:00:00+00:00/PT14H', 23], ['2026-10-30T01:00:00+00:00/PT14H', 38])), NOW, SPOT, { storage: kept });
+  ok('a whole night\'s span in the grid file is read ahead of yesterday\'s saved figure', Gw.rec.dawn.lo === 25 && dawns(Gw.days[0]) === '23 this morning', JSON.stringify([Gw.rec.dawn, dawns(Gw.days[0])]));
+  const Gc = await load(gridWeek(lowsOf(['2026-10-29T10:00:00+00:00/PT5H', 27], ['2026-10-30T01:00:00+00:00/PT14H', 38])), NOW, SPOT, { storage: kept });
+  ok('a cut-short span is read only when nothing is saved: the saved 25 stands over its 27', Gc.rec.dawn.lo === 25 && dawns(Gc.days[0]) === '25 this morning' && !!hf(Gc, 0), JSON.stringify([Gc.rec.dawn, dawns(Gc.days[0])]));
+  const Gk = await load(gridWeek(lowsOf(['2026-10-29T10:00:00+00:00/PT5H', 27])), NOW + 3 * 3600000, SPOT, { storage: Object.fromEntries(Gw.A.store) });
+  ok('and the whole night\'s figure, once seen, is the one kept after the span is cut short', Gk.rec.dawn.lo === 23 && dawns(Gk.days[0]) === '23 this morning', JSON.stringify([Gk.rec.dawn, dawns(Gk.days[0])]));
+  /* The saved figure carries its date. With no night period and no grid span to stand in, it is shown on its own day and on no other. */
+  const savedOnly = { ...Re2.rec, periods: Re2.rec.periods.filter(p => p.day), lows: [] };
+  ok('a saved figure is shown on its own day', dawns(Re2.A.T.fxDays(savedOnly, SPOT, NOW + 3 * 3600000)[0]) === '25 this morning', JSON.stringify(Re2.A.T.fxDays(savedOnly, SPOT, NOW + 3 * 3600000)[0].dawn));
+  ok('and never the next day, when it would be yesterday morning\'s', Re2.A.T.fxDays(savedOnly, SPOT, NOW + 86400000)[0].key === '2026-10-30' && Re2.A.T.fxDays(savedOnly, SPOT, NOW + 86400000)[0].dawn === null, JSON.stringify(Re2.A.T.fxDays(savedOnly, SPOT, NOW + 86400000)[0].dawn));
+  /* A forecast saved by v48 has neither the grid lows nor a saved figure. */
+  const v48rec = { ...Dn.rec }; delete v48rec.lows; delete v48rec.dawn;
+  const v48days = Dn.A.T.fxDays(v48rec, SPOT, NOW);
+  ok('a forecast saved by v48 still reads: today has no figure, later rows read the night before', v48days.length === 7 && v48days[0].dawn === null && v48days.slice(1).map(dawns).join(' | ') === '38 tonight | 40 Friday night | 24 Saturday night | 20 Sunday night | 28 Monday night | 30 Tuesday night', v48days.map(dawns).join(' | '));
 
   finished = true;
   console.log(`test_forecast: ${pass} pass, ${fail} fail`);

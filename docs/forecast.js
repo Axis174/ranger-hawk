@@ -153,16 +153,21 @@ function fxGrid(g, name, scale) {
   return (layer && layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { s: new Date(Date.parse(start) + fxSpan(dur) / 2).toISOString(), v: +(v.value * scale).toFixed(2), h: +(fxSpan(dur) / 3600000).toFixed(2) }; });
 }
 /* The grid's minimum-temperature layer: one figure for each night (7 pm to 9 am),
-   kept with the time its span ends and turned to whole degrees F. Once the
-   forecast is revised in the morning the first span is cut short to the last
-   hours of the night, but its figure is still the whole night's low: on
-   2026-11-16, across 15 forecast offices, 27 of 37 cut-short spans carried a
-   figure lower than every hourly temperature left inside them, and none a
-   higher one. A layer in any unit but Celsius is left out. */
+   kept with the time its span ends, its length in hours and whole degrees F.
+   Until the office revises the forecast the first span is last night's, whole.
+   After a revision it is cut short to the last hours of the night. Whether a
+   cut-short span's figure is still the whole night's low, or only the lowest
+   of the hours left, has not been shown: on 2026-11-16 the figure sat a degree
+   or two under the hourly temperatures on whole and cut-short spans alike, so
+   that comparison settles nothing. fxNightBefore therefore trusts a whole span
+   and reads a cut-short one only when nothing better is saved. At worst a
+   cut-short figure reads a few degrees warm, on a night whose coldest hours
+   came early; it cannot read colder than the night was forecast. A layer in
+   any unit but Celsius is left out. */
 function fxGridLows(g) {
   const layer = g && g.properties && g.properties.minTemperature;
   if (!layer || !/degC$/.test(layer.uom || '')) return [];
-  return (layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { e: new Date(Date.parse(start) + fxSpan(dur)).toISOString(), v: Math.round(v.value * 9 / 5 + 32) }; });
+  return (layer.values || []).filter(v => v.value != null).map(v => { const [start, dur] = v.validTime.split('/'); return { e: new Date(Date.parse(start) + fxSpan(dur)).toISOString(), v: Math.round(v.value * 9 / 5 + 32), h: +(fxSpan(dur) / 3600000).toFixed(2) }; });
 }
 /* The forecast low of the night that ends on the morning of the local day
    `key`: the low the deer woke up to. The hard-freeze factor reads this and
@@ -171,10 +176,13 @@ function fxGridLows(g) {
    after the day, and a freeze after the hunt cannot have moved deer during it).
    In order: the forecast's night period whose end falls on that morning (every
    later day has one; today has one before 6 am, the Overnight period, and in a
-   forecast saved the evening before); for today only, the grid's figure for the
-   span that ended this morning, there from 6 am until about mid-afternoon; for
-   today only, the figure this phone saved earlier for this morning (dawn, set
-   in fxLoad). Null when none is there, and the factor then says nothing.
+   forecast saved the evening before). Then, for today only: the grid's span
+   that ended this morning when it is still the whole night's (12 hours or
+   more); the figure this phone saved earlier for this morning (dawn, set in
+   fxLoad, and dated so it is never shown on another day); and last the grid's
+   span cut short, there until about mid-afternoon (see fxGridLows for what
+   that figure may be). Null when none is there, and the factor then says
+   nothing.
    The period is matched by its end time, never as "the row before, nightP":
    before 6 am today's nightP is the Overnight period, which would hand
    tomorrow's row this morning's low. */
@@ -183,8 +191,9 @@ function fxNightBefore(rec, key, today) {
   if (p) return { lo: p.t, s: p.s };
   if (!today) return null;
   const g = (rec.lows || []).find(v => fxDay(v.e) === key && fxHour(v.e) <= 12);
-  if (g) return { lo: g.v };
-  return rec.dawn && rec.dawn.key === key && rec.dawn.lo != null ? { lo: rec.dawn.lo } : null;
+  if (g && g.h >= 12) return { lo: g.v };
+  if (rec.dawn && rec.dawn.key === key && rec.dawn.lo != null) return { lo: rec.dawn.lo };
+  return g ? { lo: g.v } : null;
 }
 async function fxLoad(spot, force) {
   const key = fxKey(spot), have = fxRecord(key);
@@ -213,12 +222,11 @@ async function fxLoad(spot, force) {
       gust: fxGrid(g, 'windGust', 0.621371), snow: fxGrid(g, 'snowfallAmount', 1 / 25.4), qpf: fxGrid(g, 'quantitativePrecipitation', 1 / 25.4),
       lows: fxGridLows(g)
     };
-    /* This morning's low, kept with its date so a later refresh that no longer carries it can still
-       show it: from this forecast when it has it, else from the one it replaces if that was fetched
-       since yesterday morning (an older one is too stale a forecast to stand for last night). */
-    const today = fxDay(fxNow()), own = fxNightBefore(rec, today, true);
-    const kept = !own && have && fxNow() - have.at < FX_CARRY ? fxNightBefore(have, today, true) : null;
-    rec.dawn = own || kept ? { key: today, lo: (own || kept).lo } : null;
+    /* This morning's low as the forecast this one replaces had it, kept with its date so it can
+       still be shown once the weather service no longer sends it. Carried only from a forecast
+       fetched in the last 36 hours: an older one is too stale to stand for last night. */
+    const today = fxDay(fxNow()), kept = have && fxNow() - have.at < FX_CARRY ? fxNightBefore(have, today, true) : null;
+    rec.dawn = kept ? { key: today, lo: kept.lo } : null;
     FX.cache[key] = rec; FX.error = null; fxStore(key, rec);
     return rec;
   })();
