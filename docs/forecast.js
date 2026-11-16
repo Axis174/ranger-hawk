@@ -162,8 +162,8 @@ function fxGrid(g, name, scale) {
    that comparison settles nothing. fxNightBefore therefore trusts a whole span
    and reads a cut-short one only when nothing better is saved. At worst a
    cut-short figure reads a few degrees warm, on a night whose coldest hours
-   came early; it cannot read colder than the night was forecast. A layer in
-   any unit but Celsius is left out. */
+   came early; within one issue of the forecast it cannot read colder than
+   the night's low. A layer in any unit but Celsius is left out. */
 function fxGridLows(g) {
   const layer = g && g.properties && g.properties.minTemperature;
   if (!layer || !/degC$/.test(layer.uom || '')) return [];
