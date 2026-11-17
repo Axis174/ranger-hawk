@@ -162,7 +162,9 @@ day sheet gives the forecaster's words for Overnight, the day and the night to c
 that order. Since v49 the hard-freeze factor reads the forecast low of the night that ends
 on the morning of the hunting day, not the Low tile's night, and names that night in its
 sentence; today's row takes it from the weather service's grid file or from the figure the
-phone saved, and says nothing when neither has it. Snow on the ground comes from the four SNOTEL gauges in
+phone saved, and says nothing when neither has it. Since v50 each row's weekday and date
+are printed from midday in Utah, so a phone set to another time zone no longer shows them
+a day early. Snow on the ground comes from the four SNOTEL gauges in
 `data/ut/snow.json` (their lat, lon and elevation from the NWCC stations call, cached in
 `scraper/sources.py`): a gauge within 25 miles of the spot, read in the last three days and
 showing ten inches or more, scores +1 strong from October to mid-December and names the
