@@ -613,6 +613,21 @@ the app says.
   time, so no number is typed by hand. The privacy and money pages carry the in-app
   screens' own HTML from `site.js`, so they cannot say something the app does not.
   It runs in `refresh.yml` every day, before the tests.
+- **Links and dates for search engines (since v51).** `/hunting/` ends with every unit
+  page by name and `/fishing/` with the every-water list line for line (every guidebook
+  entry and community water, a name that only points elsewhere with the entry it points
+  to), so each page is two steps from home. The footer of every page and the list on the
+  home page carry both A-to-Z lists. A water or community page lists the other waters in
+  each of its counties ("Other waters in X County"), before its button; a name that only
+  points elsewhere is listed with the entry it points to. Waters are tied by county only
+  (the guidebook heading plus `links.json` `extra_counties`, the counties the page already
+  names), units by shared name only, and no page ties a water to a hunt unit: the data does
+  not. Every address in `docs/sitemap.xml` carries the date its page last changed.
+  `docs/data/ut/page_dates.json` holds that date and a hash of the page without its two
+  date stamps ("Sources last checked" and "as of noon"), so the daily refresh moves no
+  date on its own. Only the plain `node scraper/build_pages.js` run writes that file; test
+  builds and `--date=` builds do not. A missing or damaged file stops the build. It is not
+  edited by hand.
 - **A page for every fishing water** (since v39): `docs/fishing/waters/<id>/` for each
   guidebook water, `docs/fishing/community/<id>/` for each community water, and the A-to-Z
   index at `docs/fishing/waters/`. `scraper/build_pages.js` runs the app's own renderer

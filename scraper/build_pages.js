@@ -428,9 +428,18 @@ ${footer(rel, here)}
 ${items.join('\n')}
 </ul>
 </section>`;
+  /* One line of an A-to-Z list. A pointer (a guidebook name that only sends the reader to another
+     entry) says where the guidebook sends it, and the stretch when UDWR names one. */
+  const seeTarget = item => item.kind === 'pointer' ? ` &mdash; see ${esc(item.targetName)}` : '';
+  const indexItem = (index, item) => {
+    const detail = index.key === 'fishing' ? countyText(item.counties) : item.species.join(', ');
+    return `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)}${detail ? ' &mdash; ' + esc(detail) : ''}${seeTarget(item)}${item.kind === 'pointer' && item.targetReach ? ', ' + esc(item.targetReach) : ''}</li>`;
+  };
+  /* The fishing hub carries the very lines of the every-water page, pointers included, so a name the
+     guidebook lists is never missing from a list that reads as the whole of it. */
   const hubList = key => key === 'hunting'
     ? linkList('Hunt units, A to Z', unitDefs.pages.map(p => `<li><a href="${esc(p.path)}">${esc(p.name)}</a></li>`))
-    : linkList('Waters, A to Z', waterDefs.pages.map(p => `<li><a href="${esc(p.path)}">${esc(p.name)}</a> &mdash; ${esc(countyText(p.counties))}</li>`));
+    : linkList('Waters, A to Z', waterDefs.index.map(item => indexItem(indexes[0], item)));
 
   const crumb = (d, url) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
@@ -491,12 +500,14 @@ ${site[d.embed]}
      page already names in its lead: the guidebook's heading, plus the four recorded cases in
      scraper/fishing/links.json (extra_counties), read the way the app reads them
      (fishing.counties). One list for each county the page is in, and no list where the county
-     has no other page. Nothing in the data ties a water to a hunt unit, so no page says so. */
+     has no other page. A pointer in the county is listed too, with the entry the guidebook sends
+     it to, unless that entry is this page. Nothing in the data ties a water to a hunt unit, so
+     no page says so. */
   const inCounty = new Map();
-  for (const p of waterDefs.pages) for (const c of new Set(p.counties)) inCounty.set(c, (inCounty.get(c) || []).concat(p));
+  for (const item of waterDefs.index) if (item.path) for (const c of new Set(item.counties)) inCounty.set(c, (inCounty.get(c) || []).concat(item));
   const countyLists = p => [...new Set(p.counties)].map(c => {
-    const others = inCounty.get(c).filter(o => o !== p);
-    return others.length ? linkList(`Other waters in ${c} County`, others.map(o => `<li><a href="${esc(o.path)}">${esc(o.name)}</a></li>`)) + '\n' : '';
+    const others = (inCounty.get(c) || []).filter(o => o.path !== p.path);
+    return others.length ? linkList(`Other waters in ${c} County`, others.map(o => `<li><a href="${esc(o.path)}">${esc(o.name)}</a>${seeTarget(o)}</li>`)) + '\n' : '';
   }).join('');
   for (const p of waterDefs.pages) {
     const where = countyText(p.counties), rel = '../../../';
@@ -568,10 +579,7 @@ ${sheet}
         letter = first;
         list += `<section>\n<h2>${esc(letter)}</h2>\n<ul class="links">\n`;
       }
-      /* A pointer says where the guidebook sends it, and the stretch when UDWR names one. */
-      const see = item.kind === 'pointer' ? ` &mdash; see ${esc(item.targetName)}${item.targetReach ? ', ' + esc(item.targetReach) : ''}` : '';
-      const detail = index.key === 'fishing' ? countyText(item.counties) : item.species.join(', ');
-      list += `<li>${item.path ? `<a href="${esc(item.path)}">${esc(item.name)}</a>` : esc(item.name)}${detail ? ' &mdash; ' + esc(detail) : ''}${see}</li>\n`;
+      list += indexItem(index, item) + '\n';
     }
     if (letter) list += '</ul>\n</section>\n';
     const lead = index.key === 'hunting' ? `<p class="lead">${esc(`Every polygon in Utah DWR's big game hunt boundary layer, A to Z, with the species each unit is listed for. A unit with no link is a polygon that none of the ${huntYear} hunt lists Ranger Hawk reads names.`)}</p>\n` : '';

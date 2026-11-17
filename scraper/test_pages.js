@@ -969,7 +969,7 @@ for (const p of ALL_PAGES) {
   const sections = (html, h2) => [...html.matchAll(new RegExp('<section>\\n<h2>' + reEsc(esc(h2)) + '</h2>\\n<ul class="links">\\n([\\s\\S]*?)\\n</ul>\\n</section>', 'g'))].map(m => m[1].split('\n'));
   const same = (got, want) => JSON.stringify(got.slice().sort()) === JSON.stringify(want.slice().sort());
   const aToZ = names => names.every((n, i) => i === 0 || names[i - 1].localeCompare(n, 'en-US') <= 0);
-  const names = items => items.map(li => unesc((/<a href="[^"]+">([^<]*)<\/a>/.exec(li) || [])[1] || ''));
+  const names = items => items.map(li => unesc((/^<li>(?:<a href="[^"]+">)?([^<]*?)(?:<\/a>| &mdash;|<\/li>)/.exec(li) || [])[1] || ''));
   const cta = /<p class="cta"><a class="btn" href="[^"]+">[^<]+<\/a><\/p>\n<\/div>\n<\/main>/;
 
   /* the two hubs */
@@ -977,8 +977,15 @@ for (const p of ALL_PAGES) {
   const huntList = sections(hunt, 'Hunt units, A to Z'), fishList = sections(fish, 'Waters, A to Z');
   ok('hub lists: /hunting/ lists every unit page once, by name, A to Z', huntList.length === 1 && UNIT_PAGES.length > 100 &&
     same(huntList[0], UNIT_PAGES.map(p => `<li><a href="${p.path}">${esc(p.name)}</a></li>`)) && aToZ(names(huntList[0])), huntList.length ? huntList[0].length + ' items' : 'no list');
-  ok('hub lists: /fishing/ lists every water and community page once, by name and county, A to Z', fishList.length === 1 && FISH_PAGES.length > 150 &&
-    same(fishList[0], FISH_PAGES.map(p => `<li><a href="${p.path}">${esc(p.entry.name)}</a> &mdash; ${esc(countyLine(countyNames(p.entry)))}</li>`)) && aToZ(names(fishList[0])), fishList.length ? fishList[0].length + ' items' : 'no list');
+  /* The fishing hub repeats the every-water page line for line (that page is checked against the fields
+     above), so a guidebook name that only points to another entry is on the hub too. */
+  const everyWater = ((/<main>([\s\S]*?)<\/main>/.exec(read('fishing/waters/index.html')) || [])[1] || '').split('\n').filter(l => l.startsWith('<li>'));
+  const POINTERS = R.waters.filter(w => w.kind === 'pointer').map(w => ({ w, target: WATER_PAGES.find(o => o.id === w.see.water) }));
+  ok('hub lists: /fishing/ repeats the every-water page line for line: every guidebook entry and community water, A to Z', fishList.length === 1 &&
+    everyWater.length === R.waters.length + COMMUNITY_PAGES.length && JSON.stringify(fishList[0]) === JSON.stringify(everyWater) && aToZ(names(fishList[0])), fishList.length ? fishList[0].length + ' items' : 'no list');
+  ok('hub lists: /fishing/ links every water and community page by name and county, and names every pointer with the entry it points to', fishList.length === 1 && FISH_PAGES.length > 150 && POINTERS.length > 20 &&
+    FISH_PAGES.every(p => fishList[0].includes(`<li><a href="${p.path}">${esc(p.entry.name)}</a> &mdash; ${esc(countyLine(countyNames(p.entry)))}</li>`)) &&
+    POINTERS.every(x => x.target && fishList[0].some(li => li.startsWith(`<li><a href="${x.target.path}">${esc(x.w.name)}</a> &mdash; ${esc(countyLine(countyNames(x.w)))} &mdash; see ${esc(x.target.entry.name)}`))));
   ok('hub lists: each list is the last section, and the page still ends with its button', [hunt, fish].every(h => cta.test(h) && /<\/ul>\n<\/section>\n<p class="cta">/.test(h) && h.lastIndexOf('A to Z</h2>') > h.lastIndexOf('<h2>Sources</h2>')));
   ok('hub lists: no other page carries one', STATIC.filter(d => d.key !== 'hunting' && d.key !== 'fishing').map(d => fileOf(d.c.path)).concat(DETAIL_FILES, ['index.html', '404.html'])
     .every(f => !/<h2>(?:Hunt units|Waters), A to Z<\/h2>/.test(read(f))));
@@ -1010,20 +1017,21 @@ for (const p of ALL_PAGES) {
   let listed = 0, lists = 0; const badCounty = [];
   for (const p of FISH_PAGES) {
     const html = read(fileOf(p.path)), mine = countyNames(p.entry).filter((c, i, a) => a.indexOf(c) === i);
-    const want = mine.map(c => ({ c, others: FISH_PAGES.filter(o => o !== p && countyNames(o.entry).includes(c)) })).filter(x => x.others.length);
+    const want = mine.map(c => ({ c, others: FISH_PAGES.filter(o => o !== p && countyNames(o.entry).includes(c)).map(o => `<li><a href="${o.path}">${esc(waterName(o))}</a></li>`)
+      .concat(POINTERS.filter(x => x.target && x.target !== p && countyNames(x.w).includes(c)).map(x => `<li><a href="${x.target.path}">${esc(x.w.name)}</a> &mdash; see ${esc(waterName(x.target))}</li>`)) })).filter(x => x.others.length);
     const got = [...html.matchAll(/<h2>Other waters in ([^<]*)<\/h2>/g)].map(m => unesc(m[1]));
     let good = JSON.stringify(got) === JSON.stringify(want.map(x => x.c + ' County')) && cta.test(html);
     for (const x of want) {
       const found = sections(html, `Other waters in ${x.c} County`);
       if (found.length !== 1) { good = false; continue; }
       const ns = names(found[0]);
-      good = good && same(found[0], x.others.map(o => `<li><a href="${o.path}">${esc(waterName(o))}</a></li>`)) && aToZ(ns) &&
+      good = good && same(found[0], x.others) && aToZ(ns) &&
         new Set(ns).size === ns.length && !ns.includes(waterName(p)) && !found[0].some(li => li.includes(`href="${p.path}"`));
       listed += found[0].length; lists++;
     }
     if (!good) badCounty.push(p.id);
   }
-  ok('county lists: each water and community page lists the other pages in each of its counties, from the county fields, A to Z, never itself and no name twice',
+  ok('county lists: each water and community page lists the other waters in each of its counties (pointers with the entry they point to), from the county fields, A to Z, never itself and no name twice',
     badCounty.length === 0 && lists >= FISH_PAGES.length && listed > 2000, badCounty.slice(0, 5).join(', ') + ' (' + lists + ' lists, ' + listed + ' links)');
   ok('county lists: only water and community pages carry one, and no page names a hunt unit beside a water',
     ['index.html', '404.html', 'fishing/waters/index.html'].concat(STATIC.map(d => fileOf(d.c.path)), UNIT_FILES).every(f => !read(f).includes('Other waters in')) &&
