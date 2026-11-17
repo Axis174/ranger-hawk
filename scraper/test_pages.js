@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Checks what scraper/build_pages.js writes: the static pages, the home page's head tags,
-   the sitemap, llms.txt, the manifest, and docs/robots.txt. It runs the build twice,
-   then reads the files back.
+   the sitemap and its last-changed dates, llms.txt, the manifest, and docs/robots.txt. It runs
+   the build twice, then reads the files back.
 
        node scraper/test_pages.js
 */
@@ -27,6 +27,11 @@ const BUILD_DATE = (() => {
   return p.year + '-' + p.month + '-' + p.day;
 })();
 
+/* The last-changed dates as they stood before any build here. No test build may change this file;
+   the blocks that damage it on purpose put these bytes back. */
+const DATES_FILE = path.join(DOCS, 'data/ut/page_dates.json');
+const DATES_AT_START = fs.existsSync(DATES_FILE) ? fs.readFileSync(DATES_FILE) : null;
+
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {
   if (cond) { pass++; return; }
@@ -35,11 +40,12 @@ function ok(name, cond, detail) {
 const short = s => { s = String(s); return s.length > 140 ? s.slice(0, 137) + '...' : s; };
 
 /* ---------------------------------------------------------------- build twice */
-let counts, site, fishing, hunting, generated, unitGenerated, builtDate, built = {};
+let counts, site, fishing, hunting, generated, unitGenerated, builtDate, pageDates, built = {};
 try {
   const first = B.build({ date: BUILD_DATE });
   counts = first.counts;
   builtDate = first.date;
+  pageDates = first.pageDates;
   const snap = {};
   first.files.forEach(f => { snap[f] = fs.readFileSync(path.join(ROOT, f)); });
   const second = B.build({ date: BUILD_DATE });
@@ -647,7 +653,8 @@ for (const p of ALL_PAGES) {
   const want = ['/'].concat(STATIC.map(d => d.c.path), INDEXES.map(i => i.path), generated.pages.map(p => p.path), unitGenerated.pages.map(p => p.path)).map(p => SITE + p);
   ok('sitemap: lists exactly the built pages, home first', JSON.stringify(rows.map(r => r.loc)) === JSON.stringify(want), rows.map(r => r.loc).join(' '));
   ok('sitemap: a valid urlset', x.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') && x.trimEnd().endsWith('</urlset>') && (x.match(/<url>/g) || []).length === rows.length);
-  ok('sitemap: no lastmod anywhere (the daily footer date is not a significant update)', !/lastmod/.test(x) && rows.every(r => r.lastmod === null));
+  ok('sitemap: every address carries a last-changed date, a real YYYY-MM-DD no later than the build date',
+    rows.length > 0 && rows.every(r => /^\d{4}-\d{2}-\d{2}$/.test(r.lastmod || '') && !isNaN(Date.parse(r.lastmod)) && r.lastmod <= BUILD_DATE), rows.filter(r => !r.lastmod || r.lastmod > BUILD_DATE).map(r => r.loc + ' ' + r.lastmod).slice(0, 5).join(' '));
   ok('sitemap: every address maps to a file in docs/', rows.every(r => exists(fileForUrl(r.loc))));
   ok('sitemap: the 404 is not listed', !x.includes('404'));
 }
@@ -950,6 +957,76 @@ for (const p of ALL_PAGES) {
   }
   ok('all unit-page main HTML is identical under Denver and Auckland', hashes[0].length === 64 && hashes[0] === hashes[1], hashes.join(' / '));
   ok('time-zone builds restore every current-date byte', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
+}
+
+/* ------------------------------------------- last-changed dates in the sitemap */
+/* The sitemap's <lastmod> is the day a page's content last changed, kept in page_dates.json. These
+   checks hold on any day of the year, including a day a notice ends and every water page changes. */
+{
+  const stampless = text => text.replace(/Sources last checked \d{1,2} [A-Z][a-z]+ \d{4}\./g, '').replace(/as of noon, [A-Z][a-z]+ \d{1,2}, \d{4}/g, '');
+  const sitemapDates = text => new Map([...text.matchAll(/<url><loc>([^<]+)<\/loc><lastmod>([^<]+)<\/lastmod><\/url>/g)].map(m => [m[1].slice(SITE.length), m[2]]));
+  const fileRel = p => 'docs' + (p === '/' ? '/index.html' : p + 'index.html');
+  const restored = () => Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f]));
+  const recorded = B.readPageDates(), today = sitemapDates(built['docs/sitemap.xml'].toString()), paths = [...today.keys()];
+
+  ok('page dates: the sitemap covers every address the build dated', paths.length > 300 && JSON.stringify(paths) === JSON.stringify(Object.keys(pageDates)));
+  ok('page dates: a page that still matches its recorded hash shows the recorded date; any other shows the build date',
+    paths.every(p => today.get(p) === pageDates[p].changed && (recorded[p] && recorded[p].sha === pageDates[p].sha ? pageDates[p].changed === recorded[p].changed : pageDates[p].changed === BUILD_DATE)));
+  ok('page dates: a test build does not write page_dates.json', DATES_AT_START !== null && !Object.keys(built).some(f => /page_dates\.json$/.test(f)) && fs.readFileSync(DATES_FILE).equals(DATES_AT_START));
+
+  /* The next Utah day. Every page's "as of noon" date moves; only a page whose content also moved may take the new date. */
+  const next = new Date(Date.parse(BUILD_DATE + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10);
+  try {
+    B.build({ date: next });
+    const later = sitemapDates(read('sitemap.xml')), both = [...later.keys()].filter(p => today.has(p));
+    const now = p => fs.readFileSync(path.join(ROOT, fileRel(p)), 'utf8'), was = p => built[fileRel(p)].toString();
+    const same = both.filter(p => stampless(was(p)) === stampless(now(p))), moved = both.filter(p => !same.includes(p));
+    ok('page dates: the next day, a page that changed only in its date stamps keeps its date', same.every(p => later.get(p) === today.get(p)), same.filter(p => later.get(p) !== today.get(p)).slice(0, 5).join(' '));
+    ok('page dates: the next day, a page whose content changed, or a new page, takes that day', moved.every(p => later.get(p) === next) && [...later.keys()].filter(p => !today.has(p)).every(p => later.get(p) === next), moved.slice(0, 5).join(' '));
+    ok('page dates: the next-day check is not empty (stamps did move on pages that kept their date)', same.some(p => was(p) !== now(p)));
+  } catch (err) { ok('page dates: the next-day build succeeds', false, err.message); }
+  finally { B.build({ date: BUILD_DATE }); }
+  ok('page dates: the next-day build restores every current-date build byte', restored());
+
+  /* A newer refresh run moves the footer's "Sources last checked" on every page and no date in the sitemap. */
+  const logPath = path.join(DOCS, 'data/ut/changelog.json'), logWas = fs.readFileSync(logPath);
+  try {
+    const log = JSON.parse(logWas);
+    log.runs.unshift({ run: '2099-01-01T00:00:00+00:00', changes: [], errors: [] });
+    fs.writeFileSync(logPath, JSON.stringify(log));
+    B.build({ date: BUILD_DATE });
+    ok('page dates: a newer "Sources last checked" date changes the pages and moves no date',
+      read('hunting/index.html').includes('Sources last checked 1 January 2099.') && fs.readFileSync(path.join(DOCS, 'sitemap.xml')).equals(built['docs/sitemap.xml']));
+  } catch (err) { ok('page dates: the newer-refresh build succeeds', false, err.message); }
+  finally { fs.writeFileSync(logPath, logWas); B.build({ date: BUILD_DATE }); }
+  ok('page dates: the newer-refresh build restores every current-date build byte', restored());
+
+  /* The recording build (the daily refresh): a stale hash and a missing entry take the build date, the rest stay. */
+  try {
+    const stale = unitGenerated.pages[0].path, missing = generated.pages[0].path, edited = Object.assign({}, pageDates);
+    edited[stale] = { changed: '2001-01-01', sha: '0000000000000000' };
+    delete edited[missing];
+    fs.writeFileSync(DATES_FILE, JSON.stringify({ pages: edited }));
+    const out = B.build({ date: BUILD_DATE, record: true }), after = B.readPageDates(), dated = sitemapDates(read('sitemap.xml'));
+    ok('page dates: a recording build writes page_dates.json, one address a line, in sitemap order', out.files.includes('docs/data/ut/page_dates.json') && JSON.stringify(Object.keys(after)) === JSON.stringify(paths) &&
+      paths.every(p => fs.readFileSync(DATES_FILE, 'utf8').includes('\n' + JSON.stringify(p) + ': ' + JSON.stringify(after[p]))));
+    ok('page dates: a page whose recorded hash is stale takes the build date and its new hash', after[stale].changed === BUILD_DATE && after[stale].sha === pageDates[stale].sha && dated.get(stale) === BUILD_DATE);
+    ok('page dates: a page with no entry takes the build date', !!after[missing] && after[missing].changed === BUILD_DATE && after[missing].sha === pageDates[missing].sha && dated.get(missing) === BUILD_DATE);
+    ok('page dates: every other entry is recorded exactly as it was', paths.filter(p => p !== stale && p !== missing).every(p => JSON.stringify(after[p]) === JSON.stringify(pageDates[p]) && dated.get(p) === pageDates[p].changed));
+  } catch (err) { ok('page dates: the recording build succeeds', false, err.message); }
+  finally { if (DATES_AT_START) fs.writeFileSync(DATES_FILE, DATES_AT_START); B.build({ date: BUILD_DATE }); }
+  ok('page dates: the recording build is undone and every current-date build byte restored', restored());
+
+  /* Without a sound page_dates.json every address would be stamped today, so the build stops instead. */
+  for (const [name, text] of [['missing', null], ['not JSON', 'not json'], ['without a pages object', '{"pages":[]}'], ['holding a damaged entry', '{"pages":{"/":{"changed":"today","sha":"x"}}}']]) {
+    let stopped = false;
+    try {
+      if (text === null) fs.unlinkSync(DATES_FILE); else fs.writeFileSync(DATES_FILE, text);
+      try { B.build({ date: BUILD_DATE, record: true }); } catch (e) { stopped = e instanceof B.BuildError && /page_dates\.json/.test(e.message); }
+    } finally { if (DATES_AT_START) fs.writeFileSync(DATES_FILE, DATES_AT_START); }
+    ok('page dates: the build stops and writes nothing when page_dates.json is ' + name, stopped && restored());
+  }
+  ok('page dates: page_dates.json ends byte for byte as it began', DATES_AT_START !== null && fs.readFileSync(DATES_FILE).equals(DATES_AT_START));
 }
 
 console.log(`${pass} passed, ${fail} failed`);

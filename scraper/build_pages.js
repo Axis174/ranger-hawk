@@ -5,11 +5,13 @@
 
    Reads  scraper/pages/content.js   every sentence the pages say (one source)
           docs/data/ut/*.json        the counts and the data refresh date
+          docs/data/ut/page_dates.json  the date each sitemap address last changed (see readPageDates)
           docs/state.js + site.js    the Privacy and Money screens, loaded the way the browser loads them
           docs/app.js + finder.js + units.js (after state.js), the app's unit sheets
    Writes docs/hunting/index.html, docs/fishing/index.html, docs/privacy/index.html,
           docs/how-ranger-hawk-makes-money/index.html, docs/404.html, docs/sitemap.xml,
           docs/llms.txt (and docs/about/index.html if content.js ever exports ABOUT)
+          docs/data/ut/page_dates.json, only on a plain run with no --date (the daily refresh)
    Edits  two marked regions of docs/index.html (seo, shell) and three keys of
           docs/manifest.webmanifest (description, lang, categories).
 
@@ -18,13 +20,14 @@
    number above zero stops the build (see checkCounts), and so does a {placeholder} left
    in any output. Run before the tests; refresh.yml does. */
 'use strict';
-const fs = require('fs'), path = require('path'), vm = require('vm');
+const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto');
 const C = require('./pages/content.js');
 const { phone } = require('./unit_vm.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const DOCS = path.join(ROOT, 'docs');
 const DATA = path.join(DOCS, 'data', 'ut');
+const PAGE_DATES = path.join(DATA, 'page_dates.json');
 const SITE = C.SITE;
 
 const OG_IMAGE = SITE + '/icons/og-image.png';
@@ -234,6 +237,30 @@ function refreshDate() {
   return runs[runs.length - 1];
 }
 const humanDate = iso => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MONTHS[m - 1]} ${y}`; };
+
+/* ------------------------------------------------------ last-changed dates --- */
+/* docs/data/ut/page_dates.json holds, for each address in the sitemap, the Utah date its page last
+   changed and a short hash of the page as it stood then. build() hashes each page with the two
+   stamps a build rewrites every day taken out (the footer's "Sources last checked" date and the
+   lead's "as of noon" date), keeps the recorded date while the hash is the same, and gives the
+   build's own Utah date to a page whose hash is new or that has no entry. So a daily refresh that
+   changes nothing a reader would see moves no date, and the sitemap's <lastmod> is the day the
+   page's words, links or head tags last changed.
+   Only a plain command-line run (no --date) writes the file back; a test build or a --date build
+   reads it and leaves it alone. A missing or damaged file stops the build: going on without it
+   would stamp today's date on every address. */
+function readPageDates() {
+  let pages;
+  try { pages = JSON.parse(fs.readFileSync(PAGE_DATES, 'utf8')).pages; }
+  catch (e) { throw new BuildError(`docs/data/ut/page_dates.json is missing or is not JSON (${e.message}). Restore it from git: a build without it would stamp today's date on every address in the sitemap.`); }
+  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new BuildError('docs/data/ut/page_dates.json has no "pages" object. Restore it from git.');
+  for (const k of Object.keys(pages)) {
+    const v = pages[k];
+    if (!v || typeof v !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(v.changed) || !/^[0-9a-f]{16}$/.test(v.sha))
+      throw new BuildError('docs/data/ut/page_dates.json has a damaged entry for ' + k + '. Restore it from git.');
+  }
+  return pages;
+}
 
 /* -------------------------------------------- the Privacy and Money screens --- */
 /* Loads docs/state.js and then docs/site.js into ONE vm context, as the browser does, with
@@ -535,17 +562,6 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
     out[path.join(DOCS, '404.html')] = doc(staticHead({ title: n.title, description: n.lead, noindex: true }, '/'), '/', main);
   }
 
-  /* ---- sitemap.xml: no lastmod. The only thing that changes daily is the footer date, which is not a
-     significant update to a page, so the sitemap does not claim one. */
-  {
-    const entries = ['/'].concat(defs.map(d => d.c.path), indexes.map(i => i.c.path), waterDefs.pages.map(p => p.path), unitDefs.pages.map(p => p.path));
-    out[path.join(DOCS, 'sitemap.xml')] = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.map(e => `  <url><loc>${SITE}${e}</loc></url>`).join('\n')}
-</urlset>
-`;
-  }
-
   /* ---- llms.txt (llmstxt.org) */
   {
     const desc = d => fill(d.c.description || d.c.lead || '');
@@ -622,6 +638,34 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
     out[p] = text;
   }
 
+  /* ---- sitemap.xml, each address with the date its page last changed (see readPageDates).
+     It comes after every page is in out, the home page included, because it hashes them. */
+  let pageDates;
+  {
+    const entries = ['/'].concat(defs.map(d => d.c.path), indexes.map(i => i.c.path), waterDefs.pages.map(p => p.path), unitDefs.pages.map(p => p.path));
+    const stamps = [`<p>Sources last checked ${human}.</p>`, `as of noon, ${asOf}`, `as of noon, ${longDate(hunting.date)}`];
+    const sha = text => crypto.createHash('sha256').update(stamps.reduce((t, stamp) => t.split(stamp).join('(date)'), text)).digest('hex').slice(0, 16);
+    const prior = readPageDates(), today = fishing.date;
+    pageDates = {};
+    for (const e of entries) {
+      const now = sha(out[fileOf(e)]), was = Object.prototype.hasOwnProperty.call(prior, e) ? prior[e] : null;
+      pageDates[e] = { changed: was && was.sha === now ? was.changed : today, sha: now };
+    }
+    out[path.join(DOCS, 'sitemap.xml')] = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries.map(e => `  <url><loc>${SITE}${e}</loc><lastmod>${pageDates[e].changed}</lastmod></url>`).join('\n')}
+</urlset>
+`;
+    /* One address a line, so a day's diff shows exactly the pages that changed. */
+    if (options.record) out[PAGE_DATES] = `{
+"_note": "The date each address in sitemap.xml last changed, and a hash of the page as it stood then. Written by scraper/build_pages.js on the daily refresh; the footer's Sources last checked date and the lead's as of noon date are left out of the hash. Not edited by hand.",
+"pages": {
+${entries.map(e => `${JSON.stringify(e)}: ${JSON.stringify(pageDates[e])}`).join(',\n')}
+}
+}
+`;
+  }
+
   /* ---- a {placeholder} anywhere in what we are about to write is a failed build */
   for (const f of Object.keys(out)) {
     const m = out[f].match(/\{[A-Za-z_][A-Za-z0-9_]*\}/);
@@ -651,7 +695,7 @@ ${links.map(l => `<li><a href="${l.href}">${esc(l.label)}</a></li>`).join('\n')}
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, out[f].endsWith('\n') || f.endsWith('.webmanifest') ? out[f] : out[f] + '\n');
   }
-  return { counts, iso, date: fishing.date, fishing: waterDefs, hunting: unitDefs, files: Object.keys(out).map(f => path.relative(ROOT, f)).sort() };
+  return { counts, iso, date: fishing.date, fishing: waterDefs, hunting: unitDefs, pageDates, files: Object.keys(out).map(f => path.relative(ROOT, f)).sort() };
 }
 
 function replaceRegion(html, start, end, inner) {
@@ -660,13 +704,14 @@ function replaceRegion(html, start, end, inner) {
   return html.slice(0, a + start.length) + '\n' + inner + '\n' + html.slice(b);
 }
 
-module.exports = { build, loadSite, loadFishing, fishingPages, loadUnits, unitPages, utahDate, denverNoon, computeCounts, checkCounts, refreshDate, humanDate, BuildError };
+module.exports = { build, readPageDates, loadSite, loadFishing, fishingPages, loadUnits, unitPages, utahDate, denverNoon, computeCounts, checkCounts, refreshDate, humanDate, BuildError };
 
 if (require.main === module) {
   try {
     const args = process.argv.slice(2);
     if (args.some(a => !/^--date=\d{4}-\d{2}-\d{2}$/.test(a)) || args.length > 1) throw new BuildError('usage: node scraper/build_pages.js [--date=YYYY-MM-DD]');
-    const r = build(args.length ? { date: args[0].slice(7) } : {});
+    /* Only this plain run records last-changed dates; a --date build is a what-if and records nothing. */
+    const r = build(args.length ? { date: args[0].slice(7) } : { record: true });
     console.log('build_pages: counts ' + JSON.stringify(r.counts) + '; sources last checked ' + r.iso);
     console.log('build_pages: wrote ' + r.files.length + ' files: ' + r.files.join(', '));
   } catch (e) {
