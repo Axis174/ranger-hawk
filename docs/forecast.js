@@ -367,6 +367,11 @@ function fxDays(rec, spot, now) {
   for (let i = 0; i < 7; i++) {
     const key = fxDay(new Date(Date.UTC(y, m - 1, d + i, 19)).toISOString());
     const [ky, km, kd] = key.split('-').map(Number), date = new Date(ky, km - 1, kd);
+    /* The row's weekday and date are printed from an instant that is midday in Utah on that day.
+       date is midnight on the phone's own clock: right for legalLight and the moon, which read its
+       calendar numbers, but on a phone set east of Mountain time that instant is still the evening
+       before in Utah, and every row printed a day early (Sunday, Nov 1 as "Saturday, Oct 31"). */
+    const midday = new Date(Date.UTC(ky, km - 1, kd, 19));
     const dayP = rec.periods.find(p => p.day && fxDay(p.s) === key) || null;
     const early = rec.periods.find(p => !p.day && fxDay(p.s) === key && fxHour(p.s) < 12) || null;
     const evening = rec.periods.find(p => !p.day && fxDay(p.s) === key && fxHour(p.s) >= 12) || null;
@@ -382,7 +387,7 @@ function fxDays(rec, spot, now) {
     const before = fxNightBefore(rec, key, i === 0);
     const clockHours = (from, to) => hours.filter(h => { const c = fxHour(h.s); return c >= from && c < to; }).map(h => h.pop);
     out.push({
-      key, date, i, name: i === 0 ? 'Today' : fxWF.format(date), label: fxLF.format(date),
+      key, date, i, name: i === 0 ? 'Today' : fxWF.format(midday), label: fxLF.format(midday),
       hi: dayP ? dayP.t : (temps.length ? Math.max(...temps) : null),
       lo: nightP ? nightP.t : (temps.length ? Math.min(...temps) : null),
       dawn: before ? { lo: before.lo, when: i === 0 ? 'this morning' : i === 1 ? 'tonight' : fxWF.format(new Date(before.s)) + ' night' } : null,
@@ -638,7 +643,7 @@ function fxSheetDay(i) {
   const days = fxDays(rec, spot), d = days[i];
   if (!d) return '';
   const s = fxSignal(days, i, FX.species, undefined, undefined, spot), L = d.light, H = 3600000;
-  let h = `<h3>${esc(d.i === 0 ? 'Today, ' + d.label : fxWF.format(d.date) + ', ' + d.label.replace(/^\w+,?\s+/, ''))}</h3>
+  let h = `<h3>${esc(d.i === 0 ? 'Today, ' + d.label : d.name + ', ' + d.label.replace(/^\w+,?\s+/, ''))}</h3>
     <p class="where">${esc(s.tier)} day for ${esc(s.who.toLowerCase())} &middot; ${esc(spot.label)}</p>${fxStats(d)}
     <div class="sec-title" style="padding:0 16px">Best window</div><p class="fine" style="padding:4px 16px 0"><b>${esc(s.best.label)}${s.best.window ? ', ' + esc(s.best.window) + ' (estimate)' : ''}.</b> ${esc(s.best.why)}</p>
     <div class="sec-title" style="padding:0 16px">What moves ${esc(s.who.toLowerCase())} this day</div>${fxFactors(s)}`;

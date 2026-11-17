@@ -11,8 +11,10 @@
    Wednesday. The expected reads are worked by hand from the factor table in
    docs/forecast.js and research/2026-10-26_forecast-movement-evidence.md. */
 'use strict';
-process.env.TZ = 'America/Denver';
-const fs = require('fs'), path = require('path'), vm = require('vm'), { pathToFileURL } = require('url');
+/* The suite runs on Utah's clock. Section 15 runs this file again under other phone clocks, named
+   in FX_TEST_ZONE, for the checks that depend on the phone's own time zone. */
+process.env.TZ = process.env.FX_TEST_ZONE || 'America/Denver';
+const fs = require('fs'), path = require('path'), vm = require('vm'), { pathToFileURL } = require('url'), { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..'), DOCS = path.join(ROOT, 'docs');
 const INDEX = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');   // what a browser loads: a tag inside an HTML comment is text, not a script
@@ -140,6 +142,24 @@ async function app(opts = {}) {
 
 /* -------------------------------------------------------------- tests ---- */
 (async () => {
+  /* A child run under another phone clock (section 15): only what the phone's time zone can change.
+     The week is Utah's whatever the phone says, so every row keeps its own weekday and date. */
+  if (process.env.FX_TEST_ZONE) {
+    const Z = await app({ online: true, week: nwsWeek(), now: NOW });
+    Z.T.FX.spot = SPOT; Z.T.setTab('forecast'); Z.T.vForecast(); await Z.flush();
+    const zdays = Z.T.fxDays(Z.T.fxRecord(Z.T.fxKey(SPOT)), SPOT, NOW), zhtml = Z.T.vForecast();
+    const head = i => (/<h3>([^<]*)<\/h3>/.exec(Z.T.fxSheetDay(i)) || [])[1];
+    ok('the rows are Utah\'s days', zdays.map(d => d.key).join(' ') === '2026-10-29 2026-10-30 2026-10-31 2026-11-01 2026-11-02 2026-11-03 2026-11-04', zdays.map(d => d.key).join(' '));
+    ok('each row is named for its own weekday', zdays.map(d => d.name).join(' ') === 'Today Friday Saturday Sunday Monday Tuesday Wednesday', zdays.map(d => d.name).join(' '));
+    ok('each row carries its own date', zdays.map(d => d.label).join(' | ') === 'Thu, Oct 29 | Fri, Oct 30 | Sat, Oct 31 | Sun, Nov 1 | Mon, Nov 2 | Tue, Nov 3 | Wed, Nov 4', zdays.map(d => d.label).join(' | '));
+    ok('the screen prints them on the rows', zdays.every(d => new RegExp('data-fx="day:' + d.i + '" style[\\s\\S]{0,160}?' + (d.i === 0 ? 'Today' : d.name)).test(zhtml)), zhtml.slice(zhtml.indexOf('data-fx="day:1"'), zhtml.indexOf('data-fx="day:1"') + 300));
+    ok('the day sheets are headed with the same weekday and date', head(0) === 'Today, Thu, Oct 29' && head(3) === 'Sunday, Nov 1' && head(6) === 'Wednesday, Nov 4', [head(0), head(3), head(6)].join(' | '));
+    const zf = Z.T.fxSignal(zdays, 3, 'deer', NOW, [], SPOT).factors.find(f => f.k === 'Hard freeze');
+    ok('so the row named Sunday is the one that reads Saturday night', !!zf && zf.why.startsWith('Forecast low of 24° Saturday night. '), JSON.stringify(zf));
+    finished = true;
+    console.log(`test_forecast under ${process.env.FX_TEST_ZONE}: ${pass} pass, ${fail} fail`);
+    process.exit(fail ? 1 : 0);
+  }
   const sw = fs.readFileSync(path.join(DOCS, 'sw.js'), 'utf8'), src = fs.readFileSync(path.join(DOCS, 'forecast.js'), 'utf8');
   const EMOJI = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{2B00}-\u{2BFF}]/u;
   ok('forecast.js carries no emoji', !EMOJI.test(src));
@@ -672,6 +692,14 @@ async function app(opts = {}) {
   const v48rec = { ...Dn.rec }; delete v48rec.lows; delete v48rec.dawn;
   const v48days = Dn.A.T.fxDays(v48rec, SPOT, NOW);
   ok('a forecast saved by v48 still reads: today has no figure, later rows read the night before', v48days.length === 7 && v48days[0].dawn === null && v48days.slice(1).map(dawns).join(' | ') === '38 tonight | 40 Friday night | 24 Saturday night | 20 Sunday night | 28 Monday night | 30 Tuesday night', v48days.map(dawns).join(' | '));
+
+  /* 15. The phone's own clock. The rows are Utah's days, so their weekday and date must not move
+     when the phone is set to another time zone. East of Mountain time every row once printed a
+     day early. Each zone is a run of this file with the clock set before anything loads. */
+  for (const zone of ['America/Los_Angeles', 'America/Chicago', 'America/New_York', 'UTC', 'Pacific/Auckland']) {
+    const r = spawnSync(process.execPath, [__filename], { env: Object.assign({}, process.env, { FX_TEST_ZONE: zone }), encoding: 'utf8' });
+    ok('on a phone set to ' + zone + ' every row keeps its own weekday and date', r.status === 0 && new RegExp('under ' + zone.replace('/', '\\/') + ': 6 pass, 0 fail').test(r.stdout), (r.stdout + r.stderr).slice(0, 400));
+  }
 
   finished = true;
   console.log(`test_forecast: ${pass} pass, ${fail} fail`);
