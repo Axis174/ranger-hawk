@@ -152,7 +152,8 @@ async function app(opts = {}) {
     ok('the rows are Utah\'s days', zdays.map(d => d.key).join(' ') === '2026-10-29 2026-10-30 2026-10-31 2026-11-01 2026-11-02 2026-11-03 2026-11-04', zdays.map(d => d.key).join(' '));
     ok('each row is named for its own weekday', zdays.map(d => d.name).join(' ') === 'Today Friday Saturday Sunday Monday Tuesday Wednesday', zdays.map(d => d.name).join(' '));
     ok('each row carries its own date', zdays.map(d => d.label).join(' | ') === 'Thu, Oct 29 | Fri, Oct 30 | Sat, Oct 31 | Sun, Nov 1 | Mon, Nov 2 | Tue, Nov 3 | Wed, Nov 4', zdays.map(d => d.label).join(' | '));
-    ok('the screen prints them on the rows', zdays.every(d => new RegExp('data-fx="day:' + d.i + '" style[\\s\\S]{0,160}?' + (d.i === 0 ? 'Today' : d.name)).test(zhtml)), zhtml.slice(zhtml.indexOf('data-fx="day:1"'), zhtml.indexOf('data-fx="day:1"') + 300));
+    const ROWS = ['Today', 'Friday Oct 30', 'Saturday Oct 31', 'Sunday Nov 1', 'Monday Nov 2', 'Tuesday Nov 3', 'Wednesday Nov 4'];
+    ok('the screen prints them on the rows, by name', ROWS.every((text, i) => new RegExp('data-fx="day:' + i + '" style[\\s\\S]{0,160}?<span class="t">' + text + ' &middot;').test(zhtml)), zhtml.slice(zhtml.indexOf('data-fx="day:1"'), zhtml.indexOf('data-fx="day:1"') + 300));
     ok('the day sheets are headed with the same weekday and date', head(0) === 'Today, Thu, Oct 29' && head(3) === 'Sunday, Nov 1' && head(6) === 'Wednesday, Nov 4', [head(0), head(3), head(6)].join(' | '));
     const zf = Z.T.fxSignal(zdays, 3, 'deer', NOW, [], SPOT).factors.find(f => f.k === 'Hard freeze');
     ok('so the row named Sunday is the one that reads Saturday night', !!zf && zf.why.startsWith('Forecast low of 24° Saturday night. '), JSON.stringify(zf));
@@ -697,7 +698,7 @@ async function app(opts = {}) {
      when the phone is set to another time zone. East of Mountain time every row once printed a
      day early. Each zone is a run of this file with the clock set before anything loads. */
   for (const zone of ['America/Los_Angeles', 'America/Chicago', 'America/New_York', 'UTC', 'Pacific/Auckland']) {
-    const r = spawnSync(process.execPath, [__filename], { env: Object.assign({}, process.env, { FX_TEST_ZONE: zone }), encoding: 'utf8' });
+    const r = spawnSync(process.execPath, [__filename], { env: Object.assign({}, process.env, { FX_TEST_ZONE: zone }), encoding: 'utf8', timeout: 60000 });   // a hung child fails the check, it does not hang the gate
     ok('on a phone set to ' + zone + ' every row keeps its own weekday and date', r.status === 0 && new RegExp('under ' + zone.replace('/', '\\/') + ': 6 pass, 0 fail').test(r.stdout), (r.stdout + r.stderr).slice(0, 400));
   }
 
