@@ -625,9 +625,10 @@ the app says.
   not. Every address in `docs/sitemap.xml` carries the date its page last changed.
   `docs/data/ut/page_dates.json` holds that date and a hash of the page without its two
   date stamps ("Sources last checked" and "as of noon"), so the daily refresh moves no
-  date on its own. Only the plain `node scraper/build_pages.js` run writes that file; test
-  builds and `--date=` builds do not. A missing or damaged file stops the build. It is not
-  edited by hand.
+  date on its own. Only the plain `node scraper/build_pages.js` run records that file; a
+  build given a date (`--date=`, or the builds the tests make) never does, and
+  `test_pages.js`, which rewrites the file to try the date rule, puts it back byte for
+  byte. A missing or damaged file stops the build. It is not edited by hand.
 - **A page for every fishing water** (since v39): `docs/fishing/waters/<id>/` for each
   guidebook water, `docs/fishing/community/<id>/` for each community water, and the A-to-Z
   index at `docs/fishing/waters/`. `scraper/build_pages.js` runs the app's own renderer
