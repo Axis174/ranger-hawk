@@ -959,6 +959,100 @@ for (const p of ALL_PAGES) {
   ok('time-zone builds restore every current-date byte', Object.keys(built).every(f => fs.readFileSync(path.join(ROOT, f)).equals(built[f])));
 }
 
+/* ------------------------------------------------- links between the pages */
+/* Structure, not rules text: which page links to which, so that every unit, water and community
+   page is two steps from home. Every expected list comes from the input fields (names, counties,
+   slugs), never from what the builder wrote. Waters are tied by county and by nothing else; no page
+   ties a water to a hunt unit. */
+{
+  const reEsc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const sections = (html, h2) => [...html.matchAll(new RegExp('<section>\\n<h2>' + reEsc(esc(h2)) + '</h2>\\n<ul class="links">\\n([\\s\\S]*?)\\n</ul>\\n</section>', 'g'))].map(m => m[1].split('\n'));
+  const same = (got, want) => JSON.stringify(got.slice().sort()) === JSON.stringify(want.slice().sort());
+  const aToZ = names => names.every((n, i) => i === 0 || names[i - 1].localeCompare(n, 'en-US') <= 0);
+  const names = items => items.map(li => unesc((/<a href="[^"]+">([^<]*)<\/a>/.exec(li) || [])[1] || ''));
+  const cta = /<p class="cta"><a class="btn" href="[^"]+">[^<]+<\/a><\/p>\n<\/div>\n<\/main>/;
+
+  /* the two hubs */
+  const hunt = read('hunting/index.html'), fish = read('fishing/index.html');
+  const huntList = sections(hunt, 'Hunt units, A to Z'), fishList = sections(fish, 'Waters, A to Z');
+  ok('hub lists: /hunting/ lists every unit page once, by name, A to Z', huntList.length === 1 && UNIT_PAGES.length > 100 &&
+    same(huntList[0], UNIT_PAGES.map(p => `<li><a href="${p.path}">${esc(p.name)}</a></li>`)) && aToZ(names(huntList[0])), huntList.length ? huntList[0].length + ' items' : 'no list');
+  ok('hub lists: /fishing/ lists every water and community page once, by name and county, A to Z', fishList.length === 1 && FISH_PAGES.length > 150 &&
+    same(fishList[0], FISH_PAGES.map(p => `<li><a href="${p.path}">${esc(p.entry.name)}</a> &mdash; ${esc(countyLine(countyNames(p.entry)))}</li>`)) && aToZ(names(fishList[0])), fishList.length ? fishList[0].length + ' items' : 'no list');
+  ok('hub lists: each list is the last section, and the page still ends with its button', [hunt, fish].every(h => cta.test(h) && /<\/ul>\n<\/section>\n<p class="cta">/.test(h) && h.lastIndexOf('A to Z</h2>') > h.lastIndexOf('<h2>Sources</h2>')));
+  ok('hub lists: no other page carries one', STATIC.filter(d => d.key !== 'hunting' && d.key !== 'fishing').map(d => fileOf(d.c.path)).concat(DETAIL_FILES, ['index.html', '404.html'])
+    .every(f => !/<h2>(?:Hunt units|Waters), A to Z<\/h2>/.test(read(f))));
+
+  /* the footer of every page, and the list on the home page */
+  const NAV = [['Hunting in Utah', '/hunting/'], [C.HUNTING.unitIndex.label, '/hunting/units/'], ['Fishing in Utah', '/fishing/'], [C.FISHING.waterIndex.label, '/fishing/waters/']]
+    .concat(C.ABOUT ? [[C.ABOUT.label || 'About', '/about/']] : [], [['Privacy', '/privacy/'], ['How Ranger Hawk makes money', '/how-ranger-hawk-makes-money/']]);
+  const navOf = (html, re, base) => [...((re.exec(html) || [])[1] || '').matchAll(/<li><a href="([^"]+)"( aria-current="page")?>([^<]*)<\/a><\/li>/g)]
+    .map(m => ({ to: new URL(m[1], base).href, label: unesc(m[3]), current: !!m[2] }));
+  const wantNav = JSON.stringify(NAV.map(([label, to]) => [label, SITE + to]));
+  const footRe = /<nav aria-label="Pages"><ul>\n([\s\S]*?)\n<\/ul><\/nav>/;
+  const hubOf = f => f.startsWith('hunting/') ? '/hunting/' : '/fishing/';
+  const footPages = STATIC.map(d => ({ f: fileOf(d.c.path), url: SITE + d.c.path, current: SITE + d.c.path }))
+    .concat(DETAIL_FILES.map(f => { const url = SITE + '/' + f.replace(/index\.html$/, ''); return { f, url, current: /^(?:fishing\/waters|hunting\/units)\/index\.html$/.test(f) ? url : SITE + hubOf(f) }; }),
+      [{ f: '404.html', url: SITE + '/404.html', current: null }]);
+  const badFoot = [], badCurrent = [];
+  for (const p of footPages) {
+    const nav = navOf(read(p.f), footRe, p.url), marked = nav.filter(l => l.current).map(l => l.to);
+    if (JSON.stringify(nav.map(l => [l.label, l.to])) !== wantNav) badFoot.push(p.f);
+    if (JSON.stringify(marked) !== JSON.stringify(p.current ? [p.current] : [])) badCurrent.push(p.f);
+  }
+  ok('footer: every page links the hubs, both A-to-Z lists and the other pages, in one order', footPages.length > 340 && badFoot.length === 0, badFoot.slice(0, 5).join(', '));
+  ok('footer: one link is marked as the current page (the list page marks itself, a unit or water page its hub), and none on the 404', badCurrent.length === 0, badCurrent.slice(0, 5).join(', '));
+  const shellNav = navOf((read('index.html').match(/<!-- shell:start -->([\s\S]*?)<!-- shell:end -->/) || [])[1] || '', /<ul>\n([\s\S]*?)\n<\/ul>/, SITE + '/');
+  ok('index.html: the shell block links the same pages in the same order', JSON.stringify(shellNav.map(l => [l.label, l.to])) === wantNav && shellNav.every(l => !l.current));
+
+  /* water and community pages: one list for each county the page is in */
+  const waterName = p => p.entry.name;
+  let listed = 0, lists = 0; const badCounty = [];
+  for (const p of FISH_PAGES) {
+    const html = read(fileOf(p.path)), mine = countyNames(p.entry).filter((c, i, a) => a.indexOf(c) === i);
+    const want = mine.map(c => ({ c, others: FISH_PAGES.filter(o => o !== p && countyNames(o.entry).includes(c)) })).filter(x => x.others.length);
+    const got = [...html.matchAll(/<h2>Other waters in ([^<]*)<\/h2>/g)].map(m => unesc(m[1]));
+    let good = JSON.stringify(got) === JSON.stringify(want.map(x => x.c + ' County')) && cta.test(html);
+    for (const x of want) {
+      const found = sections(html, `Other waters in ${x.c} County`);
+      if (found.length !== 1) { good = false; continue; }
+      const ns = names(found[0]);
+      good = good && same(found[0], x.others.map(o => `<li><a href="${o.path}">${esc(waterName(o))}</a></li>`)) && aToZ(ns) &&
+        new Set(ns).size === ns.length && !ns.includes(waterName(p)) && !found[0].some(li => li.includes(`href="${p.path}"`));
+      listed += found[0].length; lists++;
+    }
+    if (!good) badCounty.push(p.id);
+  }
+  ok('county lists: each water and community page lists the other pages in each of its counties, from the county fields, A to Z, never itself and no name twice',
+    badCounty.length === 0 && lists >= FISH_PAGES.length && listed > 2000, badCounty.slice(0, 5).join(', ') + ' (' + lists + ' lists, ' + listed + ' links)');
+  ok('county lists: only water and community pages carry one, and no page names a hunt unit beside a water',
+    ['index.html', '404.html', 'fishing/waters/index.html'].concat(STATIC.map(d => fileOf(d.c.path)), UNIT_FILES).every(f => !read(f).includes('Other waters in')) &&
+    FISH_PAGES.every(p => !read(fileOf(p.path)).includes('/hunting/units/' + '" ') && ![...read(fileOf(p.path)).matchAll(/href="([^"]+)"/g)].some(m => /\/hunting\/units\/[a-z0-9-]+\//.test(m[1]))) &&
+    UNIT_PAGES.every(p => ![...read(fileOf(p.path)).matchAll(/href="([^"]+)"/g)].some(m => /\/fishing\/(?:waters|community)\/[a-z0-9-]+\//.test(m[1]))));
+
+  /* steps from home, following the links in each page's own HTML */
+  const addresses = ['/'].concat(STATIC.map(d => d.c.path), INDEXES.map(i => i.path), FISH_PAGES.map(p => p.path), UNIT_PAGES.map(p => p.path));
+  const known = new Set(addresses), out = new Map(), into = new Map(addresses.map(a => [a, new Set()]));
+  for (const a of addresses) {
+    const to = new Set();
+    for (const m of read(a === '/' ? 'index.html' : fileOf(a)).matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {
+      if (/^(mailto:|tel:|data:|#|javascript:)/.test(m[1])) continue;
+      const u = new URL(m[1], SITE + a);
+      if (u.origin === SITE && known.has(u.pathname) && u.pathname !== a) to.add(u.pathname);
+    }
+    out.set(a, to); to.forEach(t => into.get(t).add(a));
+  }
+  const steps = new Map([['/', 0]]);
+  for (let queue = ['/'], i = 0; i < queue.length; i++) for (const t of out.get(queue[i])) if (!steps.has(t)) { steps.set(t, steps.get(queue[i]) + 1); queue.push(t); }
+  const far = FISH_PAGES.concat(UNIT_PAGES).map(p => p.path).filter(a => steps.get(a) !== 2);
+  ok('steps from home: every unit, water and community page is two steps from home', far.length === 0, far.slice(0, 5).join(', '));
+  ok('steps from home: the hubs and both A-to-Z lists are one step from home and linked from every other page',
+    STATIC.map(d => d.c.path).concat(INDEXES.map(i => i.path)).every(a => steps.get(a) === 1 && into.get(a).size === addresses.length - 1));
+  ok('steps from home: a unit page is linked from at least two pages, a water or community page from at least three',
+    UNIT_PAGES.every(p => into.get(p.path).size >= 2 && into.get(p.path).has('/hunting/') && into.get(p.path).has('/hunting/units/')) &&
+    FISH_PAGES.every(p => into.get(p.path).size >= 3 && into.get(p.path).has('/fishing/') && into.get(p.path).has('/fishing/waters/')));
+}
+
 /* ------------------------------------------- last-changed dates in the sitemap */
 /* The sitemap's <lastmod> is the day a page's content last changed, kept in page_dates.json. These
    checks hold on any day of the year, including a day a notice ends and every water page changes. */
@@ -974,9 +1068,12 @@ for (const p of ALL_PAGES) {
     paths.every(p => today.get(p) === pageDates[p].changed && (recorded[p] && recorded[p].sha === pageDates[p].sha ? pageDates[p].changed === recorded[p].changed : pageDates[p].changed === BUILD_DATE)));
   ok('page dates: a test build does not write page_dates.json', DATES_AT_START !== null && !Object.keys(built).some(f => /page_dates\.json$/.test(f)) && fs.readFileSync(DATES_FILE).equals(DATES_AT_START));
 
-  /* The next Utah day. Every page's "as of noon" date moves; only a page whose content also moved may take the new date. */
+  /* The next Utah day, once the daily refresh has recorded today's pages (written here the way that build
+     leaves it, so the check holds even when the saved file is behind the pages). Every page's "as of noon"
+     date moves; only a page whose content also moved may take the new date. */
   const next = new Date(Date.parse(BUILD_DATE + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10);
   try {
+    fs.writeFileSync(DATES_FILE, JSON.stringify({ pages: pageDates }));
     B.build({ date: next });
     const later = sitemapDates(read('sitemap.xml')), both = [...later.keys()].filter(p => today.has(p));
     const now = p => fs.readFileSync(path.join(ROOT, fileRel(p)), 'utf8'), was = p => built[fileRel(p)].toString();
@@ -985,7 +1082,7 @@ for (const p of ALL_PAGES) {
     ok('page dates: the next day, a page whose content changed, or a new page, takes that day', moved.every(p => later.get(p) === next) && [...later.keys()].filter(p => !today.has(p)).every(p => later.get(p) === next), moved.slice(0, 5).join(' '));
     ok('page dates: the next-day check is not empty (stamps did move on pages that kept their date)', same.some(p => was(p) !== now(p)));
   } catch (err) { ok('page dates: the next-day build succeeds', false, err.message); }
-  finally { B.build({ date: BUILD_DATE }); }
+  finally { if (DATES_AT_START) fs.writeFileSync(DATES_FILE, DATES_AT_START); B.build({ date: BUILD_DATE }); }
   ok('page dates: the next-day build restores every current-date build byte', restored());
 
   /* A newer refresh run moves the footer's "Sources last checked" on every page and no date in the sitemap. */

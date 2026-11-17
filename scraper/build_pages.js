@@ -382,8 +382,15 @@ function build(options = {}) {
   const defs = pageDefs();
   const out = {};   // absolute path -> text
 
+  /* The links every page carries, in one order: the footer of each page and the list on the
+     home page. Each A-to-Z list follows its hub, so both lists are one step from every page. */
+  const pageLinks = rel => defs.flatMap(d => {
+    const index = indexes.find(i => i.key === d.key);
+    return [{ href: rel + d.c.path.replace(/^\//, ''), label: d.label, key: d.key }]
+      .concat(index ? [{ href: rel + index.c.path.replace(/^\//, ''), label: index.c.label, key: d.key + '-index' }] : []);
+  });
   const footer = (rel, here) => {
-    const links = defs.map(d => ({ href: rel + d.c.path.replace(/^\//, ''), label: d.label, key: d.key }));
+    const links = pageLinks(rel);
     return `<footer>
 <div class="wrap">
 <p>${esc(C.DISCLAIMER)}</p>
@@ -411,6 +418,19 @@ ${footer(rel, here)}
 </body>
 </html>
 `;
+
+  /* A hub names every page under it, so each unit and water is two steps from home and is
+     linked from a page a search engine already has. Names and counties only: the pages
+     themselves carry the rules. */
+  const linkList = (h2, items) => `<section>
+<h2>${esc(h2)}</h2>
+<ul class="links">
+${items.join('\n')}
+</ul>
+</section>`;
+  const hubList = key => key === 'hunting'
+    ? linkList('Hunt units, A to Z', unitDefs.pages.map(p => `<li><a href="${esc(p.path)}">${esc(p.name)}</a></li>`))
+    : linkList('Waters, A to Z', waterDefs.pages.map(p => `<li><a href="${esc(p.path)}">${esc(p.name)}</a> &mdash; ${esc(countyText(p.counties))}</li>`));
 
   const crumb = (d, url) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: SITE + '/' },
@@ -443,7 +463,7 @@ ${faq.map(f => `<h3>${esc(f.q)}</h3>\n<p>${esc(f.a)}</p>`).join('\n')}
 ${C.SOURCES.map(s => `<li><a href="${esc(s.url)}" rel="noopener">${esc(s.label)}</a></li>`).join('\n')}
 </ul>
 </section>
-<p class="cta"><a class="btn" href="../">Open Ranger Hawk</a></p>
+${index ? hubList(d.key) + '\n' : ''}<p class="cta"><a class="btn" href="../">Open Ranger Hawk</a></p>
 </div>`;
     } else {
       main = `<div class="wrap page embed">
@@ -467,6 +487,17 @@ ${site[d.embed]}
   };
   const edition = fishing.rules._edition, asOf = longDate(fishing.date);
   const sourceChange = a => `<p class="fine">Source: <a href="${esc(a.url)}" rel="noopener">Utah DWR emergency change, in force ${esc(longDate(a.from))} through ${esc(longDate(a.last_day))}</a></p>`;
+  /* Waters are tied to each other by county and by nothing else. The counties are the ones the
+     page already names in its lead: the guidebook's heading, plus the four recorded cases in
+     scraper/fishing/links.json (extra_counties), read the way the app reads them
+     (fishing.counties). One list for each county the page is in, and no list where the county
+     has no other page. Nothing in the data ties a water to a hunt unit, so no page says so. */
+  const inCounty = new Map();
+  for (const p of waterDefs.pages) for (const c of new Set(p.counties)) inCounty.set(c, (inCounty.get(c) || []).concat(p));
+  const countyLists = p => [...new Set(p.counties)].map(c => {
+    const others = inCounty.get(c).filter(o => o !== p);
+    return others.length ? linkList(`Other waters in ${c} County`, others.map(o => `<li><a href="${esc(o.path)}">${esc(o.name)}</a></li>`)) + '\n' : '';
+  }).join('');
   for (const p of waterDefs.pages) {
     const where = countyText(p.counties), rel = '../../../';
     let title = `${p.name} fishing rules, ${where}, Utah | Ranger Hawk`;
@@ -489,7 +520,7 @@ ${site[d.embed]}
 ${sheet}
 ${guidebookSource}
 ${p.changes.map(sourceChange).join('\n')}
-<p class="cta"><a class="btn" href="/?water=${esc(p.id)}">Open this water in Ranger Hawk</a></p>
+${countyLists(p)}<p class="cta"><a class="btn" href="/?water=${esc(p.id)}">Open this water in Ranger Hawk</a></p>
 </div>`;
     out[fileOf(p.path)] = doc(staticHead({ title, description, canonical: SITE + p.path, ld: [indexCrumbs(indexes[0], p)] }, rel), rel, main, 'fishing');
   }
@@ -545,7 +576,7 @@ ${sheet}
     if (letter) list += '</ul>\n</section>\n';
     const lead = index.key === 'hunting' ? `<p class="lead">${esc(`Every polygon in Utah DWR's big game hunt boundary layer, A to Z, with the species each unit is listed for. A unit with no link is a polygon that none of the ${huntYear} hunt lists Ranger Hawk reads names.`)}</p>\n` : '';
     const main = `<div class="wrap page">\n<h1>${esc(c.label)}</h1>\n${lead}${list}</div>`;
-    out[fileOf(c.path)] = doc(staticHead({ title: c.title, description: fill(c.description), canonical: SITE + c.path, ld: [indexCrumbs(index)] }, rel), rel, main, index.key);
+    out[fileOf(c.path)] = doc(staticHead({ title: c.title, description: fill(c.description), canonical: SITE + c.path, ld: [indexCrumbs(index)] }, rel), rel, main, index.key + '-index');
   }
 
   /* ---- 404: served at any path, so every URL is root-absolute */
@@ -610,9 +641,7 @@ ${C.SOURCES.map(s => `- [${s.label}](${s.url})`).join('\n')}
       ...fontPreloads(''),
       ldBlock(graph),
     ].join('\n');
-    const links = [{ href: 'hunting/', label: 'Hunting in Utah' }, { href: 'fishing/', label: 'Fishing in Utah' }]
-      .concat(C.ABOUT ? [{ href: 'about/', label: C.ABOUT.label || 'About' }] : [])
-      .concat([{ href: 'privacy/', label: 'Privacy' }, { href: 'how-ranger-hawk-makes-money/', label: 'How Ranger Hawk makes money' }]);
+    const links = pageLinks('');
     const shell = `<div class="card"><div class="card-b priv">
 <p class="note">${esc(C.HOME.lead)}</p>
 <ul>
