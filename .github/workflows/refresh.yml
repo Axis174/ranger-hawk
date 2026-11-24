@@ -138,9 +138,51 @@ jobs:
           echo "::warning::could not push refreshed data after 5 attempts; \
           the Pages deploy below still publishes this run's output"
 
+      # The commit step above must never hand a half-merged tree to the deploy. On
+      # 2026-11-23 its rebase stopped on a conflict and left merge markers in five
+      # data files; only a failed deploy kept them off the live site. This step
+      # fails the job before anything is uploaded if that state is ever seen again.
+      - name: Refuse to publish a half-merged tree
+        run: |
+          if [ -n "$(git ls-files -u)" ] \
+             || [ -d "$(git rev-parse --git-path rebase-merge)" ] \
+             || [ -d "$(git rev-parse --git-path rebase-apply)" ]; then
+            echo "::error title=Half-merged tree::the data commit stopped in the middle of a rebase; nothing is published from this run"
+            git status --short | head -40
+            exit 1
+          fi
+          echo "tree is whole"
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
+
+      # deploy-pages asks GitHub once for this run's artifact and gives up if the
+      # list comes back empty. On 2026-11-19, 11-22 and 11-23 it came back empty
+      # under a second after the upload above reported success ("Found 0
+      # artifact(s)"), so the data was committed and the site was not updated.
+      # Up to three attempts, with a wait between them. An attempt runs only when
+      # the one before it failed, the artifact is uploaded once, and the job is
+      # red only if the third attempt fails too. A failed test suite still stops
+      # the job long before this: none of these steps runs after a failure.
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait before the second deploy attempt
+        if: steps.deployment.outcome == 'failure'
+        run: |
+          echo "::warning title=Deploy retried::first deploy attempt failed; trying again in 20 seconds"
+          sleep 20
+      - id: deployment_2
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait before the third deploy attempt
+        if: steps.deployment_2.outcome == 'failure'
+        run: |
+          echo "::warning title=Deploy retried::second deploy attempt failed; trying again in 60 seconds"
+          sleep 60
+      - id: deployment_3
+        if: steps.deployment_2.outcome == 'failure'
         uses: actions/deploy-pages@v4
