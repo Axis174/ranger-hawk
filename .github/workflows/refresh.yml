@@ -132,7 +132,12 @@ jobs:
               echo "pushed on attempt $i"; exit 0
             fi
             echo "push rejected, rebasing (attempt $i)"
-            git pull --rebase --autostash origin main || true
+            if ! git pull --rebase --autostash origin main; then
+              # A rebase that stops on a conflict leaves merge markers in the
+              # data files (run of 2026-11-23). Undo it, so the tree goes back to
+              # this run's own commit and nothing half-merged is published.
+              git rebase --abort || true
+            fi
             sleep $(( i * 5 ))
           done
           echo "::warning::could not push refreshed data after 5 attempts; \
