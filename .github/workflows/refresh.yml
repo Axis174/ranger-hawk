@@ -5,14 +5,15 @@ on:
     # Set for 11:15 UTC (5:15 a.m. MDT / 4:15 a.m. MST), but GitHub starts its
     # scheduled runs late: every one of the 66 from 2026-09-21 to 2026-11-25
     # began between 2 hours 56 minutes and 11 hours 21 minutes after this time,
-    # and GitHub's documentation gives no limit (the schedule event "can be delayed during periods of high
-    # loads", and queued jobs "may be dropped"). So this line is the midday
-    # refresh and the fallback, not the before-dawn one. A run that is asked
-    # for is not held up that way (a push has its run a second or two later),
-    # so the before-dawn run is asked for from outside GitHub, through
-    # workflow_dispatch below, at 4:10 a.m. Mountain: see ops/dawn-trigger.
-    # That is live only once Pete has set it up and the repo variable
-    # DAWN_TRIGGER is on; until then this late run is the only one each day.
+    # and GitHub's documentation gives no limit (the schedule event "can be
+    # delayed during periods of high loads", and queued jobs "may be dropped").
+    # So this line is the midday refresh and the fallback, not the before-dawn
+    # one. A run that is asked for is not held up that way (a push has its run
+    # a second or two later), so the before-dawn run is asked for from outside
+    # GitHub, through workflow_dispatch below, at 4:10 a.m. Mountain: see
+    # ops/dawn-trigger. That is live only once Pete has set it up and the repo
+    # variable DAWN_TRIGGER is on; until then this late run is the only one
+    # each day.
     - cron: '15 11 * * *'
   workflow_dispatch:
     inputs:

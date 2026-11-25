@@ -746,10 +746,11 @@ Mountain in summer and 4:15 a.m. in winter. **It does not start then.** Every
 one of the 66 scheduled runs from 2026-09-21 to 2026-11-25 began between 2
 hours 56 minutes and 11 hours 21 minutes late (half of them more than 5.9
 hours; Mondays worst, a median of 8.7 hours; the last twelve days a median of
-8.2), so the data landed between 8:10 a.m. and 3:36 p.m. in Utah. GitHub's documentation promises nothing better: the
-schedule event "can be delayed during periods of high loads of GitHub Actions
-workflow runs", and "some queued jobs may be dropped". It gives no limit. Its
-one piece of advice, a minute away from the top of the hour, is already taken.
+8.2), so the data landed between 8:10 a.m. and 3:36 p.m. in Utah. GitHub's
+documentation promises nothing better: the schedule event "can be delayed
+during periods of high loads of GitHub Actions workflow runs", and "some queued
+jobs may be dropped". It gives no limit. Its one piece of advice, a minute away
+from the top of the hour, is already taken.
 
 A run that is *asked for* is not held up that way. Of the seven pushes still
 in GitHub's event log on 2026-11-25, six started a run (the seventh touched no
@@ -797,7 +798,9 @@ What the alarm cannot see: a run that never starts at all (GitHub drops it, or
 the workflow file itself is broken, or GitHub has switched the schedule off
 after 60 days without activity in the repo). Whether it sees a job that GitHub
 cuts off (a time limit, a lost runner) is not settled by GitHub's documentation
-and has not been seen. On those days GitHub's own email is the only signal.
+and has not been seen. Nothing in the workflow reports a run that never
+started: the Actions page, which should show a run every day, is the place to
+look.
 
 ---
 
