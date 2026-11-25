@@ -265,7 +265,9 @@ choice still measuring; words are not carried, so they are typed again once.
 
 ## The data
 
-Refreshed daily at 5:15 a.m. Mountain by `.github/workflows/refresh.yml`.
+Refreshed every day by `.github/workflows/refresh.yml`: before dawn once the
+dawn trigger is switched on, and again around midday by GitHub's own late
+schedule (see "When the refresh runs" under *Maintaining it*).
 Everything lands in `docs/data/ut/`.
 
 | File | What it is |
@@ -736,6 +738,58 @@ python3 scraper/refresh.py && python3 scraper/build_calendar.py
 
 No dependencies — standard library only, so the Actions run cannot break on a
 package upgrade.
+
+### When the refresh runs
+
+The workflow's own schedule is set for 11:15 UTC, which would be 5:15 a.m.
+Mountain in summer and 4:15 a.m. in winter. **It does not start then.** Every
+one of the 66 scheduled runs from 2026-09-21 to 2026-11-25 began 2.9 to 11.4
+hours late (half of them more than 5.9 hours; Mondays worst, a median of 8.7
+hours; the last twelve days a median of 8.2), so the data landed between 8:10
+a.m. and 3:36 p.m. in Utah. GitHub's documentation promises nothing better: the
+schedule event "can be delayed during periods of high loads of GitHub Actions
+workflow runs", and "some queued jobs may be dropped". It gives no limit. Its
+one piece of advice, a minute away from the top of the hour, is already taken.
+
+A run that is *asked for* is not held up that way. Each of the six pushes
+still in GitHub's event log on 2026-11-25 had its run created one or two
+seconds later, and all 63 runs started by a push or by the Run workflow button
+began in the second they were created. (How fast a run asked for through the
+API is created had not been timed when this was written; the first mornings of
+the dawn trigger are that measurement.) So the before-dawn run is asked for
+from outside GitHub. `ops/dawn-trigger` is a small
+Cloudflare Worker that presses Run workflow at 4:10 a.m. Mountain, summer and
+winter; its own README has the one-time setup, which only Pete can do because
+it needs a token he creates and stores himself. GitHub's own late run stays as
+the midday refresh and as the fallback if the trigger ever stops.
+
+Two runs a day are safe. The second run of a day commits four small files
+(`changelog.json`, `fishing_notices.json`, `lake_level.json`, `hunt.ics`: time
+stamps and gauge readings), moves no sitemap date and changes no page.
+`changelog.json` keeps the last 60 runs, so with two a day it looks back about
+a month instead of two.
+
+### When a run is red
+
+The workflow's last job, `alarm`, opens an issue in this repo labelled
+`refresh-red` and assigned to the repo owner when the refresh job does not end
+green, whatever started the run, and adds a line to that issue for each later
+red day. It also reports a day on which the dawn trigger asked for no run (once
+the repo variable `DAWN_TRIGGER` is `on`). The issue is closed by hand, so an
+open one means a red day nobody has dealt with:
+
+```bash
+gh issue list -R Axis174/ranger-hawk --label refresh-red
+```
+
+To see the alarm work without a failure: *Actions → Refresh hunt data → Run
+workflow*, tick `alarm_test`. The run refreshes and deploys as usual and then
+opens (or adds to) the issue with a line marked ALARM TEST.
+
+What the alarm cannot see: a run that never starts at all (GitHub drops it, or
+the workflow file itself is broken, or GitHub has switched the schedule off
+after 60 days without activity in the repo). On those days the dawn-trigger
+check or GitHub's own email is the only signal.
 
 ---
 

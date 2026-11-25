@@ -16,7 +16,7 @@ Ranger Hawk (rangerhawk.com, formerly Utah Hunt Atlas) is Pete's personal, insta
 - Fishing: after any amendment or guidebook change run `python3 scraper/build_fishing.py` then `node scraper/fishing/test_fishing.js`; rebuild the places when the build says so.
 - seasons.json is the one hunting file edited by hand. A guidebook reissue is read by a human; season tables are never parsed by guesswork.
 - Regulatory data never ships without an independent check by checker (Opus) against the page images or the agency's own data. After a fix, re-check what the fix touched.
-- Check state before trusting any save point: git status, git log --oneline -5, the live version (grep ranger-hawk-v docs/sw.js against rangerhawk.com), and `node scraper/fishing/test_fishing.js`.
+- Check state before trusting any save point: git status, git log --oneline -5, the live version (grep ranger-hawk-v docs/sw.js against rangerhawk.com), `node scraper/fishing/test_fishing.js`, and any open red-run issue (`gh issue list -R Axis174/ranger-hawk --label refresh-red`). A red run goes in the save point before its issue is closed.
 - Verify on the live site after the Actions run.
 
 ## Content rules

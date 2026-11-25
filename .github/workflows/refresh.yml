@@ -2,9 +2,24 @@ name: Refresh hunt data
 
 on:
   schedule:
-    # 11:15 UTC daily = 5:15 a.m. MDT / 4:15 a.m. MST
+    # Set for 11:15 UTC (5:15 a.m. MDT / 4:15 a.m. MST), but GitHub starts its
+    # scheduled runs late: every one of the 66 from 2026-09-21 to 2026-11-25
+    # began 2.9 to 11.4 hours after this time, and GitHub's documentation gives
+    # no limit (the schedule event "can be delayed during periods of high
+    # loads", and queued jobs "may be dropped"). So this line is the midday
+    # refresh and the fallback, not the before-dawn one. A run that is asked
+    # for is not held up that way (a push has its run a second or two later),
+    # so the before-dawn run is asked for from outside GitHub, through
+    # workflow_dispatch below, at 4:10 a.m. Mountain: see ops/dawn-trigger.
+    # That is live only once Pete has set it up and the repo variable
+    # DAWN_TRIGGER is on; until then this late run is the only one each day.
     - cron: '15 11 * * *'
   workflow_dispatch:
+    inputs:
+      alarm_test:
+        description: 'Prove the red-run alarm: run as usual, then open the alarm issue anyway'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -191,3 +206,104 @@ jobs:
       - id: deployment_3
         if: steps.deployment_2.outcome == 'failure'
         uses: actions/deploy-pages@v4
+
+  # A red run must not go unseen (five scheduled runs failed between 2026-11-05
+  # and 2026-11-23 and four of them were in no save point). This job changes
+  # nothing in the refresh job above: it runs after it, has its own token rights
+  # (issues, and reading the run list; the refresh job gets neither) and never
+  # touches the tree. It opens an issue in this repo labelled refresh-red and
+  # assigned to the repo owner, or adds a line to the one already open, when:
+  #   - the refresh job did not end green, whatever started the run (a failed
+  #     suite, a failed deploy, a job that was cut off). A run that a person
+  #     cancelled, or that a newer run replaced in the queue, is not reported;
+  #   - GitHub's own scheduled run finds that the dawn trigger asked for no run
+  #     in the 20 hours before it (only once the repo variable DAWN_TRIGGER is
+  #     on). The trigger is tried at 10:10 or 11:10 UTC and the scheduled run
+  #     has never started before 14:10 UTC, so 20 hours takes in today's and
+  #     leaves out yesterday's;
+  #   - someone ticks alarm_test on Run workflow, to see the alarm work.
+  # The issue is closed by hand, so an open refresh-red issue means a red day
+  # nobody has dealt with yet.
+  alarm:
+    needs: refresh
+    if: ${{ !cancelled() && (needs.refresh.result != 'success' || inputs.alarm_test || (github.event_name == 'schedule' && vars.DAWN_TRIGGER == 'on')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+    steps:
+      - name: Open or update the refresh-red issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          RESULT: ${{ needs.refresh.result }}
+          ALARM_TEST: ${{ inputs.alarm_test }}
+          DAWN_TRIGGER: ${{ vars.DAWN_TRIGGER }}
+        run: |
+          day=$(date -u +%Y-%m-%d)
+          title=""
+          lines=""
+          add() {
+            [ -n "$title" ] || title="$1"
+            if [ -n "$lines" ]; then lines="$lines"$'\n\n'"$2"; else lines="$2"; fi
+          }
+
+          if [ "$RESULT" != "success" ]; then
+            # The failed step's name, read from this run's own job list. If the
+            # list cannot be read the issue is still opened, without the name.
+            step=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/attempts/$RUN_ATTEMPT/jobs" \
+              --jq '[.jobs[] | select(.name == "refresh") | .steps[]? | select(.conclusion == "failure" or .conclusion == "cancelled") | .name] | join("; ")' \
+              2>/dev/null || true)
+            [ -n "$step" ] || step="not listed, open the run"
+            add "Refresh run failed $day" \
+              "$day (UTC): the run started by $EVENT ended as $RESULT at: $step. $RUN_URL"
+          fi
+
+          if [ "$EVENT" = "schedule" ] && [ "$DAWN_TRIGGER" = "on" ]; then
+            since=$(date -u -d '20 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+            asked=$(gh api -X GET "repos/$GH_REPO/actions/workflows/refresh.yml/runs" \
+              -f event=workflow_dispatch -f "created=>=$since" -f per_page=1 \
+              --jq '.total_count' 2>/dev/null || echo unknown)
+            echo "runs asked for since $since: $asked"
+            if [ "$asked" = "0" ]; then
+              add "Dawn trigger silent $day" \
+                "$day (UTC): no run was asked for in the last 20 hours, so the dawn trigger did not fire and GitHub's own late run was the only refresh. ops/dawn-trigger/README.md says where to look; a lapsed token is the usual cause. $RUN_URL"
+            elif [ "$asked" = "unknown" ]; then
+              echo "::warning title=Dawn trigger not checked::the list of runs could not be read"
+            fi
+          fi
+
+          if [ "$ALARM_TEST" = "true" ]; then
+            add "Alarm test $day" \
+              "$day (UTC): ALARM TEST, asked for by hand. Nothing is wrong. $RUN_URL"
+          fi
+
+          if [ -z "$lines" ]; then
+            echo "nothing to report"
+            exit 0
+          fi
+          echo "$lines"
+
+          gh label create refresh-red --color B60205 \
+            --description "A refresh run did not finish green" 2>/dev/null || true
+
+          open=$(gh issue list --label refresh-red --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$lines"
+            exit 0
+          fi
+
+          body="$lines
+
+          If a refresh run stopped before \"Commit refreshed data\", nothing was committed or published and the site still shows the last good run. If it stopped at a deploy step, the data was committed and the site was not updated: start a new run with Run workflow, not Re-run.
+
+          Later red days are added below as comments. This issue is closed by hand, once someone has read it."
+          gh issue create --title "$title" --label refresh-red \
+            --assignee "$OWNER" --body "$body" \
+          || gh issue create --title "$title" --label refresh-red --body "$body"
