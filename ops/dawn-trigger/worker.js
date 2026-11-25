@@ -1,7 +1,7 @@
 // Ranger Hawk dawn trigger.
 //
 // GitHub starts its own scheduled runs hours late (every one of the 66 from
-// 2026-09-21 to 2026-11-25 began 2.9 to 11.4 hours after the set time), and its
+// 2026-09-21 to 2026-11-25 began 3 to 11 hours after the set time), and its
 // documentation promises no limit. A run that is ASKED for is not held up that
 // way (a push has its run created a second or two later). So this Cloudflare
 // Worker asks for one every morning: it calls the "Run workflow" door
@@ -73,8 +73,9 @@ export default {
       await new Promise((done) => setTimeout(done, WAIT_MS));
     }
     // Thrown so the failure shows in Cloudflare's own log for this Worker. The
-    // refresh workflow also notices: its alarm job opens an issue on any day no
-    // run was asked for (repo variable DAWN_TRIGGER).
+    // refresh workflow can notice too: when the repo variable DAWN_TRIGGER is
+    // on, GitHub's own scheduled run opens an issue if no run was asked for in
+    // the 20 hours before it.
     throw new Error(`dawn trigger failed: ${last}`);
   },
 

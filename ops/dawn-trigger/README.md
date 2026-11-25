@@ -6,8 +6,10 @@ under "When the refresh runs"). It is a Cloudflare Worker with one job: once a
 day it presses the same "Run workflow" door a person can press on the Actions
 page. It serves nothing, stores nothing and has no public address.
 
-**Status: built, not switched on.** Nothing here runs until Pete does the
-one-time setup below.
+**Status on 2026-11-25: built, not switched on.** Nothing here runs until Pete
+has done the one-time setup below. It is live when the repo variable
+`DAWN_TRIGGER` reads `on` and the Actions page shows a run started by
+`workflow_dispatch` each morning (see "Checking it").
 
 ## What is in this folder
 
@@ -71,7 +73,8 @@ this uses one; GitHub's standard runners are free for a public repo.
 ## When it stops
 
 The usual cause is the token reaching its year. GitHub emails the owner before
-that, and the `refresh-red` issue appears the first day no run is asked for.
+that, and with `DAWN_TRIGGER` on a `refresh-red` issue appears the first day
+no run is asked for.
 Make a new token as in step 1 and repeat step 3. Nothing else changes.
 
 Cloudflare publishes no promise about how punctually a cron trigger fires. If
