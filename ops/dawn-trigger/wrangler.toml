@@ -1,0 +1,15 @@
+# Cloudflare Worker settings for the dawn trigger. No secret lives here: the
+# GitHub token is stored in Cloudflare by Pete (`wrangler secret put GITHUB_TOKEN`
+# or the dashboard), and Cloudflare never shows it again.
+name = "ranger-hawk-dawn-trigger"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+# No public address: the Worker is only ever woken by its own clock.
+workers_dev = false
+
+# One clock entry, two hours (UTC). The Worker goes on only at the one that is
+# 4 a.m. in Utah, so this is 4:10 a.m. Mountain all year. Ten past, so the run
+# is always asked for before GitHub's own 11:15 UTC schedule could fire.
+[triggers]
+crons = ["10 10,11 * * *"]
